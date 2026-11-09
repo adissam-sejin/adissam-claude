@@ -21,7 +21,8 @@ career-wiki/
 │  ├─ orgs/             ④ 기관 페이지 — 제안·지원하는 기관의 문제 정의, 톤, 결과
 │  ├─ works/            ⑤ 작업물 — 제안서, 지원서, 계획서, 상세페이지 시안 기록
 │  └─ queries/          다시 쓸 만한 질문과 답
-└─ sites/               ⑥ 맞춤 웹 — 기관별로 보내는 제출용 한 장짜리 웹페이지(HTML)
+├─ sites/               ⑥ 맞춤 웹 — portfolio/(전체 포트폴리오 사이트) + 기관별 제출용 페이지
+└─ scripts/build_site.py  위키 → 포트폴리오 사이트 생성기
 ```
 
 ## 각 층의 형식
@@ -57,6 +58,9 @@ updated: YYYY-MM-DD
 ### ⑤ 작업물 `wiki/works/`
 만든 제안서·지원서·시안 기록: 날짜, 대상 기관, 파일 위치, 결과. 좋은 문단은 다음에 재사용할 수 있게 발췌해 둔다.
 
+### ⑥ 포트폴리오 사이트 `sites/portfolio/`
+위키를 고친 뒤 `python3 career-wiki/scripts/build_site.py`로 다시 만들고, 같은 파일 경로로 Artifact를 다시 게시한다(주소 유지: https://claude.ai/artifact/WPmFuaQstCBwXiMNtokj8E). `(확인 필요)` 내용은 사이트에 나가지 않는다.
+
 ### ⑥ 맞춤 웹 `sites/기관명.html`
 기관 페이지를 바탕으로 그 기관에 맞는 카드만 골라 만든 한 장짜리 소개 페이지. 브랜드 톤(웜다크 #2B2A2A · 크림 #F4F1EA · 와인 #8C0001, Freesentation)을 따른다. 필요하면 Artifact로 게시해 링크로 보낸다.
 
@@ -67,6 +71,7 @@ updated: YYYY-MM-DD
 2. 경험 카드를 만들거나 고친다 → 역량 페이지에 연결 → 필요하면 기관 페이지·overview·타임라인 갱신
 3. 기존 내용과 부딪히면 덮어쓰지 말고 둘 다 적고 `gaps.md`에 올린다
 4. `index.md` 갱신, `log.md`에 `## YYYY-MM-DD 넣기 | 제목` 추가
+5. 포트폴리오 사이트를 다시 만들고 다시 게시한다
 
 ### 지원·제안 — "○○기관에 제안하려고"
 1. `orgs/_template.md`로 기관 페이지를 만든다(기관 조사 → 문제 정의 → 톤)
