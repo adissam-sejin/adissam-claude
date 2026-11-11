@@ -34,7 +34,7 @@ async function isAdmin(token: unknown) {
 async function findStudent(code: string) {
   if (!code) return null;
   const { data } = await db.from("student_codes")
-    .select("id, student_name, exhibition_id, exhibitions(id, status, max_per_student)")
+    .select("id, student_name, exhibition_id, exhibitions(id, max_per_student)")
     .eq("code", code).maybeSingle();
   return data as any;
 }
@@ -48,7 +48,8 @@ async function upload(form: FormData) {
   const student = await findStudent(normCode(form.get("code")));
   if (!student) return json({ error: "not_found" }, 403);
   const ex = student.exhibitions;
-  if (!ex || ex.status !== "active") return json({ error: "ended" }, 403);
+  const { data: state } = await db.rpc("_exhibition_state", { p_id: student.exhibition_id });
+  if (!ex || state !== "active") return json({ error: "ended" }, 403);
 
   const { count } = await db.from("artworks").select("id", { count: "exact", head: true })
     .eq("student_code_id", student.id);
@@ -91,6 +92,27 @@ async function upload(form: FormData) {
   return json({ ok: true, id });
 }
 
+// 관리자: 전시회 포스터 이미지 등록
+async function setPoster(form: FormData) {
+  if (!(await isAdmin(form.get("token")))) return json({ error: "forbidden" }, 403);
+  const id = String(form.get("exhibition_id") ?? "");
+  const image = form.get("image");
+  if (!(image instanceof File) || image.type !== "image/jpeg") return json({ error: "bad_type" }, 400);
+  if (image.size > 2 * 1024 * 1024) return json({ error: "too_large" }, 400);
+  const { data: ex } = await db.from("exhibitions").select("id, poster_path").eq("id", id).maybeSingle();
+  if (!ex) return json({ error: "not_found" }, 404);
+  const path = `posters/${id}-${crypto.randomUUID().slice(0, 8)}.jpg`;
+  const up = await db.storage.from(BUCKET).upload(path, image, { contentType: "image/jpeg", cacheControl: "31536000" });
+  if (up.error) return json({ error: "storage", detail: up.error.message }, 500);
+  const { error } = await db.from("exhibitions").update({ poster_path: path }).eq("id", id);
+  if (error) {
+    await removeFiles([path]);
+    return json({ error: "db", detail: error.message }, 500);
+  }
+  if (ex.poster_path) await removeFiles([ex.poster_path]);
+  return json({ ok: true, poster: path });
+}
+
 async function deleteArtwork(body: any) {
   const { data: art } = await db.from("artworks")
     .select("id, student_code_id, image_path, thumb_path").eq("id", String(body.artwork_id ?? "")).maybeSingle();
@@ -111,9 +133,11 @@ async function deleteExhibition(body: any) {
   if (!(await isAdmin(body.token))) return json({ error: "forbidden" }, 403);
   const id = String(body.exhibition_id ?? "");
   const { data: arts } = await db.from("artworks").select("image_path, thumb_path").eq("exhibition_id", id);
+  const { data: exRow } = await db.from("exhibitions").select("poster_path").eq("id", id).maybeSingle();
   const { error } = await db.from("exhibitions").delete().eq("id", id);
   if (error) return json({ error: "db", detail: error.message }, 500);
   const paths = (arts ?? []).flatMap((a: any) => [a.image_path, a.thumb_path]);
+  if (exRow?.poster_path) paths.push(exRow.poster_path);
   for (let i = 0; i < paths.length; i += 100) await removeFiles(paths.slice(i, i + 100));
   return json({ ok: true });
 }
@@ -123,7 +147,10 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
   try {
     const type = req.headers.get("content-type") ?? "";
-    if (type.includes("multipart/form-data")) return await upload(await req.formData());
+    if (type.includes("multipart/form-data")) {
+      const form = await req.formData();
+      return form.get("action") === "poster" ? await setPoster(form) : await upload(form);
+    }
     const body = await req.json();
     if (body.action === "delete_artwork") return await deleteArtwork(body);
     if (body.action === "delete_exhibition") return await deleteExhibition(body);

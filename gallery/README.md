@@ -4,7 +4,7 @@
 
 - `site/` — 배포되는 정적 사이트 (빌드 과정 없음)
   - `index.html` 관람객/수강생 입장 및 3D 전시관
-  - `admin.html` 관리자 화면 (전시회 생성, 수강생 코드 발급, 진행/종료 전환)
+  - `admin.html` 관리자 화면 (전시회 생성, 기간·포스터 설정, 진행/종료 전환)
   - `js/config.js` Supabase 주소와 공개 키
 - `supabase/migrations/` — 데이터베이스 스키마와 RPC 함수
 - `supabase/functions/gallery/` — 작품 업로드/삭제용 Edge Function

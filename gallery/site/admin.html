@@ -45,16 +45,20 @@
             <input id="newName" maxlength="60" placeholder="예: AI 이미지 특강 61기 작품전" required>
           </div>
           <div>
+            <label for="newStart">전시 시작일 (선택)</label>
+            <input id="newStart" type="date">
+          </div>
+          <div>
+            <label for="newEnd">전시 종료일 (선택)</label>
+            <input id="newEnd" type="date">
+          </div>
+          <div>
             <label for="newMax">1인당 최대 작품 수</label>
             <input id="newMax" type="number" min="1" max="50" value="3" required>
           </div>
           <div>
-            <label for="newCount">수강생 코드 개수</label>
-            <input id="newCount" type="number" min="0" max="300" value="20" required>
-          </div>
-          <div class="span2">
-            <label for="newNames">수강생 이름 (선택 · 한 줄에 한 명)</label>
-            <textarea id="newNames" rows="3" placeholder="이름을 적으면 이름별로 코드가 만들어집니다.&#10;비워 두면 위의 개수만큼 이름 없는 코드가 만들어집니다."></textarea>
+            <label for="newCount">수강생 수 (등록 가능 인원)</label>
+            <input id="newCount" type="number" min="1" max="500" value="30" required>
           </div>
           <button class="btn primary span2" type="submit">전시회 만들기</button>
         </form>

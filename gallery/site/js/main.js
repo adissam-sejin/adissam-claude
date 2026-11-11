@@ -1,5 +1,5 @@
 import { sb, rpc, imageUrl, fn, fnUpload } from './api.js';
-import { AVATARS, renderAvatarPreviews } from './avatars.js';
+import { ANIMALS, COLORS, AvatarPreview, avatarId, parseAvatar } from './avatars.js';
 import { World } from './world.js';
 
 const $ = (id) => document.getElementById(id);
@@ -21,40 +21,153 @@ if (!visitorId) {
 }
 const sessionId = uuid();
 
+const saved = parseAvatar(store.get('gallery.avatar'));
 const state = {
-  code: '', name: '', avatar: store.get('gallery.avatar') || AVATARS[0].id,
+  code: '', name: '', animal: saved.animal, color: saved.color,
+  target: null, // 현황판에서 고른 전시회
   role: 'visitor', exhibition: null, student: null, artworks: [],
-  channel: null, timers: [], viewing: null,
+  channel: null, live: false, timers: [], viewing: null,
 };
 let world = null;
 
-// ───────────── 입장 화면 ─────────────
+let toastTimer;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 3500);
+}
 
+// ───────────── 전시회 현황판 ─────────────
+
+const fmtDate = (d) => (d ? d.slice(0, 10).replace(/-/g, '.') : '');
+function period(ex) {
+  if (ex.starts_on && ex.ends_on) return `${fmtDate(ex.starts_on)} – ${fmtDate(ex.ends_on)}`;
+  if (ex.starts_on) return `${fmtDate(ex.starts_on)} –`;
+  if (ex.ends_on) return `– ${fmtDate(ex.ends_on)}`;
+  return '상시 전시';
+}
+const STATE_LABEL = { active: '전시중', upcoming: '오픈 예정', ended: '종료' };
+
+function posterCard(ex, index) {
+  const card = document.createElement('button');
+  card.type = 'button';
+  card.className = `poster ${ex.state} design-${index % 6}`;
+  const art = document.createElement('div');
+  art.className = 'poster-art';
+  if (ex.poster) {
+    const img = document.createElement('img');
+    img.src = imageUrl(ex.poster);
+    img.alt = '';
+    img.loading = 'lazy';
+    art.append(img);
+  } else {
+    const t = document.createElement('span');
+    t.className = 'poster-title';
+    t.textContent = ex.name;
+    const k = document.createElement('span');
+    k.className = 'poster-kicker';
+    k.textContent = 'EXHIBITION';
+    art.append(k, t);
+  }
+  const badge = document.createElement('span');
+  badge.className = 'poster-badge';
+  badge.textContent = STATE_LABEL[ex.state];
+  art.append(badge);
+
+  const info = document.createElement('div');
+  info.className = 'poster-info';
+  const name = document.createElement('strong');
+  name.textContent = ex.name;
+  const when = document.createElement('span');
+  when.textContent = period(ex);
+  const count = document.createElement('span');
+  count.textContent = `작품 ${ex.artworks}점`;
+  info.append(name, when, count);
+  card.append(art, info);
+
+  card.addEventListener('click', () => {
+    if (ex.state === 'ended') return toast('종료된 전시회입니다.');
+    if (ex.state === 'upcoming') return toast(`아직 열리지 않은 전시회입니다. ${ex.starts_on ? `${fmtDate(ex.starts_on)}에 열립니다.` : ''}`);
+    openEntry(ex);
+  });
+  return card;
+}
+
+async function loadBoard() {
+  const body = $('boardBody');
+  let list;
+  try {
+    list = await rpc('list_exhibitions');
+  } catch (err) {
+    console.error(err);
+    body.innerHTML = '<p class="board-empty">전시회 목록을 불러오지 못했습니다. 새로고침해 주세요.</p>';
+    return;
+  }
+  body.replaceChildren();
+  if (!list.length) {
+    body.innerHTML = '<p class="board-empty">아직 등록된 전시회가 없습니다.</p>';
+    return;
+  }
+  const groups = [
+    ['active', '지금 전시중'],
+    ['upcoming', '오픈 예정'],
+    ['ended', '지난 전시'],
+  ];
+  let i = 0;
+  for (const [key, title] of groups) {
+    const items = list.filter((e) => e.state === key);
+    if (!items.length) continue;
+    const sec = document.createElement('section');
+    const h = document.createElement('h2');
+    h.textContent = title;
+    const n = document.createElement('span');
+    n.textContent = items.length;
+    h.append(n);
+    const grid = document.createElement('div');
+    grid.className = 'poster-grid';
+    for (const ex of items) grid.append(posterCard(ex, i++));
+    sec.append(h, grid);
+    body.append(sec);
+  }
+}
+
+// ───────────── 입장 ─────────────
+
+let preview = null;
 function buildAvatarPicker() {
-  const wrap = $('avatars');
-  let previews = {};
-  try { previews = renderAvatarPreviews(160); } catch { /* WebGL 불가 시 이름만 표시 */ }
-  for (const a of AVATARS) {
+  try { preview = new AvatarPreview(200); } catch { preview = null; }
+  for (const a of ANIMALS) {
     const b = document.createElement('button');
     b.type = 'button';
     b.setAttribute('role', 'radio');
     b.dataset.id = a.id;
-    if (previews[a.id]) {
-      const img = document.createElement('img');
-      img.src = previews[a.id];
-      img.alt = '';
-      b.append(img);
-    }
-    b.append(a.name);
-    b.addEventListener('click', () => selectAvatar(a.id));
-    wrap.append(b);
+    const img = document.createElement('img');
+    img.alt = '';
+    b.append(img, a.name);
+    b.addEventListener('click', () => { state.animal = a.id; syncPicker(false); });
+    $('avatars').append(b);
   }
-  selectAvatar(AVATARS.some((a) => a.id === state.avatar) ? state.avatar : AVATARS[0].id);
+  COLORS.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-label', c.name);
+    b.title = c.name;
+    b.style.background = `#${c.hex.toString(16).padStart(6, '0')}`;
+    b.addEventListener('click', () => { state.color = i; syncPicker(true); });
+    $('colors').append(b);
+  });
+  syncPicker(true);
 }
 
-function selectAvatar(id) {
-  state.avatar = id;
-  for (const b of $('avatars').children) b.setAttribute('aria-checked', String(b.dataset.id === id));
+function syncPicker(redraw) {
+  for (const b of $('avatars').children) {
+    b.setAttribute('aria-checked', String(b.dataset.id === state.animal));
+    if (redraw && preview) b.querySelector('img').src = preview.render(avatarId(b.dataset.id, state.color));
+  }
+  [...$('colors').children].forEach((b, i) => b.setAttribute('aria-checked', String(i === state.color)));
 }
 
 function showEntryError(msg) {
@@ -63,14 +176,31 @@ function showEntryError(msg) {
   el.hidden = !msg;
 }
 
-const ENTER_ERRORS = {
-  not_found: '코드를 찾을 수 없습니다. 입장 코드를 다시 확인해 주세요.',
-  ended: '종료된 전시회입니다.',
-};
+function openEntry(ex, code = '') {
+  state.target = ex;
+  $('entryTitle').textContent = ex ? ex.name : '전시회 입장';
+  $('code').value = code;
+  showEntryError('');
+  $('entry').hidden = false;
+  if (!matchMedia('(pointer: coarse)').matches) $('code').focus();
+}
+
+const myCodeKey = (exId) => `gallery.student.${exId}`;
+
+function enterErrorText(data) {
+  switch (data.error) {
+    case 'not_found': return '코드를 찾을 수 없습니다. 입장 코드를 다시 확인해 주세요.';
+    case 'ended': return `「${data.name}」 전시회는 종료되었습니다.`;
+    case 'upcoming': return `「${data.name}」 전시회는 아직 열리지 않았습니다.${data.starts_on ? ` (${fmtDate(data.starts_on)} 오픈)` : ''}`;
+    case 'full': return '수강생 등록 인원이 모두 찼습니다. 강사에게 문의해 주세요.';
+    case 'name_taken': return '이미 등록된 이름입니다. 본인이라면 발급받은 개인 코드를 입력하고, 아니라면 다른 이름(예: 홍길동2)으로 입장해 주세요.';
+    default: return '입장하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  }
+}
 
 $('entryForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const code = $('code').value.replace(/\s/g, '').toUpperCase();
+  let code = $('code').value.replace(/\s/g, '').toUpperCase();
   const name = $('name').value.trim();
   if (!code || !name) return;
   showEntryError('');
@@ -78,15 +208,27 @@ $('entryForm').addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = '입장 중…';
   try {
-    const data = await rpc('enter', { p_code: code, p_visitor: visitorId });
-    if (data.error) {
-      showEntryError(data.error === 'ended' ? `「${data.name}」 전시회는 종료되었습니다.` : ENTER_ERRORS[data.error]);
-      return;
+    let data = await rpc('enter', { p_code: code, p_visitor: visitorId, p_name: name });
+    // 이 기기에서 같은 이름으로 이미 개인 코드를 받았다면 그 코드로 다시 입장
+    if (data.error === 'name_taken') {
+      let mine = null;
+      try { mine = JSON.parse(store.get(myCodeKey(data.exhibition_id))); } catch { /* 없음 */ }
+      if (mine && mine.name.toLowerCase() === name.toLowerCase()) {
+        code = mine.code;
+        data = await rpc('enter', { p_code: code, p_visitor: visitorId, p_name: name });
+      }
     }
-    state.code = code;
+    if (data.error) return showEntryError(enterErrorText(data));
+    if (state.target && data.exhibition.id !== state.target.id) {
+      return showEntryError(`이 코드는 「${data.exhibition.name}」 전시회의 코드입니다. 현황판에서 해당 전시회를 선택해 주세요.`);
+    }
+    state.code = data.student?.code || code;
     state.name = name;
     store.set('gallery.name', name);
-    store.set('gallery.avatar', state.avatar);
+    store.set('gallery.avatar', avatarId(state.animal, state.color));
+    if (data.student) {
+      store.set(myCodeKey(data.exhibition.id), JSON.stringify({ code: data.student.code, name: data.student.name }));
+    }
     enterGallery(data);
   } catch (err) {
     showEntryError('접속에 실패했습니다. 잠시 후 다시 시도해 주세요.');
@@ -119,7 +261,8 @@ function enterGallery(data) {
     }
   }
   world.setTitle(data.exhibition.name);
-  world.setSelf({ name: state.name, avatar: state.avatar });
+  world.setSelf({ name: state.name, avatar: avatarId(state.animal, state.color) });
+  world.resetPose();
   applyData(data);
   world.paused = false;
   world.start();
@@ -127,6 +270,7 @@ function enterGallery(data) {
   $('exName').textContent = data.exhibition.name;
   document.title = `${data.exhibition.name} · 온라인 전시관`;
   $('entry').hidden = true;
+  $('board').hidden = true;
   $('hud').hidden = false;
 
   const touch = matchMedia('(pointer: coarse)').matches;
@@ -137,7 +281,11 @@ function enterGallery(data) {
   hint.classList.remove('fade');
   state.timers.push(setTimeout(() => hint.classList.add('fade'), 9000));
 
-  if (!data.artworks.length) {
+  if (data.student?.issued) {
+    $('issuedCode').textContent = data.student.code;
+    world.paused = true;
+    $('issued').hidden = false;
+  } else if (!data.artworks.length) {
     toast(data.role === 'student' ? '아직 작품이 없습니다. 첫 작품을 올려 보세요!' : '아직 전시된 작품이 없습니다.');
   }
   joinRealtime();
@@ -147,7 +295,7 @@ function enterGallery(data) {
 async function refresh() {
   if (!state.exhibition) return;
   try {
-    const data = await rpc('enter', { p_code: state.code, p_visitor: visitorId });
+    const data = await rpc('enter', { p_code: state.code, p_visitor: visitorId, p_name: state.name });
     if (!state.exhibition) return;
     if (data.error) {
       leaveGallery(data.error === 'ended' ? '전시회가 종료되었습니다.' : '입장 코드가 더 이상 유효하지 않습니다.');
@@ -175,9 +323,10 @@ function leaveGallery(message) {
   state.exhibition = null;
   closeModals();
   $('hud').hidden = true;
-  $('entry').hidden = false;
+  $('board').hidden = false;
   document.title = '온라인 3D 전시관';
-  showEntryError(message || '');
+  if (message) toast(message);
+  loadBoard();
 }
 
 $('exitBtn').addEventListener('click', () => leaveGallery());
@@ -221,7 +370,7 @@ function joinRealtime() {
   ch.subscribe((status) => {
     state.live = status === 'SUBSCRIBED';
     if (state.live) {
-      ch.track({ name: state.name, avatar: state.avatar, ...world.getPose() });
+      ch.track({ name: state.name, avatar: avatarId(state.animal, state.color), ...world.getPose() });
     }
   });
 
@@ -262,8 +411,7 @@ function openViewer(id) {
 
 function closeModals() {
   state.viewing = null;
-  $('viewer').hidden = true;
-  $('uploader').hidden = true;
+  for (const id of ['viewer', 'uploader', 'issued', 'entry']) $(id).hidden = true;
   if (world) world.paused = false;
 }
 
@@ -303,8 +451,8 @@ $('deleteBtn').addEventListener('click', async () => {
   if (!id || !confirm('이 작품을 전시에서 삭제할까요?')) return;
   const res = await fn({ action: 'delete_artwork', code: state.code, artwork_id: id });
   if (res.error) return toast('삭제하지 못했습니다.');
-  closeModals();
   await refresh();
+  closeModals();
   send('refresh', {});
   toast('작품을 삭제했습니다.');
 });
@@ -327,11 +475,9 @@ async function loadBitmap(file) {
 }
 
 function resizeToJpeg(src, max, quality) {
-  const sw = src.width;
-  const sh = src.height;
-  const scale = Math.min(1, max / Math.max(sw, sh));
-  const w = Math.max(1, Math.round(sw * scale));
-  const h = Math.max(1, Math.round(sh * scale));
+  const scale = Math.min(1, max / Math.max(src.width, src.height));
+  const w = Math.max(1, Math.round(src.width * scale));
+  const h = Math.max(1, Math.round(src.height * scale));
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
@@ -356,14 +502,15 @@ function quotaLeft() {
 
 $('uploadBtn').addEventListener('click', () => {
   const left = quotaLeft();
+  const max = state.exhibition.max_per_student;
   picked = null;
   $('uploadForm').reset();
   $('preview').hidden = true;
   $('fileHint').hidden = false;
   $('artAuthor').value = state.student?.name || state.name;
-  $('quota').textContent = left > 0
-    ? `1인 최대 ${state.exhibition.max_per_student}점 · 앞으로 ${left}점 더 올릴 수 있습니다.`
-    : `올릴 수 있는 작품 수(${state.exhibition.max_per_student}점)를 모두 채웠습니다. 작품을 터치해 삭제한 뒤 다시 올릴 수 있습니다.`;
+  $('quota').textContent = `${left > 0
+    ? `1인 최대 ${max}점 · 앞으로 ${left}점 더 올릴 수 있습니다.`
+    : `올릴 수 있는 작품 수(${max}점)를 모두 채웠습니다. 작품을 터치해 삭제한 뒤 다시 올릴 수 있습니다.`} 내 개인 코드: ${state.code}`;
   $('submitArt').disabled = left <= 0;
   showUploadError('');
   world.paused = true;
@@ -431,16 +578,7 @@ $('uploadForm').addEventListener('submit', async (e) => {
   }
 });
 
-// ───────────── 기타 ─────────────
-
-let toastTimer;
-function toast(msg) {
-  const el = $('toast');
-  el.textContent = msg;
-  el.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.hidden = true; }, 3500);
-}
+// ───────────── 시작 ─────────────
 
 window.addEventListener('pagehide', () => {
   if (state.channel) sb.removeChannel(state.channel);
@@ -448,5 +586,7 @@ window.addEventListener('pagehide', () => {
 
 buildAvatarPicker();
 $('name').value = store.get('gallery.name') || '';
+loadBoard();
+// 입장 링크(?code=)로 들어오면 바로 입장 창을 연다
 const urlCode = new URLSearchParams(location.search).get('code');
-if (urlCode) $('code').value = urlCode.toUpperCase();
+if (urlCode) openEntry(null, urlCode.toUpperCase());

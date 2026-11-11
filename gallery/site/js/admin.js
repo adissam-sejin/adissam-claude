@@ -1,4 +1,4 @@
-import { rpc, imageUrl, fn } from './api.js';
+import { rpc, imageUrl, fn, fnUpload } from './api.js';
 
 const $ = (id) => document.getElementById(id);
 const TOKEN_KEY = 'gallery.admin';
@@ -162,43 +162,30 @@ function renderCodes(ex) {
     const input = el('input', { value: c.student_name, maxlength: 30, placeholder: '이름 없음', 'aria-label': '수강생 이름' });
     input.addEventListener('change', () => act(call('admin_update_code', { p_code_id: c.id, p_name: input.value }), '이름을 저장했습니다.'));
     return el('tr', {},
-      el('td', {}, el('span', { class: 'code' }, c.code)),
       el('td', {}, input),
+      el('td', {}, el('span', { class: 'code' }, c.code)),
       el('td', { class: 'num' }, `${c.used} / ${ex.max_per_student}`),
       el('td', {},
-        el('button', { class: 'btn small', onclick: () => copy(entryUrl(c.code), '수강생 입장 링크를') }, '링크'),
-        ' ',
         el('button', {
           class: 'btn small danger',
           onclick: () => {
-            if (confirm(`코드 ${c.code}를 삭제할까요?\n이미 올린 작품은 전시에 남습니다.`)) {
-              act(call('admin_delete_code', { p_code_id: c.id }), '코드를 삭제했습니다.');
+            if (confirm(`${c.student_name || c.code} 수강생 등록을 삭제할까요?\n이미 올린 작품은 전시에 남습니다.`)) {
+              act(call('admin_delete_code', { p_code_id: c.id }), '수강생 등록을 삭제했습니다.');
             }
           },
         }, '삭제')),
     );
   });
-
-  const countInput = el('input', { type: 'number', min: 1, max: 300, value: 5, id: `add-${ex.id}` });
-  const addForm = el('form', { class: 'row-form' },
-    el('div', {}, el('label', { for: `add-${ex.id}` }, '코드 추가 개수'), countInput),
-    el('button', { class: 'btn small primary', type: 'submit' }, '코드 추가'),
-    el('button', {
-      class: 'btn small', type: 'button',
-      onclick: () => copy(ex.codes.map((c) => `${c.code}\t${c.student_name}`).join('\n'), '수강생 코드 목록을'),
-    }, '전체 코드 복사'),
-  );
-  addForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    act(call('admin_add_codes', { p_exhibition: ex.id, p_count: Number(countInput.value) || 0 }), '코드를 추가했습니다.');
-  });
-
-  return section(ex, 'codes', '수강생 코드', `${ex.codes.length}개`,
+  return section(ex, 'codes', '등록한 수강생', `${ex.codes.length} / ${ex.max_students}명`,
+    el('p', { class: 'ex-meta' }, '수강생이 수강생 코드와 이름을 입력하면 여기에 자동 등록되고 개인 코드가 발급됩니다.'),
     ex.codes.length ? el('div', { class: 'table-wrap' },
       el('table', {},
-        el('thead', {}, el('tr', {}, el('th', {}, '코드'), el('th', {}, '수강생 이름'), el('th', {}, '올린 작품'), el('th', {}, ''))),
+        el('thead', {}, el('tr', {}, el('th', {}, '수강생 이름'), el('th', {}, '개인 코드'), el('th', {}, '올린 작품'), el('th', {}, ''))),
         el('tbody', {}, ...rows))) : null,
-    addForm);
+    ex.codes.length ? el('div', { class: 'row-form' }, el('button', {
+      class: 'btn small', type: 'button',
+      onclick: () => copy(ex.codes.map((c) => `${c.student_name}\t${c.code}`).join('\n'), '수강생 목록을'),
+    }, '수강생 목록 복사')) : null);
 }
 
 function renderArtworks(ex) {
@@ -218,6 +205,29 @@ function renderArtworks(ex) {
     cards.length ? el('div', { class: 'art-grid' }, ...cards) : el('p', { class: 'ex-meta' }, '아직 올라온 작품이 없습니다.'));
 }
 
+const STATE_LABEL = { active: '진행중', upcoming: '오픈 예정', ended: '종료' };
+const fmt = (d) => (d ? d.replace(/-/g, '.') : '');
+
+// 포스터 이미지를 줄여서 업로드
+async function uploadPoster(ex, file) {
+  const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const scale = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * scale);
+  c.height = Math.round(bmp.height * scale);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.86));
+  const form = new FormData();
+  form.append('action', 'poster');
+  form.append('token', token);
+  form.append('exhibition_id', ex.id);
+  form.append('image', new File([blob], 'poster.jpg', { type: 'image/jpeg' }));
+  return fnUpload(form);
+}
+
 function render(list) {
   const wrap = $('list');
   wrap.replaceChildren();
@@ -226,51 +236,80 @@ function render(list) {
     return;
   }
   for (const ex of list) {
-    const active = ex.status === 'active';
-    const created = new Date(ex.created_at).toLocaleDateString('ko-KR');
-    const maxInput = el('input', { type: 'number', min: 1, max: 50, value: ex.max_per_student, id: `max-${ex.id}` });
-    const maxForm = el('form', { class: 'row-form' },
+    const manualActive = ex.status === 'active';
+    const periodText = ex.starts_on || ex.ends_on ? `${fmt(ex.starts_on)} – ${fmt(ex.ends_on)}` : '기간 미지정(상시)';
+    const num = (id, value, min, max) => el('input', { type: 'number', min, max, value, id });
+    const maxInput = num(`max-${ex.id}`, ex.max_per_student, 1, 50);
+    const stuInput = num(`stu-${ex.id}`, ex.max_students, 1, 500);
+    const startInput = el('input', { type: 'date', value: ex.starts_on || '', id: `st-${ex.id}` });
+    const endInput = el('input', { type: 'date', value: ex.ends_on || '', id: `en-${ex.id}` });
+    const setForm = el('form', { class: 'row-form' },
+      el('div', {}, el('label', { for: `st-${ex.id}` }, '시작일'), startInput),
+      el('div', {}, el('label', { for: `en-${ex.id}` }, '종료일'), endInput),
       el('div', {}, el('label', { for: `max-${ex.id}` }, '1인당 최대 작품 수'), maxInput),
+      el('div', {}, el('label', { for: `stu-${ex.id}` }, '수강생 수'), stuInput),
       el('button', { class: 'btn small', type: 'submit' }, '저장'));
-    maxForm.addEventListener('submit', (e) => {
+    setForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      act(call('admin_update_exhibition', { p_id: ex.id, p_max_per_student: Number(maxInput.value) || 1 }), '저장했습니다.');
+      act(call('admin_update_exhibition', {
+        p_id: ex.id, p_max_per_student: Number(maxInput.value) || 1, p_max_students: Number(stuInput.value) || 1,
+        p_set_dates: true, p_starts_on: startInput.value || null, p_ends_on: endInput.value || null,
+      }), '저장했습니다.');
     });
 
+    const posterInput = el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', hidden: true });
+    posterInput.addEventListener('change', async () => {
+      if (!posterInput.files[0]) return;
+      toast('포스터를 올리는 중…');
+      try {
+        await act(uploadPoster(ex, posterInput.files[0]), '포스터를 등록했습니다.');
+      } catch {
+        toast('포스터 이미지를 읽을 수 없습니다.');
+      }
+    });
+    const posterBox = el('button', { class: 'poster-pick', type: 'button', title: '포스터 이미지 등록', onclick: () => posterInput.click() },
+      ex.poster ? el('img', { src: imageUrl(ex.poster), alt: '포스터' }) : el('span', {}, '포스터', el('br'), '등록'));
+
+    const codeBox = (label, code, linkLabel) => el('div', { class: 'code-box' },
+      el('div', { class: 'grow' }, el('small', {}, label), el('span', { class: 'code' }, code)),
+      el('button', { class: 'btn small', onclick: () => copy(code, '코드를') }, '코드 복사'),
+      el('button', { class: 'btn small', onclick: () => copy(entryUrl(code), `${linkLabel} 링크를`) }, '링크 복사'));
+
     wrap.append(el('article', { class: 'ex' },
-      el('div', { class: 'ex-head' },
-        el('div', {},
-          el('h3', {}, ex.name, el('span', { class: `badge ${ex.status}` }, active ? '진행중' : '종료')),
-          el('div', { class: 'ex-meta' }, `${created} 생성 · 수강생 코드 ${ex.codes.length}개 · 작품 ${ex.artworks.length}점`)),
-        el('div', { class: 'ex-buttons' },
-          el('button', {
-            class: 'btn small',
-            onclick: () => {
-              const name = prompt('전시회 이름', ex.name);
-              if (name && name.trim() && name !== ex.name) act(call('admin_update_exhibition', { p_id: ex.id, p_name: name }), '이름을 변경했습니다.');
-            },
-          }, '이름 변경'),
-          el('button', {
-            class: `btn small ${active ? '' : 'primary'}`,
-            onclick: () => {
-              if (active && !confirm('전시회를 종료할까요?\n종료하면 코드를 입력해도 입장할 수 없습니다. (다시 진행중으로 되돌릴 수 있습니다)')) return;
-              act(call('admin_update_exhibition', { p_id: ex.id, p_status: active ? 'ended' : 'active' }),
-                active ? '전시회를 종료했습니다.' : '전시회를 다시 열었습니다.');
-            },
-          }, active ? '전시 종료하기' : '다시 진행하기'),
-          el('button', {
-            class: 'btn small danger',
-            onclick: () => {
-              if (prompt(`전시회와 모든 작품이 영구 삭제됩니다.\n삭제하려면 전시회 이름을 입력하세요:\n${ex.name}`) === ex.name) {
-                act(fn({ action: 'delete_exhibition', token, exhibition_id: ex.id }), '전시회를 삭제했습니다.');
-              }
-            },
-          }, '삭제'))),
-      el('div', { class: 'code-box' },
-        el('div', { class: 'grow' }, el('small', {}, '관람객 입장 코드'), el('span', { class: 'code' }, ex.visitor_code)),
-        el('button', { class: 'btn small', onclick: () => copy(ex.visitor_code, '입장 코드를') }, '코드 복사'),
-        el('button', { class: 'btn small', onclick: () => copy(entryUrl(ex.visitor_code), '관람객 입장 링크를') }, '입장 링크 복사')),
-      maxForm,
+      el('div', { class: 'ex-top' },
+        posterBox, posterInput,
+        el('div', { class: 'ex-main' },
+          el('div', { class: 'ex-head' },
+            el('div', {},
+              el('h3', {}, ex.name, el('span', { class: `badge ${ex.state}` }, STATE_LABEL[ex.state])),
+              el('div', { class: 'ex-meta' }, `${periodText} · 수강생 ${ex.codes.length}/${ex.max_students}명 · 작품 ${ex.artworks.length}점`)),
+            el('div', { class: 'ex-buttons' },
+              el('button', {
+                class: 'btn small',
+                onclick: () => {
+                  const name = prompt('전시회 이름', ex.name);
+                  if (name && name.trim() && name !== ex.name) act(call('admin_update_exhibition', { p_id: ex.id, p_name: name }), '이름을 변경했습니다.');
+                },
+              }, '이름 변경'),
+              el('button', {
+                class: `btn small ${manualActive ? '' : 'primary'}`,
+                onclick: () => {
+                  if (manualActive && !confirm('전시회를 종료할까요?\n종료하면 코드를 입력해도 입장할 수 없습니다. (다시 진행중으로 되돌릴 수 있습니다)')) return;
+                  act(call('admin_update_exhibition', { p_id: ex.id, p_status: manualActive ? 'ended' : 'active' }),
+                    manualActive ? '전시회를 종료했습니다.' : '전시회를 다시 열었습니다.');
+                },
+              }, manualActive ? '전시 종료하기' : '다시 진행하기'),
+              el('button', {
+                class: 'btn small danger',
+                onclick: () => {
+                  if (prompt(`전시회와 모든 작품이 영구 삭제됩니다.\n삭제하려면 전시회 이름을 입력하세요:\n${ex.name}`) === ex.name) {
+                    act(fn({ action: 'delete_exhibition', token, exhibition_id: ex.id }), '전시회를 삭제했습니다.');
+                  }
+                },
+              }, '삭제'))),
+          codeBox('관람객 입장 코드', ex.visitor_code, '관람객 입장'),
+          codeBox('수강생 코드 (전체 수강생에게 이 코드 하나만 알려 주세요)', ex.student_code, '수강생 입장'))),
+      setForm,
       renderCodes(ex),
       renderArtworks(ex),
     ));
@@ -279,15 +318,14 @@ function render(list) {
 
 $('createForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const names = $('newNames').value.split('\n').map((s) => s.trim()).filter(Boolean);
   try {
-    const id = await call('admin_create_exhibition', {
+    await call('admin_create_exhibition', {
       p_name: $('newName').value,
       p_max_per_student: Number($('newMax').value) || 3,
-      p_student_count: names.length ? 0 : Number($('newCount').value) || 0,
-      p_names: names.length ? names : null,
+      p_max_students: Number($('newCount').value) || 30,
+      p_starts_on: $('newStart').value || null,
+      p_ends_on: $('newEnd').value || null,
     });
-    openState.set(`${id}:codes`, true);
     $('createForm').reset();
     toast('전시회를 만들었습니다.');
     await load();
