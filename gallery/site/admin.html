@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>전시관 관리자</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+  <!-- 로그인 / 최초 설정 -->
+  <main id="auth" class="screen" hidden>
+    <form id="authForm" class="card">
+      <p class="eyebrow">ADMIN</p>
+      <h1 id="authTitle">관리자 로그인</h1>
+      <p id="authSub" class="sub">관리자 비밀번호를 입력하세요.</p>
+      <label for="pw">비밀번호</label>
+      <input id="pw" type="password" autocomplete="current-password" minlength="8" required>
+      <div id="pw2Wrap" hidden>
+        <label for="pw2">비밀번호 확인</label>
+        <input id="pw2" type="password" autocomplete="new-password" minlength="8">
+      </div>
+      <p id="authError" class="error" role="alert" hidden></p>
+      <button id="authBtn" class="btn primary" type="submit">로그인</button>
+    </form>
+  </main>
+
+  <div id="app" hidden>
+    <header class="admin-bar">
+      <strong>전시관 관리자</strong>
+      <div class="actions">
+        <a class="btn small" href="./" target="_blank" rel="noopener">전시관 열기</a>
+        <button id="pwBtn" class="btn small">비밀번호 변경</button>
+        <button id="logoutBtn" class="btn small">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="admin-wrap">
+      <section class="panel">
+        <h2>새 전시회 만들기</h2>
+        <form id="createForm" class="create-grid">
+          <div class="span2">
+            <label for="newName">전시회 이름</label>
+            <input id="newName" maxlength="60" placeholder="예: AI 이미지 특강 61기 작품전" required>
+          </div>
+          <div>
+            <label for="newMax">1인당 최대 작품 수</label>
+            <input id="newMax" type="number" min="1" max="50" value="3" required>
+          </div>
+          <div>
+            <label for="newCount">수강생 코드 개수</label>
+            <input id="newCount" type="number" min="0" max="300" value="20" required>
+          </div>
+          <div class="span2">
+            <label for="newNames">수강생 이름 (선택 · 한 줄에 한 명)</label>
+            <textarea id="newNames" rows="3" placeholder="이름을 적으면 이름별로 코드가 만들어집니다.&#10;비워 두면 위의 개수만큼 이름 없는 코드가 만들어집니다."></textarea>
+          </div>
+          <button class="btn primary span2" type="submit">전시회 만들기</button>
+        </form>
+      </section>
+
+      <section>
+        <div class="list-head">
+          <h2>전시회 목록</h2>
+          <button id="reloadBtn" class="btn small">새로고침</button>
+        </div>
+        <div id="list"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="vendor/supabase.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
