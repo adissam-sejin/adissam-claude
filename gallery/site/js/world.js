@@ -2,17 +2,17 @@ import * as THREE from '../vendor/three.module.min.js';
 import { buildAvatar, makeNameLabel } from './avatars.js';
 
 // 전시실 치수 (미터)
-const AISLE = 11; // 가벽 줄 사이 통로 폭
+let AISLE = 11; // 가벽 줄 사이 통로 폭
 const SLOT = 4.4; // 작품 한 점이 차지하는 벽 길이
-const ISL_GAP = 3.8; // 가벽 사이 통로
+let ISL_GAP = 3.8; // 가벽 사이 통로
 const END = 6; // 가벽 끝과 끝벽 사이 여유
 const ISL_T = 0.5; // 가벽 두께
-const ISL_H = 4.6; // 가벽 높이 (천장까지 닿지 않는다)
-const H = 7.5; // 천장 높이
+let ISL_H = 4.6; // 가벽 높이 (천장까지 닿지 않는다)
+let H = 7.5; // 천장 높이
 const LOBBY = 14; // 입구 공간 깊이
-const ART_Y = 2.45; // 작품 중심 높이
+let ART_Y = 2.45; // 작품 중심 높이
 const ART_MAX_W = 3.6;
-const ART_MAX_H = 2.8;
+let ART_MAX_H = 2.8;
 const PLAYER_R = 0.42;
 const SPEED = 5.4;
 const TURN = 1.9;
@@ -24,23 +24,28 @@ const HIRES_MAX = 6;
 const FONT = '"Pretendard", system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
 
 // 전시실 스타일 (관리자가 전시회마다 선택)
+// 테마가 따로 정하지 않으면 쓰는 기본 치수
+const DEFAULT_DIM = { H: 7.5, AISLE: 11, ISL_H: 4.6, ISL_GAP: 3.8, ART_Y: 2.45, ART_MAX_H: 2.8 };
+
 export const THEMES = {
   white: {
-    name: '화이트 큐브', desc: '흰 벽 · 원목 바닥 · 천창',
+    name: '화이트 큐브', desc: '넓은 홀 · 원목 바닥 · 천창의 자연광', sunPatches: true,
     wall: '#fbfaf8', wallShade: '#c4c1bb', island: null, endWall: null,
     floor: 'wood', floorOpacity: 0.93, ceil: 0xf3f2ef, lights: 'skylight',
     frame: 0x1d1d1f, titleWall: '#1f1f21', titleText: '#ffffff',
     hemi: [0xffffff, 0xe2ddd4, 2.5], sun: 1.0, exposure: 1.22, fog: 0xf0eeea, glow: 0.2, bench: 0xb89264,
   },
   concrete: {
-    name: '노출 콘크리트', desc: '노출 콘크리트 벽 · 흰 가벽 · 라인 조명',
+    name: '노출 콘크리트', desc: '원형 전시실 · 가운데 원형 천창 · 곡면 가벽',
+    shape: 'round', dim: { H: 8 },
     wall: '#a6a7a8', wallShade: '#5d5e60', wallPattern: 'concrete', island: '#f2f2f0', endWall: null,
-    floor: 'concrete', floorTint: 0xc9cacb, floorOpacity: 0.74, ceil: 0x8a8b8d, lights: 'slit',
+    floor: 'concrete', floorTint: 0xc9cacb, floorOpacity: 0.74, ceil: 0x8a8b8d, lights: 'oculus',
     frame: 0x151516, titleWall: '#f2f2f0', titleText: '#18181a',
     hemi: [0xffffff, 0xb4b6b9, 1.8], sun: 0.7, exposure: 1.12, fog: 0xa3a4a6, glow: 0.36, bench: 0x97989a,
   },
   warm: {
-    name: '프라이빗 갤러리', desc: '검정 벽 · 흰 여백 액자 · 스포트 조명',
+    name: '프라이빗 갤러리', desc: '낮은 천장의 긴 복도 · 검정 벽 · 스포트 조명',
+    dim: { H: 4.7, AISLE: 8.5, ISL_H: 4.7, ISL_GAP: 0, ART_Y: 2.25, ART_MAX_H: 2.3 },
     wall: '#1d1d1f', wallShade: '#0a0a0b', island: null, endWall: null,
     floor: 'stone', floorTint: 0x77777b, floorOpacity: 0.84, ceil: 0x262628, lights: 'track',
     frame: 0x0c0c0d, mount: true, plate: ['#1d1d1f', '#ffffff', '#a9a7ad'],
@@ -48,7 +53,8 @@ export const THEMES = {
     hemi: [0xffffff, 0x5a5a5e, 1.0], sun: 0.35, exposure: 1.05, fog: 0x151516, glow: 0.4, bench: 0x2b2b2d,
   },
   accent: {
-    name: '테라코타', desc: '크림 회벽 · 테라코타 천장과 가벽 · 트랙 조명',
+    name: '테라코타', desc: '높은 천장의 좁은 홀 · 측창의 빛 · 테라코타',
+    dim: { H: 11, AISLE: 8.5, ISL_H: 4.4 }, clerestory: true,
     wall: '#eadfce', wallShade: '#8d806d', wallPattern: 'panel', island: '#9a4a35', endWall: '#9a4a35',
     floor: 'concrete', floorTint: 0xdccdb7, floorOpacity: 0.8, ceil: 0x6e3525, lights: 'track',
     frame: 0xb99365, titleWall: '#9a4a35', titleText: '#fff1e2',
@@ -308,6 +314,8 @@ export class World {
     this.subtitle = '';
     this.layoutKey = '';
     this.themeId = '';
+    this.spawn = { x: 0, z: LOBBY - 3 };
+    this.round = null; // 원형 전시실일 때의 충돌 정보
     this.lobby = false; // 로비 모드: 정면 벽에 포스터를 나란히 건다
 
     this.geo = {
@@ -329,7 +337,14 @@ export class World {
         map: radial([[0, 'rgba(0,0,0,0.5)'], [1, 'rgba(0,0,0,0)']]), transparent: true, depthWrite: false,
       }),
       black: new THREE.MeshStandardMaterial({ color: 0x161617, roughness: 0.5 }),
-      light: new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }),
+      light: new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false, side: THREE.DoubleSide }),
+      // 창으로 들어온 햇빛이 바닥에 만드는 부드러운 사각 무늬
+      sunTex: canvasTexture(128, 128, (ctx) => {
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(22, 22, 84, 84);
+      }),
     };
     this.mats = {};
     this.setTheme('white');
@@ -364,6 +379,7 @@ export class World {
     this.themeId = key;
     const t = THEMES[key];
     this.theme = t;
+    ({ H, AISLE, ISL_H, ISL_GAP, ART_Y, ART_MAX_H } = { ...DEFAULT_DIM, ...t.dim });
     for (const m of Object.values(this.mats)) {
       if (m.map) m.map.dispose();
       m.dispose();
@@ -392,6 +408,13 @@ export class World {
       frame: new THREE.MeshStandardMaterial({ color: t.frame, roughness: 0.55 }),
       mount: new THREE.MeshBasicMaterial({ color: 0xf1f0ec, toneMapped: false }),
       lamp: new THREE.MeshBasicMaterial({ color: 0xffe9c4, toneMapped: false }),
+      cap: new THREE.MeshStandardMaterial({ color: t.island || t.wall, roughness: 0.95, side: THREE.DoubleSide }),
+      sun: new THREE.MeshBasicMaterial({
+        map: this.shared.sunTex, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false,
+      }),
+      pool: new THREE.MeshBasicMaterial({
+        map: this.shared.glowTex, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false,
+      }),
       bench: new THREE.MeshStandardMaterial({ color: t.bench, roughness: 0.6 }),
       glow: new THREE.MeshBasicMaterial({
         map: this.shared.glowTex, transparent: true, opacity: t.glow, blending: THREE.AdditiveBlending, depthWrite: false,
@@ -448,8 +471,8 @@ export class World {
 
   // 입장할 때 입구 시작 위치로 되돌린다
   resetPose() {
-    this.me.x = (Math.random() - 0.5) * 4;
-    this.me.z = LOBBY - 3;
+    this.me.x = this.spawn.x + (Math.random() - 0.5) * 4;
+    this.me.z = this.spawn.z;
     this.me.yaw = 0;
     this.me.pitch = 0;
   }
@@ -464,6 +487,10 @@ export class World {
       const rows = Math.max(1, Math.ceil(n / 6));
       key = `${this.themeId}:lobby${rows}`;
       if (key !== this.layoutKey) this._buildLobby(rows);
+    } else if (this.theme.shape === 'round') {
+      const plan = this._roundPlan(n);
+      key = `${this.themeId}:round${plan.R}`;
+      if (key !== this.layoutKey) this._buildRotunda(plan);
     } else {
       const A = Math.max(3, Math.min(6, Math.round(Math.sqrt((n * 5.8) / (2 * AISLE)))));
       const K = Math.max(2, 2 * Math.ceil(n / (2 * A) / 2));
@@ -513,6 +540,8 @@ export class World {
           o.material.map.dispose();
           o.material.dispose();
         }
+        if (o.userData.ownGeo) o.geometry.dispose();
+        if (o.userData.ownMat) o.material.dispose();
       });
     }
   }
@@ -567,6 +596,8 @@ export class World {
     this.bounds = { x0, x1, z0, z1 };
     this.walls = [];
     this.props = [];
+    this.round = null;
+    this.spawn = { x: 0, z: LOBBY - 3 };
     return { x0, x1, z1, len, cz };
   }
 
@@ -706,15 +737,45 @@ export class World {
       }
     }
 
+    // 천창으로 들어온 햇빛이 바닥에 만드는 무늬
+    if (t.sunPatches) {
+      for (let i = 0; i < A; i++) {
+        const ax = x0 + (i + 0.5) * AISLE;
+        for (let z = z1 - 4.7; z > z0 + 3; z -= 4.4) {
+          const patch = this._mesh(this.geo.plane, this.mats.sun, 3.3, 4.1, 1, ax + 1.5, 0.015, z + 0.6);
+          patch.rotation.x = -Math.PI / 2;
+          patch.rotation.z = 0.1;
+          patch.renderOrder = 1;
+        }
+      }
+    }
+    // 높은 측창과, 거기서 들어와 반대편 벽과 바닥에 떨어지는 빛
+    if (t.clerestory) {
+      this._mirrored(this.geo.box, light, 0.06, 1.9, len - 8, x1 - 0.03, H - 1.7, cz);
+      for (let z = z1 - 5; z > z0 + 4; z -= 6.5) {
+        this._mirrored(this.geo.box, this.shared.black, 0.1, 1.9, 0.12, x1 - 0.05, H - 1.7, z);
+        const wash = this._mesh(this.geo.plane, this.mats.sun, 5.2, 4.2, 1, x0 + 0.02, H - 4.4, z - 1.2);
+        wash.rotation.y = Math.PI / 2;
+        wash.rotation.x = 0.12;
+        wash.renderOrder = 1;
+        const patch = this._mesh(this.geo.plane, this.mats.sun, 4.6, 5.2, 1, x0 + AISLE * 0.45, 0.015, z - 2);
+        patch.rotation.x = -Math.PI / 2;
+        patch.renderOrder = 1;
+      }
+    }
+
     // 벤치: 통로 가운데, 가벽 하나 건너 하나
     for (let i = 0; i < A; i++) {
       const bx = x0 + (i + 0.5) * AISLE;
       for (let j = 0; j < nIsl; j += 2) this._bench(bx, islZ(j) - SLOT, true);
     }
 
-    // 입구의 전시 제목 벽 (입장하는 사람을 마주 본다)
-    const tw = Math.min(W - 10, 11);
-    const tz = 2.2;
+    this._titleWall(Math.min(W - 10, 11), 2.2);
+  }
+
+  // 전시 제목 벽 (입장하는 사람을 마주 본다)
+  _titleWall(tw, tz) {
+    const t = this.theme;
     this._wall(tw, 0.5, 0, tz, this.mats.titleWall, ISL_H);
     this._mesh(this.geo.box, this.shared.black, tw + 0.01, 0.16, 0.51, 0, 0, tz);
     this.walls.push({ x0: -tw / 2, x1: tw / 2, z0: tz - 0.25, z1: tz + 0.25 });
@@ -759,6 +820,141 @@ export class World {
     this._mesh(this.geo.plane, titleMat, tw - 0.6, -th, 1, 0, -2.55, tz + 0.256).material.side = THREE.DoubleSide;
   }
 
+  // ───────────── 원형 전시실 ─────────────
+
+  // 작품 수에 맞는 반지름과 곡면 가벽·작품 자리를 계산한다
+  _roundPlan(n) {
+    const STEP = 4.7; // 작품 한 점이 차지하는 호의 길이
+    const build = (R) => {
+      const slots = [];
+      const rings = [];
+      const add = (r, a, inward, concave) => {
+        const ry = inward ? Math.atan2(-Math.cos(a), -Math.sin(a)) : Math.atan2(Math.cos(a), Math.sin(a));
+        slots.push({
+          x: Math.cos(a) * r, z: Math.sin(a) * r, ry, key: `R${r.toFixed(1)}:${a.toFixed(3)}:${inward}`,
+          curve: { r, a, concave }, a,
+        });
+      };
+      // 외벽 안쪽 면
+      const nOut = Math.floor((2 * Math.PI * R) / STEP);
+      for (let k = 0; k < nOut; k++) add(R, Math.PI / 2 + ((k + 0.5) * 2 * Math.PI) / nOut, true, true);
+      // 안쪽의 동심원 가벽들 (양면에 작품, 사이사이 통로)
+      for (let r = R - 9; r >= 7.5; r -= 9) {
+        const span = (2 * STEP) / r;
+        const count = Math.floor((2 * Math.PI) / (span + 3.8 / r));
+        const centers = [];
+        for (let m = 0; m < count; m++) {
+          const c = Math.PI / 2 + ((m + 0.5) * 2 * Math.PI) / count;
+          centers.push(c);
+          for (const off of [-span / 4, span / 4]) {
+            add(r + ISL_T / 2, c + off, false, false);
+            add(r - ISL_T / 2, c + off, true, true);
+          }
+        }
+        rings.push({ r, centers, half: span / 2 });
+      }
+      // 입구 맞은편(북쪽)부터 채운다
+      const north = -Math.PI / 2;
+      const dist = (a) => Math.abs(Math.atan2(Math.sin(a - north), Math.cos(a - north)));
+      slots.sort((p, q) => dist(p.a) - dist(q.a));
+      return { R, rings, slots };
+    };
+    let plan = build(13);
+    for (let R = 14.5; plan.slots.length < n && R <= 46; R += 1.5) plan = build(R);
+    return plan;
+  }
+
+  // 벽 길이에 맞춰 무늬가 반복되는 재질 사본
+  _tiledMat(mat, length, height, side) {
+    const m = mat.clone();
+    m.side = side;
+    if (mat.userData.tileW) {
+      m.map = mat.map.clone();
+      m.map.repeat.set(length / mat.userData.tileW, height / H);
+      m.map.offset.y = (1 - height / H) / 2;
+      m.map.needsUpdate = true;
+    }
+    return m;
+  }
+
+  _own(mesh, { tex = false } = {}) {
+    mesh.userData.ownGeo = true;
+    if (tex) mesh.userData.ownTexture = true;
+    else mesh.userData.ownMat = true;
+    this.room.add(mesh);
+    return mesh;
+  }
+
+  _flat(geo, mat, y, faceDown = false) {
+    const m = new THREE.Mesh(geo, mat);
+    m.rotation.x = faceDown ? Math.PI / 2 : -Math.PI / 2;
+    m.position.y = y;
+    m.userData.ownGeo = true;
+    this.room.add(m);
+    return m;
+  }
+
+  _buildRotunda(plan) {
+    this._clearRoom();
+    const { R, rings } = plan;
+    this.bounds = { x0: -R, x1: R, z0: -R, z1: R };
+    this.walls = [];
+    this.props = [];
+    this.round = { R, rings };
+    this.spawn = { x: 0, z: R - 2.6 };
+
+    // 바닥(반투명 광택)과 천장, 바닥 아래 대칭 천장
+    this.mats.floor.map.repeat.set(R / 2, R / 2);
+    this._flat(new THREE.CircleGeometry(R, 96), this.mats.floor, 0).renderOrder = -1;
+    this._flat(new THREE.CircleGeometry(R, 96), this.mats.ceil, H, true);
+    this._flat(new THREE.CircleGeometry(R, 96), this.mats.ceil, -H);
+
+    // 둥근 외벽
+    const wallMat = this._tiledMat(this.mats.wall, 2 * Math.PI * R, H, THREE.BackSide);
+    this._own(new THREE.Mesh(new THREE.CylinderGeometry(R, R, H * 2, 128, 1, true), wallMat), { tex: !!wallMat.map && wallMat.map !== this.mats.wall.map });
+
+    // 가운데 원형 천창(오큘러스)과 그 아래 햇빛, 벽을 따라 도는 간접조명
+    const light = this.shared.light;
+    const oc = Math.max(3.2, R * 0.3);
+    for (const y of [H - 0.03, -(H - 0.03)]) {
+      this._flat(new THREE.CircleGeometry(oc, 64), light, y);
+      this._flat(new THREE.RingGeometry(oc, oc + 0.45, 64), this.mats.beam, y - Math.sign(y) * 0.02);
+      this._flat(new THREE.RingGeometry(R - 1.7, R - 1.4, 96), light, y);
+    }
+    this._flat(new THREE.RingGeometry(R - 0.13, R - 0.02, 96), light, 0.02);
+    const pool = this._flat(new THREE.PlaneGeometry(oc * 3.2, oc * 3.2), this.mats.pool, 0.015);
+    pool.renderOrder = 1;
+
+    // 천창 아래 둥근 벤치
+    this._mesh(this.geo.cyl, this.mats.bench, 1.5, 0.9, 1.5, 0, 0, 0);
+    this.props.push({ x0: -1.4, x1: 1.4, z0: -1.4, z1: 1.4 });
+
+    // 곡면 가벽
+    for (const ring of rings) {
+      for (const c of ring.centers) {
+        const a0 = c - ring.half;
+        const a1 = c + ring.half;
+        const arc = (a1 - a0) * ring.r;
+        for (const [rr, side] of [[ring.r + ISL_T / 2, THREE.FrontSide], [ring.r - ISL_T / 2, THREE.BackSide]]) {
+          const m = this._tiledMat(this.mats.island, arc, ISL_H, side);
+          const geo = new THREE.CylinderGeometry(rr, rr, ISL_H * 2, 32, 1, true, Math.PI / 2 - a1, a1 - a0);
+          this._own(new THREE.Mesh(geo, m), { tex: m.map !== this.mats.island.map });
+        }
+        for (const a of [a0, a1]) {
+          const cap = this._mesh(this.geo.box, this.mats.cap, ISL_T, ISL_H * 2, 0.03, Math.cos(a) * ring.r, 0, Math.sin(a) * ring.r);
+          cap.rotation.y = -a;
+        }
+        for (const y of [ISL_H, -ISL_H]) {
+          this._flat(new THREE.RingGeometry(ring.r - ISL_T / 2, ring.r + ISL_T / 2, 32, 1, -a1, a1 - a0), this.mats.cap, y);
+        }
+      }
+    }
+
+    this._titleWall(6.2, R - 7.2);
+    const slots = plan.slots;
+    this.placeAt = (i) => slots[i % slots.length];
+  }
+
   _addArt(data, at) {
     const aspect = Math.max(0.2, Math.min(5, (data.w || 1) / (data.h || 1)));
     const maxH = at.maxH || ART_MAX_H;
@@ -770,10 +966,16 @@ export class World {
     }
     const group = new THREE.Group();
     group.position.set(at.x, 0, at.z);
+    if (at.curve) {
+      // 곡면 벽: 평평한 액자가 벽에 묻히지 않게 벽에서 살짝 띄운다
+      const { r, a, concave } = at.curve;
+      const d = concave ? Math.sqrt(Math.max(1, r * r - (w / 2 + 0.3) ** 2)) - 0.01 : r + 0.01;
+      group.position.set(Math.cos(a) * d, 0, Math.sin(a) * d);
+    }
     group.rotation.y = at.ry;
 
     // 스포트 조명이 비친 벽면
-    const glow = this._mesh(this.geo.plane, this.mats.glow, w + 3.2, h + 3.6, 1, 0, ART_Y + 0.35, 0.006, group);
+    const glow = this._mesh(this.geo.plane, this.mats.glow, w + (at.curve ? 1.0 : 3.2), h + 3.6, 1, 0, ART_Y + 0.35, 0.006, group);
     glow.renderOrder = 1;
 
     const picMat = new THREE.MeshBasicMaterial({ color: 0xdedbd5, toneMapped: false });
@@ -792,7 +994,7 @@ export class World {
     picture.userData.artId = data.id;
 
     // 트랙 조명 기구와 불빛
-    if (this.theme.lights !== 'skylight') {
+    if (this.theme.lights === 'track' || this.theme.lights === 'slit') {
       const lamp = this._mesh(this.geo.cyl, this.shared.black, 0.1, 0.34, 0.1, 0, H - 0.62, 2.4, group);
       lamp.rotation.x = -0.6;
       const bulb = this._mesh(this.geo.cyl, this.mats.lamp, 0.085, 0.02, 0.085, 0, H - 0.765, 2.3, group);
@@ -976,7 +1178,7 @@ export class World {
     if (!r) {
       const p = this._makePlayer(avatar, name, false);
       const px = x ?? 0;
-      const pz = z ?? LOBBY - 3;
+      const pz = z ?? this.spawn.z;
       p.group.position.set(px, 0, pz);
       p.group.rotation.y = ry ?? 0;
       this.remotes.set(id, { ...p, name, avatar, tx: px, tz: pz, try: ry ?? 0, phase: Math.random() * 6 });
@@ -1105,8 +1307,22 @@ export class World {
   }
 
   _blocked(x, z, r, withProps = false) {
-    const b = this.bounds;
-    if (x < b.x0 + r || x > b.x1 - r || z < b.z0 + r || z > b.z1 - r) return true;
+    if (this.round) {
+      // 원형 전시실: 둥근 외벽과 곡면 가벽
+      const d = Math.hypot(x, z);
+      if (d > this.round.R - r) return true;
+      for (const ring of this.round.rings) {
+        if (Math.abs(d - ring.r) > ISL_T / 2 + r) continue;
+        const a = Math.atan2(z, x);
+        for (const c of ring.centers) {
+          const df = Math.atan2(Math.sin(a - c), Math.cos(a - c));
+          if (Math.abs(df) < ring.half + r / ring.r) return true;
+        }
+      }
+    } else {
+      const b = this.bounds;
+      if (x < b.x0 + r || x > b.x1 - r || z < b.z0 + r || z > b.z1 - r) return true;
+    }
     for (const w of this.walls) {
       if (x > w.x0 - r && x < w.x1 + r && z > w.z0 - r && z < w.z1 + r) return true;
     }
@@ -1123,8 +1339,8 @@ export class World {
     this.me.x = Math.max(b.x0 + PLAYER_R, Math.min(b.x1 - PLAYER_R, this.me.x));
     this.me.z = Math.max(b.z0 + PLAYER_R, Math.min(b.z1 - PLAYER_R, this.me.z));
     if (this._blocked(this.me.x, this.me.z, PLAYER_R, true)) {
-      this.me.x = 0;
-      this.me.z = LOBBY - 3;
+      this.me.x = this.spawn.x;
+      this.me.z = this.spawn.z;
     }
   }
 

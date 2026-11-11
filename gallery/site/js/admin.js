@@ -132,10 +132,10 @@ async function showApp() {
 
 // 전시실 스타일 (world.js의 THEMES와 같은 키)
 const THEMES = [
-  { id: 'white', name: '화이트 큐브', desc: '흰 벽 · 원목 바닥 · 천창', swatch: 'linear-gradient(#fbfaf8 62%, #d9c2a0 62%)' },
-  { id: 'concrete', name: '노출 콘크리트', desc: '콘크리트 벽 · 흰 가벽 · 라인 조명', swatch: 'linear-gradient(90deg, #a6a7a8 60%, #f2f2f0 60%)' },
-  { id: 'warm', name: '프라이빗 갤러리', desc: '검정 벽 · 흰 여백 액자 · 스포트 조명', swatch: 'linear-gradient(#1d1d1f 62%, #55555a 62%)' },
-  { id: 'accent', name: '테라코타', desc: '크림 회벽 · 테라코타 천장과 가벽', swatch: 'linear-gradient(#6e3525 30%, transparent 30%), linear-gradient(90deg, #eadfce 55%, #9a4a35 55%)' },
+  { id: 'white', name: '화이트 큐브', desc: '넓은 홀 · 원목 바닥 · 천창의 자연광', swatch: 'linear-gradient(#fbfaf8 62%, #d9c2a0 62%)' },
+  { id: 'concrete', name: '노출 콘크리트', desc: '원형 전시실 · 원형 천창 · 곡면 가벽', swatch: 'linear-gradient(90deg, #a6a7a8 60%, #f2f2f0 60%)' },
+  { id: 'warm', name: '프라이빗 갤러리', desc: '낮은 천장의 긴 복도 · 검정 벽', swatch: 'linear-gradient(#1d1d1f 62%, #55555a 62%)' },
+  { id: 'accent', name: '테라코타', desc: '높은 천장의 좁은 홀 · 측창의 빛', swatch: 'linear-gradient(#6e3525 30%, transparent 30%), linear-gradient(90deg, #eadfce 55%, #9a4a35 55%)' },
 ];
 function themePicker(groupName, current, onChange) {
   return THEMES.map((t) => {
