@@ -33,25 +33,26 @@ export const THEMES = {
     hemi: [0xffffff, 0xe2ddd4, 2.5], sun: 1.0, exposure: 1.22, fog: 0xf0eeea, glow: 0.2, bench: 0xb89264,
   },
   concrete: {
-    name: '모던 콘크리트', desc: '흰 벽 · 광택 콘크리트 · 면조명',
-    wall: '#f7f7f6', wallShade: '#b9babb', island: null, endWall: null,
-    floor: 'concrete', floorOpacity: 0.72, ceil: 0xededec, lights: 'grid',
-    frame: 0x151516, titleWall: '#f7f7f6', titleText: '#18181a',
-    hemi: [0xffffff, 0xd9dadc, 2.4], sun: 0.9, exposure: 1.2, fog: 0xe9eaeb, glow: 0.16, bench: 0xf2f2f0,
+    name: '노출 콘크리트', desc: '노출 콘크리트 벽 · 흰 가벽 · 라인 조명',
+    wall: '#a6a7a8', wallShade: '#5d5e60', wallPattern: 'concrete', island: '#f2f2f0', endWall: null,
+    floor: 'concrete', floorTint: 0xc9cacb, floorOpacity: 0.74, ceil: 0x8a8b8d, lights: 'slit',
+    frame: 0x151516, titleWall: '#f2f2f0', titleText: '#18181a',
+    hemi: [0xffffff, 0xb4b6b9, 1.8], sun: 0.7, exposure: 1.12, fog: 0xa3a4a6, glow: 0.36, bench: 0x97989a,
   },
   warm: {
-    name: '프라이빗 갤러리', desc: '따뜻한 베이지 · 석재 바닥 · 스포트 조명',
-    wall: '#cdbda6', wallShade: '#5c5044', island: null, endWall: null,
-    floor: 'stone', floorOpacity: 0.8, ceil: 0x7d7062, lights: 'track',
-    frame: 0x121212, titleWall: '#3a3129', titleText: '#f1e6d4',
-    hemi: [0xffe6c7, 0x5e5142, 0.85], sun: 0.3, exposure: 1.0, fog: 0x8e806e, glow: 0.8, bench: 0x4d3423,
+    name: '프라이빗 갤러리', desc: '검정 벽 · 흰 여백 액자 · 스포트 조명',
+    wall: '#1d1d1f', wallShade: '#0a0a0b', island: null, endWall: null,
+    floor: 'stone', floorTint: 0x77777b, floorOpacity: 0.84, ceil: 0x262628, lights: 'track',
+    frame: 0x0c0c0d, mount: true, plate: ['#1d1d1f', '#ffffff', '#a9a7ad'],
+    titleWall: '#1d1d1f', titleText: '#ffffff',
+    hemi: [0xffffff, 0x5a5a5e, 1.0], sun: 0.35, exposure: 1.05, fog: 0x151516, glow: 0.4, bench: 0x2b2b2d,
   },
   accent: {
-    name: '테라코타', desc: '오프화이트 + 테라코타 포인트 벽 · 트랙 조명',
-    wall: '#efe9de', wallShade: '#a79e90', island: '#b4553a', endWall: '#b4553a',
-    floor: 'concrete', floorTint: 0xe9dfd0, floorOpacity: 0.78, ceil: 0xe6dfd3, lights: 'track',
-    frame: 0xb99365, titleWall: '#b4553a', titleText: '#fff3e6',
-    hemi: [0xfff3e2, 0xc4b7a2, 2.0], sun: 0.8, exposure: 1.15, fog: 0xded5c7, glow: 0.36, bench: 0x7a4a2f,
+    name: '테라코타', desc: '크림 회벽 · 테라코타 천장과 가벽 · 트랙 조명',
+    wall: '#eadfce', wallShade: '#8d806d', wallPattern: 'panel', island: '#9a4a35', endWall: '#9a4a35',
+    floor: 'concrete', floorTint: 0xdccdb7, floorOpacity: 0.8, ceil: 0x6e3525, lights: 'track',
+    frame: 0xb99365, titleWall: '#9a4a35', titleText: '#fff1e2',
+    hemi: [0xffead4, 0xa8937b, 1.6], sun: 0.6, exposure: 1.12, fog: 0xc9b69e, glow: 0.5, bench: 0x6b3a22,
   },
 };
 
@@ -116,15 +117,83 @@ function fitText(ctx, text, maxW) {
   return t + '…';
 }
 
-// 벽 텍스처: 바닥(가운데)과 천장 근처만 살짝 어둡게. 위아래 대칭이라 아래 절반이 바닥 반사가 된다
-function wallTexture(color, shade) {
-  const t = canvasTexture(8, 512, (ctx, w, h) => {
+// 벽 텍스처: 바닥(가운데)과 천장 근처만 살짝 어둡게. 위아래 대칭이라 아래 절반이 바닥 반사가 된다.
+// 무늬가 있으면(노출 콘크리트, 패널 회벽) 가로로 반복되는 타일로 만든다.
+const TILE_W = { concrete: 3.6, panel: 2.6 };
+function wallTexture(color, shade, pattern) {
+  if (!pattern) {
+    return canvasTexture(8, 512, (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      const stops = [[0, shade], [0.06, color], [0.47, color], [0.5, shade], [0.53, color], [0.94, color], [1, shade]];
+      stops.forEach(([o, c]) => g.addColorStop(o, c));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    });
+  }
+  const rand = hashRand(`wall-${pattern}`);
+  const t = canvasTexture(512, 1024, (ctx, w, h) => {
+    const pxX = w / TILE_W[pattern]; // 가로 1m당 픽셀
+    const pxY = h / (2 * H); // 세로 1m당 픽셀
+    const mid = h / 2;
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, w, h);
+    // 얼룩 (타일 경계에서 이어지도록 좌우로 한 번씩 더 그린다)
+    for (let i = 0; i < 90; i++) {
+      const r = 20 + rand() * 90;
+      const x = rand() * w;
+      const y = rand() * h;
+      const v = rand() > 0.5 ? 255 : 0;
+      const a = (pattern === 'concrete' ? 0.05 : 0.025) * rand();
+      for (const dx of [-w, 0, w]) {
+        const g = ctx.createRadialGradient(x + dx, y, 0, x + dx, y, r);
+        g.addColorStop(0, `rgba(${v},${v},${v},${a})`);
+        g.addColorStop(1, `rgba(${v},${v},${v},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(x + dx - r, y - r, r * 2, r * 2);
+      }
+    }
+    // 바닥 위·아래로 대칭이 되게 그린다
+    const both = (m, fn) => { fn(mid - m * pxY); fn(mid + m * pxY); };
+    if (pattern === 'concrete') {
+      // 거푸집 줄눈(0.9m × 1.8m)과 콘 구멍
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      for (const x of [0, w / 2]) ctx.fillRect(x, 0, 1.5, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      for (const x of [0, w / 2]) ctx.fillRect(x + 1.5, 0, 1, h);
+      for (let m = 0.9; m < H; m += 0.9) {
+        both(m, (y) => {
+          ctx.fillStyle = 'rgba(0,0,0,0.2)';
+          ctx.fillRect(0, y, w, 1.2);
+        });
+        both(m - 0.45, (y) => {
+          for (let c = 0; c < 4; c++) {
+            const x = (c + 0.5) * (w / 4);
+            ctx.fillStyle = 'rgba(0,0,0,0.42)';
+            ctx.beginPath();
+            ctx.ellipse(x, y, 0.035 * pxX, 0.035 * pxY, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      }
+    } else {
+      // 회벽 패널 이음과 작품 걸이 레일
+      ctx.fillStyle = 'rgba(60,45,30,0.16)';
+      ctx.fillRect(0, 0, 1.5, h);
+      both(4.05, (y) => {
+        ctx.fillStyle = 'rgba(40,30,22,0.6)';
+        ctx.fillRect(0, y - 1, w, 2.2);
+      });
+    }
+    // 바닥과 천장 근처 음영
     const g = ctx.createLinearGradient(0, 0, 0, h);
-    const stops = [[0, shade], [0.06, color], [0.47, color], [0.5, shade], [0.53, color], [0.94, color], [1, shade]];
-    stops.forEach(([o, c]) => g.addColorStop(o, c));
+    const c = new THREE.Color(shade);
+    const rgba = (a) => `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+    [[0, 0.6], [0.06, 0], [0.475, 0], [0.5, 0.55], [0.525, 0], [0.94, 0], [1, 0.6]].forEach(([o, a]) => g.addColorStop(o, rgba(a)));
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
   });
+  t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = 8;
   return t;
 }
 
@@ -300,9 +369,15 @@ export class World {
       m.dispose();
     }
     const shadeOf = (color) => `#${new THREE.Color(color).multiplyScalar(0.62).getHexString()}`;
-    const wallMat = (color) => new THREE.MeshStandardMaterial({
-      map: wallTexture(color, color === t.wall ? t.wallShade : shadeOf(color)), roughness: 0.95, envMapIntensity: 0.15,
-    });
+    const wallMat = (color) => {
+      const main = color === t.wall;
+      const pattern = main ? t.wallPattern : null;
+      const m = new THREE.MeshStandardMaterial({
+        map: wallTexture(color, main ? t.wallShade : shadeOf(color), pattern), roughness: 0.95, envMapIntensity: 0.15,
+      });
+      if (pattern) m.userData.tileW = TILE_W[pattern];
+      return m;
+    };
     this.mats = {
       wall: wallMat(t.wall),
       island: wallMat(t.island || t.wall),
@@ -315,6 +390,8 @@ export class World {
       ceil: new THREE.MeshBasicMaterial({ color: t.ceil }),
       beam: new THREE.MeshBasicMaterial({ color: new THREE.Color(t.ceil).multiplyScalar(0.93) }),
       frame: new THREE.MeshStandardMaterial({ color: t.frame, roughness: 0.55 }),
+      mount: new THREE.MeshBasicMaterial({ color: 0xf1f0ec, toneMapped: false }),
+      lamp: new THREE.MeshBasicMaterial({ color: 0xffe9c4, toneMapped: false }),
       bench: new THREE.MeshStandardMaterial({ color: t.bench, roughness: 0.6 }),
       glow: new THREE.MeshBasicMaterial({
         map: this.shared.glowTex, transparent: true, opacity: t.glow, blending: THREE.AdditiveBlending, depthWrite: false,
@@ -450,7 +527,18 @@ export class World {
 
   // 바닥 위·아래 대칭인 벽 (아래쪽 절반이 바닥 반사 역할)
   _wall(sx, sz, x, z, mat = this.mats.wall, height = H) {
-    return this._mesh(this.geo.box, mat, sx, height * 2, sz, x, 0, z);
+    let m = mat;
+    if (mat.userData.tileW) {
+      // 무늬 벽: 벽 길이에 맞춰 무늬가 반복되도록 벽마다 텍스처 설정을 따로 둔다
+      m = mat.clone();
+      m.map = mat.map.clone();
+      m.map.repeat.set(Math.max(sx, sz) / mat.userData.tileW, height / H);
+      m.map.offset.y = (1 - height / H) / 2;
+      m.map.needsUpdate = true;
+    }
+    const mesh = this._mesh(this.geo.box, m, sx, height * 2, sz, x, 0, z);
+    if (m !== mat) mesh.userData.ownTexture = true;
+    return mesh;
   }
 
   // 위아래 대칭으로 한 쌍을 배치 (반사)
@@ -609,25 +697,13 @@ export class World {
         for (const s of [-1, 1]) {
           this._mirrored(this.geo.box, this.mats.beam, 0.2, 0.55, len - 5, ax + s * 1.8, H - 0.27, cz);
         }
-      } else if (t.lights === 'grid') {
-        // 큰 사각 면조명 격자
-        for (let z = z1 - 3.5; z > z0 + 3; z -= 6) {
-          for (const s of [-1, 1]) this._mirrored(this.geo.box, light, 4.4, 0.05, 4.8, ax + s * 2.5, H - 0.03, z);
-        }
       } else {
-        // 검은 트랙 레일
+        // 검은 트랙 레일 (+ 노출 콘크리트는 천장의 가는 라인 조명)
         for (const s of [-1, 1]) {
           this._mirrored(this.geo.box, this.shared.black, 0.07, 0.07, len - 4, ax + s * 3.1, H - 0.4, cz);
+          if (t.lights === 'slit') this._mirrored(this.geo.box, light, 0.2, 0.04, len - 5, ax + s * 1.4, H - 0.02, cz);
         }
       }
-    }
-    if (t.lights === 'track') {
-      // 벽 위쪽 간접조명 띠
-      const cove = new THREE.MeshBasicMaterial({ color: 0xffe2b8, toneMapped: false });
-      for (const [wx, s] of [[x0, 1], [x1, -1]]) {
-        this._mirrored(this.geo.box, cove, 0.06, 0.08, len, wx + s * 0.03, H - 0.05, cz);
-      }
-      this._mirrored(this.geo.box, cove, W, 0.08, 0.06, 0, H - 0.05, z0 + 0.03);
     }
 
     // 벤치: 통로 가운데, 가벽 하나 건너 하나
@@ -702,43 +778,48 @@ export class World {
 
     const picMat = new THREE.MeshBasicMaterial({ color: 0xdedbd5, toneMapped: false });
     let picture;
-    // 얇은 액자 + 그림, 그리고 그 바닥 반사
+    // 얇은 액자(+ 흰 여백) + 그림, 그리고 그 바닥 반사
+    const pad = this.theme.mount ? 0.52 : 0;
     for (const s of [1, -1]) {
       const part = new THREE.Group();
       part.scale.y = s;
-      this._mesh(this.geo.box, this.mats.frame, w + 0.1, h + 0.1, 0.07, 0, ART_Y, 0.035, part);
-      const pic = this._mesh(this.geo.plane, picMat, w, h, 1, 0, ART_Y, 0.072, part);
+      this._mesh(this.geo.box, this.mats.frame, w + pad + 0.1, h + pad + 0.1, 0.07, 0, ART_Y, 0.035, part);
+      if (pad) this._mesh(this.geo.box, this.mats.mount, w + pad, h + pad, 0.012, 0, ART_Y, 0.071, part);
+      const pic = this._mesh(this.geo.plane, picMat, w, h, 1, 0, ART_Y, pad ? 0.0785 : 0.072, part);
       if (s > 0) picture = pic;
       group.add(part);
     }
     picture.userData.artId = data.id;
 
-    // 트랙 조명 기구
-    if (this.theme.lights === 'track') {
-      const lamp = this._mesh(this.geo.cyl, this.shared.black, 0.09, 0.3, 0.09, 0, H - 0.6, 2.4, group);
+    // 트랙 조명 기구와 불빛
+    if (this.theme.lights !== 'skylight') {
+      const lamp = this._mesh(this.geo.cyl, this.shared.black, 0.1, 0.34, 0.1, 0, H - 0.62, 2.4, group);
       lamp.rotation.x = -0.6;
+      const bulb = this._mesh(this.geo.cyl, this.mats.lamp, 0.085, 0.02, 0.085, 0, H - 0.765, 2.3, group);
+      bulb.rotation.x = -0.6;
     }
 
     // 제목/작가 캡션
     const title = data.title || '무제';
     const author = data.author || '';
     const plateTex = canvasTexture(512, 144, (ctx, cw, ch) => {
-      ctx.fillStyle = '#ffffff';
+      const [pBg, pFg, pSub] = this.theme.plate || ['#ffffff', '#161618', '#77747a'];
+      ctx.fillStyle = pBg;
       ctx.fillRect(0, 0, cw, ch);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#161618';
+      ctx.fillStyle = pFg;
       ctx.font = `700 42px ${FONT}`;
       ctx.fillText(fitText(ctx, title, cw - 56), 28, author ? 50 : 72);
       if (author) {
-        ctx.fillStyle = '#77747a';
+        ctx.fillStyle = pSub;
         ctx.font = `500 30px ${FONT}`;
         ctx.fillText(fitText(ctx, author, cw - 56), 28, 102);
       }
     });
     const plate = new THREE.Mesh(this.geo.plane, new THREE.MeshBasicMaterial({ map: plateTex, toneMapped: false }));
     plate.scale.set(1.1, 0.31, 1);
-    plate.position.set(0, ART_Y - h / 2 - 0.42, 0.012);
+    plate.position.set(0, ART_Y - h / 2 - 0.42 - pad / 2, 0.012);
     group.add(plate);
 
     const stickers = new THREE.Group();
@@ -812,7 +893,9 @@ export class World {
     art.hearts = count;
     this._disposeStickers(art);
     if (!count) return;
-    const { w, h } = art;
+    const pad = this.theme.mount ? 0.52 : 0;
+    const w = art.w + pad;
+    const h = art.h + pad;
     const rand = hashRand(art.data.id);
     const small = Math.min(count - 1, 18);
     for (let i = 0; i < small; i++) {
