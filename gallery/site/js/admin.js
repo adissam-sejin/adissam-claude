@@ -130,9 +130,26 @@ async function showApp() {
   await load();
 }
 
+// 전시실 스타일 (world.js의 THEMES와 같은 키)
+const THEMES = [
+  { id: 'white', name: '화이트 큐브', desc: '흰 벽 · 원목 바닥 · 천창', swatch: 'linear-gradient(#fbfaf8 62%, #d9c2a0 62%)' },
+  { id: 'concrete', name: '모던 콘크리트', desc: '흰 벽 · 광택 콘크리트 · 면조명', swatch: 'linear-gradient(#f7f7f6 62%, #b9babb 62%)' },
+  { id: 'warm', name: '프라이빗 갤러리', desc: '베이지 벽 · 석재 바닥 · 스포트 조명', swatch: 'linear-gradient(#cdbda6 62%, #6f6557 62%)' },
+  { id: 'accent', name: '테라코타', desc: '오프화이트 + 테라코타 포인트 벽', swatch: 'linear-gradient(90deg, #efe9de 55%, #b4553a 55%)' },
+];
+function themePicker(groupName, current, onChange) {
+  return THEMES.map((t) => {
+    const input = el('input', { type: 'radio', name: groupName, value: t.id, checked: t.id === current });
+    if (onChange) input.addEventListener('change', () => onChange(t.id));
+    return el('label', {}, input, el('span', {}, el('i', { style: `background:${t.swatch}` }), el('b', {}, t.name), t.desc));
+  });
+}
+
 async function load() {
   try {
-    render(await call('admin_list'));
+    const [list, themes] = await Promise.all([call('admin_list'), call('admin_themes')]);
+    for (const ex of list) ex.theme = themes[ex.id] || 'white';
+    render(list);
   } catch (err) {
     toast(err.message);
   }
@@ -310,6 +327,9 @@ function render(list) {
           codeBox('관람객 입장 코드', ex.visitor_code, '관람객 입장'),
           codeBox('수강생 코드 (전체 수강생에게 이 코드 하나만 알려 주세요)', ex.student_code, '수강생 입장'))),
       setForm,
+      el('div', {}, el('label', {}, '전시실 스타일'),
+        el('div', { class: 'theme-pick' }, ...themePicker(`theme-${ex.id}`, ex.theme,
+          (id) => act(call('admin_set_theme', { p_id: ex.id, p_theme: id }), '전시실 스타일을 변경했습니다.')))),
       renderCodes(ex),
       renderArtworks(ex),
     ));
@@ -319,13 +339,15 @@ function render(list) {
 $('createForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
-    await call('admin_create_exhibition', {
+    const id = await call('admin_create_exhibition', {
       p_name: $('newName').value,
       p_max_per_student: Number($('newMax').value) || 3,
       p_max_students: Number($('newCount').value) || 30,
       p_starts_on: $('newStart').value || null,
       p_ends_on: $('newEnd').value || null,
     });
+    const theme = document.querySelector('input[name="newTheme"]:checked')?.value || 'white';
+    if (theme !== 'white') await call('admin_set_theme', { p_id: id, p_theme: theme });
     $('createForm').reset();
     toast('전시회를 만들었습니다.');
     await load();
@@ -336,5 +358,6 @@ $('createForm').addEventListener('submit', async (e) => {
 
 $('reloadBtn').addEventListener('click', load);
 
+$('newTheme').append(...themePicker('newTheme', 'white'));
 if (token) showApp();
 else showAuth();

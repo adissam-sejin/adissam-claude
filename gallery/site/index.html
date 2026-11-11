@@ -10,38 +10,48 @@
 <body>
   <canvas id="scene"></canvas>
 
-  <!-- 전시회 현황판 -->
+  <!-- 1층 안내: 프로필 + 전시회 현황판 -->
   <main id="board" class="board">
     <header class="board-head">
       <p class="eyebrow">ONLINE 3D GALLERY</p>
       <h1>온라인 전시관</h1>
-      <p class="sub">관람할 전시회를 고르고 입장 코드를 입력하세요.</p>
+      <p class="sub">이름과 캐릭터를 고른 뒤 1층 로비로 들어가거나, 아래에서 전시회를 바로 선택하세요.</p>
     </header>
+
+    <section class="profile">
+      <div class="profile-fields">
+        <label for="name">이름</label>
+        <input id="name" maxlength="12" autocomplete="nickname" placeholder="전시관에 표시될 이름">
+        <label>색상</label>
+        <div id="colors" class="swatches" role="radiogroup" aria-label="캐릭터 색상 선택"></div>
+        <button id="lobbyBtn" class="btn primary" type="button">1층 로비 입장 (3D)</button>
+        <p id="profileError" class="error" role="alert" hidden></p>
+      </div>
+      <div>
+        <label>캐릭터</label>
+        <div id="avatars" class="avatars" role="radiogroup" aria-label="캐릭터 선택"></div>
+      </div>
+    </section>
+
     <div id="boardBody" class="board-body">
       <p class="board-empty">전시회 목록을 불러오는 중…</p>
     </div>
     <footer class="board-foot"><a href="admin.html">관리자</a></footer>
   </main>
 
-  <!-- 입장 -->
+  <!-- 전시실 입장 코드 -->
   <div id="entry" class="modal" hidden>
     <form id="entryForm" class="card">
       <button type="button" class="close" data-close aria-label="닫기">✕</button>
       <p class="eyebrow">ADMISSION</p>
       <h2 id="entryTitle">전시회 입장</h2>
       <p class="sub">관람객은 입장 코드, 수강생은 수강생 코드를 입력하세요.<br>수강생은 이름으로 개인 코드가 발급되어 작품을 올릴 수 있습니다.</p>
-
       <label for="code">입장 코드</label>
       <input id="code" class="code-input" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="예: AB12CD" required>
-
-      <label for="name">이름</label>
-      <input id="name" maxlength="12" autocomplete="nickname" placeholder="전시관에 표시될 이름" required>
-
-      <label>캐릭터</label>
-      <div id="avatars" class="avatars" role="radiogroup" aria-label="캐릭터 선택"></div>
-      <label>색상</label>
-      <div id="colors" class="swatches" role="radiogroup" aria-label="캐릭터 색상 선택"></div>
-
+      <div id="entryNameWrap" hidden>
+        <label for="entryName">이름</label>
+        <input id="entryName" maxlength="12" placeholder="전시관에 표시될 이름">
+      </div>
       <p id="entryError" class="error" role="alert" hidden></p>
       <button id="enterBtn" class="btn primary" type="submit">입장하기</button>
     </form>

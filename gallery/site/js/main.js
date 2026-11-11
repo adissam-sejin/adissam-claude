@@ -25,6 +25,9 @@ const saved = parseAvatar(store.get('gallery.avatar'));
 const state = {
   code: '', name: '', animal: saved.animal, color: saved.color,
   target: null, // 현황판에서 고른 전시회
+  mode: null, // 'lobby' | 'gallery'
+  from: null, // 전시실에서 나갈 때 돌아갈 곳
+  board: [], // 전시회 목록
   role: 'visitor', exhibition: null, student: null, artworks: [],
   channel: null, live: false, timers: [], viewing: null,
 };
@@ -105,6 +108,7 @@ async function loadBoard() {
     body.innerHTML = '<p class="board-empty">전시회 목록을 불러오지 못했습니다. 새로고침해 주세요.</p>';
     return;
   }
+  state.board = list;
   body.replaceChildren();
   if (!list.length) {
     body.innerHTML = '<p class="board-empty">아직 등록된 전시회가 없습니다.</p>';
@@ -180,7 +184,10 @@ function openEntry(ex, code = '') {
   state.target = ex;
   $('entryTitle').textContent = ex ? ex.name : '전시회 입장';
   $('code').value = code;
+  // 이름을 아직 정하지 않았다면 여기서 받는다
+  $('entryNameWrap').hidden = !!$('name').value.trim();
   showEntryError('');
+  if (world) world.paused = true;
   $('entry').hidden = false;
   if (!matchMedia('(pointer: coarse)').matches) $('code').focus();
 }
@@ -201,8 +208,10 @@ function enterErrorText(data) {
 $('entryForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   let code = $('code').value.replace(/\s/g, '').toUpperCase();
+  if (!$('name').value.trim()) $('name').value = $('entryName').value.trim();
   const name = $('name').value.trim();
-  if (!code || !name) return;
+  if (!code) return;
+  if (!name) return showEntryError('이름을 입력해 주세요.');
   showEntryError('');
   const btn = $('enterBtn');
   btn.disabled = true;
@@ -229,6 +238,9 @@ $('entryForm').addEventListener('submit', async (e) => {
     if (data.student) {
       store.set(myCodeKey(data.exhibition.id), JSON.stringify({ code: data.student.code, name: data.student.name }));
     }
+    data.theme = await rpc('exhibition_theme', { p_id: data.exhibition.id }).catch(() => 'white');
+    state.from = state.mode === 'lobby' ? 'lobby' : null;
+    teardown();
     enterGallery(data);
   } catch (err) {
     showEntryError('접속에 실패했습니다. 잠시 후 다시 시도해 주세요.');
@@ -250,36 +262,149 @@ function applyData(data) {
   $('uploadBtn').hidden = data.role !== 'student';
 }
 
-function enterGallery(data) {
-  if (!world) {
-    try {
-      world = new World({ canvas: $('scene'), joystick: $('joystick'), onPick: openViewer });
-    } catch (err) {
-      console.error(err);
-      showEntryError('이 기기에서는 3D 화면(WebGL)을 사용할 수 없습니다. 다른 브라우저로 접속해 주세요.');
-      return;
-    }
+function ensureWorld() {
+  if (world) return true;
+  try {
+    world = new World({ canvas: $('scene'), joystick: $('joystick'), onPick });
+    return true;
+  } catch (err) {
+    console.error(err);
+    toast('이 기기에서는 3D 화면(WebGL)을 사용할 수 없습니다. 다른 브라우저로 접속해 주세요.');
+    return false;
   }
-  world.setTitle(data.exhibition.name);
+}
+
+function onPick(id) {
+  if (state.mode === 'gallery') return openViewer(id);
+  const ex = state.board.find((e) => e.id === id);
+  if (!ex) return;
+  if (ex.state === 'ended') return toast('종료된 전시회입니다.');
+  if (ex.state === 'upcoming') return toast(`아직 열리지 않은 전시회입니다.${ex.starts_on ? ` ${fmtDate(ex.starts_on)}에 열립니다.` : ''}`);
+  openEntry(ex);
+}
+
+function showHud(title, hintExtra) {
+  $('exName').textContent = title;
+  $('entry').hidden = true;
+  $('board').hidden = true;
+  $('hud').hidden = false;
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const hint = $('hint');
+  hint.textContent = (touch ? '조이스틱으로 이동 · 화면을 밀어 둘러보기 · ' : 'W A S D / 방향키로 이동 · 드래그로 둘러보기 · ') + hintExtra;
+  hint.classList.remove('fade');
+  state.timers.push(setTimeout(() => hint.classList.add('fade'), 9000));
+}
+
+// 진행 중인 타이머와 실시간 연결을 정리한다 (로비 ↔ 전시실 이동, 나가기)
+function teardown() {
+  state.timers.forEach((t) => { clearTimeout(t); clearInterval(t); });
+  state.timers = [];
+  if (state.channel) {
+    sb.removeChannel(state.channel);
+    state.channel = null;
+    state.live = false;
+  }
+  if (world) world.clearRemotes();
+  state.exhibition = null;
+  state.mode = null;
+}
+
+// ───────────── 1층 로비 (3D): 전시회 포스터가 걸려 있다 ─────────────
+
+const POSTER_COLORS = [
+  ['#1f1f21', '#ffffff'], ['#b4553a', '#fff3e6'], ['#e9e4da', '#1c1b1a'],
+  ['#2f4a5c', '#eef6fb'], ['#c9b28a', '#2a2118'], ['#4a5a44', '#f1f6ea'],
+];
+function drawPoster(ex, index) {
+  const c = document.createElement('canvas');
+  c.width = 600;
+  c.height = 900;
+  const ctx = c.getContext('2d');
+  const [bg, fg] = POSTER_COLORS[index % POSTER_COLORS.length];
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 600, 900);
+  ctx.fillStyle = fg;
+  ctx.font = '600 24px system-ui, sans-serif';
+  ctx.fillText('E X H I B I T I O N', 48, 96);
+  ctx.fillRect(48, 120, 90, 5);
+  ctx.font = '800 76px "Pretendard", system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+  const lines = [];
+  let line = '';
+  for (const ch of ex.name) {
+    if (ctx.measureText(line + ch).width > 500) {
+      lines.push(line);
+      line = ch === ' ' ? '' : ch;
+    } else line += ch;
+  }
+  if (line) lines.push(line);
+  lines.slice(0, 6).forEach((l, i) => ctx.fillText(l, 48, 560 + (i - Math.min(lines.length, 6) + 3) * 92));
+  ctx.font = '500 28px system-ui, sans-serif';
+  ctx.fillText(period(ex), 48, 850);
+  return c;
+}
+
+function lobbyItems() {
+  const order = { active: 0, upcoming: 1, ended: 2 };
+  return [...state.board]
+    .sort((a, b) => order[a.state] - order[b.state])
+    .map((ex, i) => ({
+      id: ex.id, w: 2, h: 3, title: ex.name,
+      author: `${STATE_LABEL[ex.state]} · ${period(ex)} · 작품 ${ex.artworks}점`,
+      thumb: ex.poster || null, image: ex.poster || null,
+      canvas: ex.poster ? null : drawPoster(ex, i),
+      dim: ex.state === 'ended', hearts: 0,
+      rev: `${ex.state}|${ex.poster}|${ex.name}|${ex.artworks}|${ex.starts_on}|${ex.ends_on}`,
+    }));
+}
+
+async function enterLobby() {
+  const name = $('name').value.trim();
+  const err = $('profileError');
+  err.hidden = !!name;
+  err.textContent = '이름을 입력해 주세요.';
+  if (!name) return $('name').focus();
+  if (!ensureWorld()) return;
+  state.name = name;
+  store.set('gallery.name', name);
+  store.set('gallery.avatar', avatarId(state.animal, state.color));
+  await loadBoard();
+  teardown();
+  state.mode = 'lobby';
+  world.setLobby(true);
+  world.setTheme('white');
+  world.setTitle('전시 안내', 'LOBBY · 1F');
+  world.setSelf({ name, avatar: avatarId(state.animal, state.color) });
+  world.resetPose();
+  world.setArtworks(lobbyItems(), imageUrl);
+  world.paused = false;
+  world.start();
+  document.title = '1층 로비 · 온라인 전시관';
+  $('uploadBtn').hidden = true;
+  showHud('1층 로비', '포스터를 누르면 전시실로 입장');
+  if (!state.board.length) toast('아직 등록된 전시회가 없습니다.');
+  joinRealtime('gallery:lobby');
+  state.timers.push(setInterval(async () => {
+    await loadBoard();
+    if (state.mode === 'lobby') world.setArtworks(lobbyItems(), imageUrl);
+  }, 60000));
+}
+$('lobbyBtn').addEventListener('click', enterLobby);
+
+// ───────────── 전시실 ─────────────
+
+function enterGallery(data) {
+  if (!ensureWorld()) return;
+  state.mode = 'gallery';
+  world.setLobby(false);
+  world.setTheme(data.theme || 'white');
+  world.setTitle(data.exhibition.name, 'EXHIBITION');
   world.setSelf({ name: state.name, avatar: avatarId(state.animal, state.color) });
   world.resetPose();
   applyData(data);
   world.paused = false;
   world.start();
-
-  $('exName').textContent = data.exhibition.name;
   document.title = `${data.exhibition.name} · 온라인 전시관`;
-  $('entry').hidden = true;
-  $('board').hidden = true;
-  $('hud').hidden = false;
-
-  const touch = matchMedia('(pointer: coarse)').matches;
-  const hint = $('hint');
-  hint.textContent = touch
-    ? '조이스틱으로 이동 · 화면을 밀어 둘러보기 · 작품을 터치하면 크게 보기'
-    : 'W A S D / 방향키로 이동 · 드래그로 둘러보기 · 작품을 클릭하면 크게 보기';
-  hint.classList.remove('fade');
-  state.timers.push(setTimeout(() => hint.classList.add('fade'), 9000));
+  showHud(data.exhibition.name, '작품을 누르면 크게 보기');
 
   if (data.student?.issued) {
     $('issuedCode').textContent = data.student.code;
@@ -288,17 +413,17 @@ function enterGallery(data) {
   } else if (!data.artworks.length) {
     toast(data.role === 'student' ? '아직 작품이 없습니다. 첫 작품을 올려 보세요!' : '아직 전시된 작품이 없습니다.');
   }
-  joinRealtime();
+  joinRealtime(`gallery:${data.exhibition.id}`);
   state.timers.push(setInterval(() => refresh(), 40000));
 }
 
 async function refresh() {
-  if (!state.exhibition) return;
+  if (state.mode !== 'gallery') return;
   try {
     const data = await rpc('enter', { p_code: state.code, p_visitor: visitorId, p_name: state.name });
-    if (!state.exhibition) return;
+    if (state.mode !== 'gallery') return;
     if (data.error) {
-      leaveGallery(data.error === 'ended' ? '전시회가 종료되었습니다.' : '입장 코드가 더 이상 유효하지 않습니다.');
+      leave(data.error === 'ended' ? '전시회가 종료되었습니다.' : '입장 코드가 더 이상 유효하지 않습니다.');
       return;
     }
     applyData(data);
@@ -308,28 +433,21 @@ async function refresh() {
   }
 }
 
-function leaveGallery(message) {
-  state.timers.forEach((t) => { clearTimeout(t); clearInterval(t); });
-  state.timers = [];
-  if (state.channel) {
-    sb.removeChannel(state.channel);
-    state.channel = null;
-    state.live = false;
-  }
-  if (world) {
-    world.stop();
-    for (const id of [...world.remotes.keys()]) world.removeRemote(id);
-  }
-  state.exhibition = null;
+// 나가기: 전시실 → (로비에서 왔으면) 로비, 로비 → 첫 화면
+function leave(message) {
+  const backToLobby = state.mode === 'gallery' && state.from === 'lobby';
+  teardown();
   closeModals();
+  if (message) toast(message);
+  if (backToLobby) return enterLobby();
+  if (world) world.stop();
   $('hud').hidden = true;
   $('board').hidden = false;
   document.title = '온라인 3D 전시관';
-  if (message) toast(message);
   loadBoard();
 }
 
-$('exitBtn').addEventListener('click', () => leaveGallery());
+$('exitBtn').addEventListener('click', () => leave());
 
 // ───────────── 실시간 (다른 관람객, 하트, 새 작품) ─────────────
 
@@ -337,8 +455,8 @@ function send(event, payload) {
   if (state.live) state.channel?.send({ type: 'broadcast', event, payload });
 }
 
-function joinRealtime() {
-  const ch = sb.channel(`gallery:${state.exhibition.id}`, {
+function joinRealtime(channelName) {
+  const ch = sb.channel(channelName, {
     config: { broadcast: { self: false }, presence: { key: sessionId } },
   });
   state.channel = ch;
@@ -360,12 +478,14 @@ function joinRealtime() {
   ch.on('presence', { event: 'join' }, () => send('pos', { id: sessionId, ...world.getPose() }));
   ch.on('broadcast', { event: 'pos' }, ({ payload }) => world.moveRemote(payload.id, payload));
   ch.on('broadcast', { event: 'heart' }, ({ payload }) => {
+    if (state.mode !== 'gallery') return;
     const art = state.artworks.find((a) => a.id === payload.id);
     if (art) art.hearts = payload.hearts;
     world.setHearts(payload.id, payload.hearts);
     if (state.viewing === payload.id) $('heartCount').textContent = payload.hearts;
   });
   ch.on('broadcast', { event: 'refresh' }, () => refresh());
+  const myMode = state.mode;
 
   ch.subscribe((status) => {
     state.live = status === 'SUBSCRIBED';
@@ -377,6 +497,7 @@ function joinRealtime() {
   let last = '';
   let idle = 0;
   state.timers.push(setInterval(() => {
+    if (state.mode !== myMode) return;
     const pose = world.getPose();
     const key = `${pose.x},${pose.z},${pose.ry}`;
     idle++;
@@ -590,3 +711,4 @@ loadBoard();
 // 입장 링크(?code=)로 들어오면 바로 입장 창을 연다
 const urlCode = new URLSearchParams(location.search).get('code');
 if (urlCode) openEntry(null, urlCode.toUpperCase());
+$('name').addEventListener('input', () => { $('profileError').hidden = true; });
