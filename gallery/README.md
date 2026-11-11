@@ -11,7 +11,7 @@
 
 ## 구조
 
-- 호스팅: Vercel (루트 디렉터리 `gallery/site`)
+- 호스팅: Netlify (https://adissam-gallery.netlify.app, 배포 폴더 `gallery/site`)
 - 백엔드: Supabase (Postgres + Storage + Realtime + Edge Function)
 - 모든 테이블은 RLS로 잠겨 있고, 코드/관리자 토큰을 확인하는 RPC 함수로만 접근합니다.
 - 관리자 비밀번호는 `admin.html` 첫 접속 시 설정합니다.
