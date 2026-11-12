@@ -60,6 +60,7 @@ updated: YYYY-MM-DD
 
 ### ⑥ 포트폴리오 사이트 `sites/portfolio/`
 위키를 고친 뒤 `python3 career-wiki/scripts/build_site.py`로 다시 만들고, 같은 파일 경로로 Artifact를 다시 게시한다(주소 유지: https://claude.ai/artifact/WPmFuaQstCBwXiMNtokj8E). `(확인 필요)` 내용은 사이트에 나가지 않는다.
+공개 주소는 Netlify **https://adidesigner.netlify.app** (site id `91cd2bf1-a82b-46e4-806d-2628cbeb5e1c`). 빌드하면 `sites/portfolio-netlify/`가 생기고, 이 폴더에서 Netlify MCP `deploy-site`가 알려주는 명령을 실행해 배포한다.
 
 ### ⑥ 맞춤 웹 `sites/기관명.html`
 기관 페이지를 바탕으로 그 기관에 맞는 카드만 골라 만든 한 장짜리 소개 페이지. 브랜드 톤(웜다크 #2B2A2A · 크림 #F4F1EA · 와인 #8C0001, Freesentation)을 따른다. 필요하면 Artifact로 게시해 링크로 보낸다.

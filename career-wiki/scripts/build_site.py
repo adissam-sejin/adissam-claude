@@ -619,3 +619,22 @@ else:
     print("! Freesentation 폰트를 찾지 못해 기존 fonts/를 그대로 둡니다")
 
 print(f"ok: 카드 {len(cards)}장, 역량 {len(comps)}개, 기관 {len(orgs)}곳, 사진 {'있음' if PHOTO else '없음'} → {OUT}/index.html")
+
+# ---------- Netlify 배포용 (완전한 HTML 문서) ----------
+import shutil
+DEP = os.path.join(ROOT, "sites", "portfolio-netlify")
+shutil.rmtree(DEP, ignore_errors=True)
+os.makedirs(DEP)
+open(os.path.join(DEP, "netlify.toml"), "w").write('[build]\n  publish = "."\n  command = ""\n')
+shutil.copytree(os.path.join(OUT, "fonts"), os.path.join(DEP, "fonts"), dirs_exist_ok=True)
+for p in ("photo.jpg", "photo.png"):
+    if os.path.exists(os.path.join(OUT, p)):
+        shutil.copy(os.path.join(OUT, p), DEP)
+desc = "25년 디자이너 출신 AI 브랜딩 교육가, 아는디자이너 김세진 강사 포트폴리오"
+open(os.path.join(DEP, "index.html"), "w", encoding="utf-8").write(
+    '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n'
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+    f'<meta name="description" content="{desc}">\n<meta property="og:title" content="아는디자이너 김세진">\n'
+    f'<meta property="og:description" content="{desc}">\n<meta property="og:type" content="website">\n'
+    '<style>body{margin:0}img{max-width:100%}</style>\n</head>\n<body>\n' + page + '\n</body>\n</html>\n')
+print(f"ok: Netlify 배포용 → {DEP}")
