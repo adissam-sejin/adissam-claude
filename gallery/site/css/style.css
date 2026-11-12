@@ -242,3 +242,6 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--text); outl
 .poster-info { padding: 12px 0 0; }
 .poster-info strong { display: block; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
 .poster-info span { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.board-foot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.install-hint { margin: 0; font-size: 13px; color: var(--muted); }

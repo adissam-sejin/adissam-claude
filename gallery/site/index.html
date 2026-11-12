@@ -3,8 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#140b0e">
+  <meta name="theme-color" content="#19191b">
   <title>온라인 3D 전시관</title>
+  <meta name="description" content="캐릭터로 걸어 다니며 감상하는 온라인 3D 전시관. 입장 코드로 전시실에 들어가 수강생 작품을 관람하세요.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="전시관">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="온라인 전시관">
+  <meta property="og:title" content="온라인 3D 전시관">
+  <meta property="og:description" content="캐릭터로 걸어 다니며 감상하는 수강생 작품 전시">
+  <meta property="og:url" content="https://adissam-gallery.netlify.app/">
+  <meta property="og:image" content="https://adissam-gallery.netlify.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ko_KR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://adissam-gallery.netlify.app/og.png">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -36,7 +56,11 @@
     <div id="boardBody" class="board-body">
       <p class="board-empty">전시회 목록을 불러오는 중…</p>
     </div>
-    <footer class="board-foot"><a href="admin.html">관리자</a></footer>
+    <footer class="board-foot">
+      <button id="installBtn" class="btn small" type="button" hidden>홈 화면에 앱으로 설치</button>
+      <p id="iosHint" class="install-hint" hidden>아이폰: 아래 <b>공유</b> 버튼 → <b>홈 화면에 추가</b>를 누르면 앱 아이콘이 생깁니다.</p>
+      <a href="admin.html">관리자</a>
+    </footer>
   </main>
 
   <!-- 전시실 입장 코드 -->

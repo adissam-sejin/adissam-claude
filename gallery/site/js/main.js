@@ -712,3 +712,25 @@ loadBoard();
 const urlCode = new URLSearchParams(location.search).get('code');
 if (urlCode) openEntry(null, urlCode.toUpperCase());
 $('name').addEventListener('input', () => { $('profileError').hidden = true; });
+
+// ───────────── 홈 화면 설치 (PWA) ─────────────
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+let installEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  // 안드로이드/크롬: 설치 버튼을 보여 준다
+  e.preventDefault();
+  installEvent = e;
+  $('installBtn').hidden = false;
+});
+$('installBtn').addEventListener('click', async () => {
+  if (!installEvent) return;
+  installEvent.prompt();
+  await installEvent.userChoice.catch(() => {});
+  installEvent = null;
+  $('installBtn').hidden = true;
+});
+window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; });
+// 아이폰 사파리는 설치 창을 띄울 수 없어 방법을 안내한다
+if (!standalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) $('iosHint').hidden = false;
