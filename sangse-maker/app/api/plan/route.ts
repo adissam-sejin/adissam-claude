@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       await demoDelay(1200);
       return { ...demoPlan(input), demo: true };
     }
-    return callStructured({
+    const make = () => callStructured({
       system: PLAN_SYSTEM,
       schema: PlanSchema,
       effort: "low",
@@ -27,5 +27,12 @@ export async function POST(req: Request) {
         { type: "text", text: `[상품 정보]\n${inputToText(input)}\n\n사진은 총 ${images.length}장입니다. 기획 초안을 만들어 주세요.` },
       ],
     });
+    // 섹션이 너무 적게 나오면 한 번 더 (8~11개 목표)
+    let plan = await make();
+    if (plan.sections.length < 7) {
+      const again = await make().catch(() => null);
+      if (again && again.sections.length > plan.sections.length) plan = again;
+    }
+    return plan;
   });
 }

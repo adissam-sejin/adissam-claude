@@ -51,7 +51,7 @@ export const GENERATE_SYSTEM = `너는 한국 이커머스 상세페이지 카�
 기획 초안을 따라 실제 상세페이지 내용을 JSON 으로 완성한다.
 ${COMMON_RULES}
 [출력 규칙]
-- sections 는 기획 초안의 순서와 type 을 그대로 따른다.
+- 요청받은 섹션(section_1, section_2 …)을 순서와 type 그대로 하나씩 완성한다.
 - 모든 섹션을 완성된 상태로 쓴다. title 은 절대 비우지 않고, 아래 type 별 items 개수를 반드시 채운다. (hero 는 title·body 필수)
 - 모든 섹션은 같은 필드(type, eyebrow, title, body, imageIndex, items)를 가진다. 쓰지 않는 문자열은 "" 로 둔다.
 - eyebrow: 섹션 라벨 칩에 들어갈 짧은 한글 문구 (예: "이런 분께 추천해요", "핵심 포인트", "이렇게 써요", "상품 정보", "자주 묻는 질문").

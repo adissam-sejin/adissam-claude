@@ -60,6 +60,7 @@ export async function callStructured<S extends z.ZodType>(opts: {
   schema: S;
   effort: "low" | "medium" | "high";
   maxTokens?: number;
+  meta?: Record<string, unknown>;
 }): Promise<z.infer<S>> {
   try {
     const stream = getClient().beta.messages.stream({
@@ -72,6 +73,15 @@ export async function callStructured<S extends z.ZodType>(opts: {
       output_config: { effort: opts.effort, format: betaZodOutputFormat(opts.schema) },
     });
     const message = await stream.finalMessage();
+    if (opts.meta) {
+      Object.assign(opts.meta, {
+        stop: message.stop_reason,
+        model: message.model,
+        out: message.usage.output_tokens,
+        blocks: message.content.map((b) => b.type + (b.type === "text" ? `:${b.text.length}` : "")).join(","),
+        textHead: message.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("").slice(0, 600),
+      });
+    }
 
     if (message.stop_reason === "refusal") {
       throw new GenerationError("요청을 처리할 수 없는 내용이 포함되어 있어요. 입력을 확인해 주세요.", 422);
