@@ -6,15 +6,24 @@ import { Editor } from "@/components/Editor";
 import { fileToResizedDataUrl } from "@/lib/image";
 import { STYLE_PRESETS } from "@/lib/channels";
 import { SECTION_LABELS, SECTION_TYPES, emptyInput, type Analysis, type Page, type Plan, type ProductInput, type SectionType, type Theme } from "@/lib/schema";
-import { listProjects, loadProject, newId, saveProject, deleteProject, type Project } from "@/lib/store";
+import { listProjects, loadProject, newId, saveProject, deleteProject, uploadImage, type ProjectSummary } from "@/lib/store";
+import { useMe } from "@/lib/useMe";
+import { COSTS } from "@/lib/pricing";
+import Link from "next/link";
 
 type Step = "input" | "plan" | "generating" | "edit";
 const MAX_IMAGES = 8;
 
-async function post<T>(url: string, body: unknown): Promise<T & { demo?: boolean }> {
+class ApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
+async function post<T>(url: string, body: unknown): Promise<T & { demo?: boolean; credits?: number }> {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `요청 실패 (${res.status})`);
+  if (!res.ok) throw new ApiError(data.error || `요청 실패 (${res.status})`, res.status);
   return data;
 }
 
@@ -31,12 +40,21 @@ export default function CreatePage() {
   const [busy, setBusy] = useState<"" | "analyze" | "plan" | "generate">("");
   const [error, setError] = useState("");
   const [demo, setDemo] = useState(false);
-  const [recent, setRecent] = useState<Project[]>([]);
+  const [recent, setRecent] = useState<ProjectSummary[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [needCredits, setNeedCredits] = useState(false);
+  const { me, setCredits } = useMe();
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // 로그인 필요
+  useEffect(() => {
+    if (me && !me.user) window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  }, [me]);
+
   // 프로젝트 불러오기 (?id=...)
   useEffect(() => {
+    if (!me?.user) return;
     const qid = new URLSearchParams(window.location.search).get("id");
     if (qid) {
       loadProject(qid).then((p) => {
@@ -52,14 +70,14 @@ export default function CreatePage() {
       setId(newId());
     }
     listProjects().then(setRecent);
-  }, []);
+  }, [me?.user]);
 
   // 자동 저장
   useEffect(() => {
-    if (!id || (!images.length && !input.productName)) return;
+    if (!id || !me?.user || (!images.length && !input.productName)) return;
     const t = setTimeout(() => saveProject({ id, updatedAt: Date.now(), input, images, plan, page }), 600);
     return () => clearTimeout(t);
-  }, [id, input, images, plan, page]);
+  }, [id, input, images, plan, page, me?.user]);
 
   useEffect(() => {
     if (id && step !== "input") window.history.replaceState(null, "", `/create?id=${id}`);
@@ -69,14 +87,28 @@ export default function CreatePage() {
     async (files: FileList | File[]) => {
       const list = Array.from(files).filter((f) => f.type.startsWith("image/")).slice(0, MAX_IMAGES - images.length);
       if (!list.length) return;
-      const urls = await Promise.all(list.map((f) => fileToResizedDataUrl(f)));
-      setImages((prev) => [...prev, ...urls].slice(0, MAX_IMAGES));
+      setUploading(true);
+      setError("");
+      try {
+        const urls = await Promise.all(list.map(async (f) => uploadImage(await fileToResizedDataUrl(f), id)));
+        setImages((prev) => [...prev, ...urls].slice(0, MAX_IMAGES));
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setUploading(false);
+      }
     },
-    [images.length],
+    [images.length, id],
   );
 
   const set = (k: keyof ProductInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setInput((p) => ({ ...p, [k]: e.target.value }));
+
+  function onApiError(e: unknown) {
+    setError((e as Error).message);
+    setNeedCredits(e instanceof ApiError && e.status === 402);
+    if (e instanceof ApiError && e.status === 401) window.location.href = `/login?next=${encodeURIComponent(`/create?id=${id}`)}`;
+  }
 
   async function analyze() {
     setError("");
@@ -95,7 +127,7 @@ export default function CreatePage() {
       setUsp(a.usp);
       if (!brandColor && /^#[0-9a-f]{6}$/i.test(a.suggestedPrimary)) setBrandColor(a.suggestedPrimary);
     } catch (e) {
-      setError((e as Error).message);
+      onApiError(e);
     } finally {
       setBusy("");
     }
@@ -111,7 +143,7 @@ export default function CreatePage() {
       setPlan(p);
       setStep("plan");
     } catch (e) {
-      setError((e as Error).message);
+      onApiError(e);
     } finally {
       setBusy("");
     }
@@ -125,7 +157,9 @@ export default function CreatePage() {
     try {
       const pg = await post<Page>("/api/generate", { images, input, plan, brandColor: brandColor || undefined });
       setDemo(!!pg.demo);
+      if (typeof pg.credits === "number") setCredits(pg.credits);
       delete pg.demo;
+      delete pg.credits;
       if (style) {
         const preset = STYLE_PRESETS.find((s) => s.id === style)!;
         pg.theme = { ...pg.theme, style, background: preset.sample.background, accent: style === "premium" ? preset.sample.accent : pg.theme.accent };
@@ -133,7 +167,7 @@ export default function CreatePage() {
       setPage(pg);
       setStep("edit");
     } catch (e) {
-      setError((e as Error).message);
+      onApiError(e);
       setStep("plan");
     } finally {
       setBusy("");
@@ -143,14 +177,25 @@ export default function CreatePage() {
   const canAnalyze = images.length > 0 && !busy;
   const canPlan = (images.length > 0 || input.productName.trim()) && input.productName.trim() && !busy;
 
+  if (!me?.user) {
+    return (
+      <>
+        <TopBar />
+        <div className="loading-card"><div className="spinner dark big-spin" /></div>
+      </>
+    );
+  }
+
   if (step === "edit" && page) {
     return (
       <>
-        {demo && <div className="demo-banner">데모 모드: API 키가 없어 샘플 결과를 보여주고 있어요. .env.local 에 ANTHROPIC_API_KEY 를 넣으면 실제로 생성돼요.</div>}
+        {demo && <div className="demo-banner">데모 모드: AI 키가 아직 설정되지 않아 샘플 결과를 보여주고 있어요. (크레딧은 차감되지 않아요)</div>}
         <Editor
           page={page}
           setPage={setPage}
           images={images}
+          setImages={setImages}
+          projectId={id}
           input={input}
           onBackToPlan={() => setStep("plan")}
         />
@@ -175,7 +220,11 @@ export default function CreatePage() {
           ))}
         </div>
 
-        {error && <div className="error-box" style={{ marginBottom: 16 }}>{error}</div>}
+        {error && (
+          <div className="error-box" style={{ marginBottom: 16 }}>
+            {error} {needCredits && <Link href="/pricing" style={{ textDecoration: "underline", fontWeight: 700 }}>크레딧 충전하기 →</Link>}
+          </div>
+        )}
 
         {step === "input" && (
           <div className="stack">
@@ -203,7 +252,7 @@ export default function CreatePage() {
                   addFiles(e.dataTransfer.files);
                 }}
               >
-                <b>사진을 끌어다 놓거나 클릭해서 선택</b>
+                <b>{uploading ? "업로드 중…" : "사진을 끌어다 놓거나 클릭해서 선택"}</b>
                 <div className="muted" style={{ fontSize: 13, marginTop: 6 }}>JPG · PNG · WEBP, 스마트폰 사진도 괜찮아요</div>
                 <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && addFiles(e.target.files)} />
               </div>
@@ -314,9 +363,9 @@ export default function CreatePage() {
                   {recent.slice(0, 6).map((p) => (
                     <div key={p.id} className="row between" style={{ fontSize: 14 }}>
                       <a href={`/create?id=${p.id}`} className="row" style={{ gap: 10 }}>
-                        {p.images[0] && <img src={p.images[0]} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />}
-                        <b>{p.input.productName || "이름 없는 상품"}</b>
-                        <span className="muted">{p.page ? "완성" : p.plan ? "기획 중" : "입력 중"} · {new Date(p.updatedAt).toLocaleString("ko-KR")}</span>
+                        {p.thumbnail && <img src={p.thumbnail} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />}
+                        <b>{p.title}</b>
+                        <span className="muted">{p.status} · {new Date(p.updatedAt).toLocaleString("ko-KR")}</span>
                       </a>
                       <button
                         className="icon-btn"
@@ -413,8 +462,8 @@ export default function CreatePage() {
                 </button>
                 {page && <button className="btn" onClick={() => setStep("edit")}>편집기로 돌아가기</button>}
               </div>
-              <button className="btn btn-primary btn-lg" disabled={!!busy || plan.sections.length === 0} onClick={generate}>
-                이대로 상세페이지 만들기 →
+              <button className="btn btn-primary btn-lg" disabled={!!busy || plan.sections.length === 0} onClick={generate} title={`보유 ${me?.credits ?? 0} 크레딧`}>
+                이대로 상세페이지 만들기 · {COSTS.generate} 크레딧 →
               </button>
             </div>
           </div>

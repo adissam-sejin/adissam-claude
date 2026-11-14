@@ -3,6 +3,8 @@ import { GENERATE_SYSTEM, inputToText, planToText } from "@/lib/prompts";
 import { callStructured, imageBlocks, isDemoMode } from "@/lib/claude";
 import { demoPage } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
+import { requireUser, withCredits } from "@/lib/auth";
+import { COSTS } from "@/lib/pricing";
 
 export const maxDuration = 300;
 
@@ -15,12 +17,14 @@ export async function POST(req: Request) {
     brandColor?: string;
   };
   return handle(async () => {
+    const { user } = await requireUser();
     if (isDemoMode()) {
       await demoDelay(1800);
       const page = demoPage(input, images.length);
       if (brandColor) page.theme.primary = brandColor;
       return { ...page, demo: true };
     }
+    return withCredits(user.id, COSTS.generate, "상세페이지 생성", async () => {
     const page = await callStructured({
       system: GENERATE_SYSTEM,
       schema: PageSchema,
@@ -49,5 +53,6 @@ export async function POST(req: Request) {
       items: s.items.map((i) => ({ ...i, imageIndex: fix(i.imageIndex) })),
     }));
     return page;
+    });
   });
 }

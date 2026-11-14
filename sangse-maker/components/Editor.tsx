@@ -6,6 +6,18 @@ import { DetailPage } from "./DetailPage";
 import { CHANNELS, STYLE_PRESETS } from "@/lib/channels";
 import { exportPage, downloadBlob, type ExportFormat } from "@/lib/export";
 import { SECTION_LABELS, SECTION_TYPES, emptySection, type Page, type ProductInput, type Section, type SectionType } from "@/lib/schema";
+import { COSTS } from "@/lib/pricing";
+import { useMe, } from "@/lib/useMe";
+import { UserMenu } from "./TopBar";
+
+const SCENES: { id: string; label: string }[] = [
+  { id: "lifestyle", label: "사용 장면" },
+  { id: "studio", label: "스튜디오 배경" },
+  { id: "detail", label: "디테일 클로즈업" },
+  { id: "outdoor", label: "야외·자연광" },
+  { id: "premium", label: "프리미엄 무드" },
+  { id: "flatlay", label: "플랫레이" },
+];
 
 const QUICK_ASKS = ["더 짧고 임팩트 있게", "더 고급스러운 말투로", "20대 친근한 말투로", "혜택이 더 와닿게", "항목 하나 더 추가"];
 const HISTORY_LIMIT = 60;
@@ -14,12 +26,16 @@ export function Editor({
   page,
   setPage,
   images,
+  setImages,
+  projectId,
   input,
   onBackToPlan,
 }: {
   page: Page;
   setPage: (p: Page) => void;
   images: string[];
+  setImages: (fn: (prev: string[]) => string[]) => void;
+  projectId: string;
   input: ProductInput;
   onBackToPlan: () => void;
 }) {
@@ -33,6 +49,36 @@ export function Editor({
   const [format, setFormat] = useState<ExportFormat>("jpg");
   const [exporting, setExporting] = useState<string>("");
   const frameRef = useRef<HTMLDivElement>(null);
+  const { me, setCredits } = useMe();
+  const [imgSrc, setImgSrc] = useState(0);
+  const [scene, setScene] = useState("lifestyle");
+  const [sceneText, setSceneText] = useState("");
+  const [ratio, setRatio] = useState("1:1");
+  const [imgBusy, setImgBusy] = useState(false);
+  const [imgErr, setImgErr] = useState("");
+
+  async function makeImage() {
+    setImgBusy(true);
+    setImgErr("");
+    try {
+      const res = await fetch("/api/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceUrl: images[imgSrc], scene, custom: sceneText, aspectRatio: ratio, projectId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "이미지 생성 실패");
+      if (typeof data.credits === "number") setCredits(data.credits);
+      const newIndex = images.length;
+      setImages((prev) => [...prev, data.url]);
+      // 선택한 섹션이 있으면 바로 적용
+      if (selected !== null && sel) updateSection(selected, { ...sel, imageIndex: newIndex });
+    } catch (e) {
+      setImgErr((e as Error).message);
+    } finally {
+      setImgBusy(false);
+    }
+  }
 
   /** 모든 변경은 commit 을 거쳐 되돌리기 기록에 남는다 */
   const commit = useCallback(
@@ -111,7 +157,9 @@ export function Editor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "수정 실패");
+      if (typeof data.credits === "number") setCredits(data.credits);
       delete data.demo;
+      delete data.credits;
       const fix = (n: number) => (n >= 0 && n < images.length ? n : -1);
       updateSection(selected, { ...data, imageIndex: fix(data.imageIndex), items: data.items.map((it: Section["items"][number]) => ({ ...it, imageIndex: fix(it.imageIndex) })) });
       setAsk("");
@@ -173,6 +221,8 @@ export function Editor({
             <button className="btn btn-sm btn-primary" onClick={doExport} disabled={!!exporting}>
               {exporting ? <><span className="spinner" /> {exporting}</> : "내보내기"}
             </button>
+            <span style={{ width: 8 }} />
+            <UserMenu />
           </div>
         </div>
       </header>
@@ -207,7 +257,7 @@ export function Editor({
                 </div>
                 <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>페이지의 글자를 클릭하면 바로 고칠 수 있어요.</p>
 
-                <h4>AI로 고치기</h4>
+                <h4>AI로 고치기 <span className="muted" style={{ fontWeight: 400 }}>· 1회 {COSTS.revise} 크레딧</span></h4>
                 <div className="usp-chips" style={{ marginBottom: 8 }}>
                   {QUICK_ASKS.map((q) => (
                     <button key={q} className="tag" style={{ border: 0, cursor: "pointer" }} disabled={revising} onClick={() => revise(q)}>{q}</button>
@@ -284,6 +334,46 @@ export function Editor({
               <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>
                 페이지에서 섹션을 클릭해 선택하세요. 글자는 클릭해서 바로 고치고, 오른쪽 패널에서 AI로 고치기·사진 교체·순서 변경을 할 수 있어요.
               </p>
+            </div>
+          )}
+
+          {images.length > 0 && (
+            <div className="side-sec ai-img-panel">
+              <h4>AI 연출 이미지 만들기 <span className="muted" style={{ fontWeight: 400 }}>· 1장 {COSTS.image} 크레딧</span></h4>
+              {me && !me.features.image ? (
+                <p className="muted" style={{ fontSize: 13, margin: 0 }}>AI 이미지 생성이 아직 설정되지 않았어요. (관리자: GEMINI_API_KEY)</p>
+              ) : (
+                <div className="stack" style={{ gap: 10 }}>
+                  <div className="muted" style={{ fontSize: 12 }}>기준 상품 사진</div>
+                  <div className="img-pick">
+                    {images.map((src, i) => (
+                      <button key={i} className={imgSrc === i ? "on" : ""} onClick={() => setImgSrc(i)}>
+                        <img src={src} alt="" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="scene-grid">
+                    {SCENES.map((sc) => (
+                      <button key={sc.id} className={scene === sc.id ? "on" : ""} onClick={() => setScene(sc.id)}>{sc.label}</button>
+                    ))}
+                  </div>
+                  <input className="input" style={{ padding: "8px 10px", fontSize: 13.5 }} placeholder="추가 요청 (예: 원목 식탁 위, 아침 햇살)" value={sceneText} onChange={(e) => setSceneText(e.target.value)} />
+                  <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+                    <select className="select" style={{ padding: "7px 8px", fontSize: 13 }} value={ratio} onChange={(e) => setRatio(e.target.value)}>
+                      <option value="1:1">정사각 1:1</option>
+                      <option value="4:5">세로 4:5</option>
+                      <option value="3:4">세로 3:4</option>
+                      <option value="4:3">가로 4:3</option>
+                      <option value="16:9">와이드 16:9</option>
+                    </select>
+                    <button className="btn btn-sm btn-dark" style={{ flex: "none" }} disabled={imgBusy} onClick={makeImage}>
+                      {imgBusy ? <><span className="spinner" /> 생성 중</> : "만들기"}
+                    </button>
+                  </div>
+                  <p className="muted" style={{ fontSize: 12, margin: 0 }}>{selected !== null ? `완성되면 ${selected + 1}번 섹션에 바로 적용돼요.` : "완성된 이미지는 사진 목록에 추가돼요."}</p>
+                  {imgErr && <div className="error-box" style={{ fontSize: 13 }}>{imgErr}</div>}
+                </div>
+              )}
             </div>
           )}
 

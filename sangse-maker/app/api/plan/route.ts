@@ -3,6 +3,7 @@ import { PLAN_SYSTEM, inputToText } from "@/lib/prompts";
 import { callStructured, imageBlocks, isDemoMode } from "@/lib/claude";
 import { demoPlan } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
+import { requireUser } from "@/lib/auth";
 
 export const maxDuration = 180;
 
@@ -10,6 +11,7 @@ export const maxDuration = 180;
 export async function POST(req: Request) {
   const { images, input } = (await req.json()) as { images: string[]; input: ProductInput };
   return handle(async () => {
+    await requireUser();
     if (isDemoMode()) {
       await demoDelay(1200);
       return { ...demoPlan(input), demo: true };

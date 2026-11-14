@@ -19,14 +19,16 @@ function getClient(): Anthropic {
 /** data:image/jpeg;base64,... 형태의 이미지를 Claude 이미지 블록으로 변환 */
 export function imageBlocks(dataUrls: string[]): BetaContentBlockParam[] {
   const blocks: BetaContentBlockParam[] = [];
-  dataUrls.slice(0, 8).forEach((url, i) => {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  dataUrls.slice(0, 10).forEach((url, i) => {
     const m = url.match(/^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/);
-    if (!m) return;
-    blocks.push({ type: "text", text: `[사진 ${i}]` });
-    blocks.push({
-      type: "image",
-      source: { type: "base64", media_type: m[1] as "image/jpeg" | "image/png" | "image/webp" | "image/gif", data: m[2] },
-    });
+    if (m) {
+      blocks.push({ type: "text", text: `[사진 ${i}]` });
+      blocks.push({ type: "image", source: { type: "base64", media_type: m[1] as "image/jpeg", data: m[2] } });
+    } else if (base && url.startsWith(`${base}/storage/v1/object/public/images/`)) {
+      blocks.push({ type: "text", text: `[사진 ${i}]` });
+      blocks.push({ type: "image", source: { type: "url", url } });
+    }
   });
   return blocks;
 }
