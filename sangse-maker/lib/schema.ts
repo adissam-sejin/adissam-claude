@@ -64,7 +64,7 @@ export const ThemeSchema = z.object({
   primary: z.string(),
   accent: z.string(),
   background: z.string(),
-  style: z.enum(["clean", "premium", "vivid", "natural"]),
+  style: z.enum(["signature", "clean", "premium", "vivid", "natural"]),
 });
 
 export const PageSchema = z.object({

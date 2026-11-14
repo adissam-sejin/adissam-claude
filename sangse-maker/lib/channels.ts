@@ -14,6 +14,7 @@ export const BASE_WIDTH = 860;
 
 /** 스타일 템플릿: 브랜드 컬러는 유지하고 분위기(타이포/여백/장식)만 바꾼다 */
 export const STYLE_PRESETS: { id: Theme["style"]; name: string; desc: string; sample: Omit<Theme, "style"> }[] = [
+  { id: "signature", name: "시그니처", desc: "파스텔 종이↔차콜 교차, 강조 박스", sample: { primary: "#14907F", accent: "#e3f3ef", background: "#f7f4ef" } },
   { id: "clean", name: "클린", desc: "깔끔한 화이트, 생활용품·가전", sample: { primary: "#1f6feb", accent: "#e8f0fe", background: "#ffffff" } },
   { id: "premium", name: "프리미엄", desc: "다크 톤, 뷰티·고가 제품", sample: { primary: "#c9a86a", accent: "#2a2622", background: "#141210" } },
   { id: "vivid", name: "비비드", desc: "강한 컬러, 식품·키즈·트렌드", sample: { primary: "#ff5a36", accent: "#fff1ec", background: "#fffaf6" } },

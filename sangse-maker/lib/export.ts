@@ -19,7 +19,10 @@ export async function exportPage(opts: {
   const zip = new JSZip();
   const canvases: HTMLCanvasElement[] = [];
 
+  // 편집 중인 글자(포커스 하이라이트)가 이미지에 찍히지 않도록 포커스 해제
+  (document.activeElement as HTMLElement | null)?.blur?.();
   root.classList.add("exporting");
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   try {
     // 페이지 전체를 한 번에 그려야 테마 변수/스타일 템플릿이 그대로 유지된다
     onProgress?.(0, sections.length + 1);

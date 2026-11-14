@@ -53,9 +53,16 @@ ${COMMON_RULES}
 [출력 규칙]
 - sections 는 기획 초안의 순서와 type 을 그대로 따른다.
 - 모든 섹션은 같은 필드(type, eyebrow, title, body, imageIndex, items)를 가진다. 쓰지 않는 문자열은 "" 로 둔다.
-- eyebrow: 섹션 위 작은 영문/한글 라벨 (예: "POINT", "CHECK", "HOW TO"). hero/cta 외에는 짧게.
-- title: 섹션 헤드라인. 줄바꿈(\\n)으로 2줄 이내.
-- body: 보조 설명 1~3문장.
+- eyebrow: 섹션 라벨 칩에 들어갈 짧은 한글 문구 (예: "이런 분께 추천해요", "핵심 포인트", "이렇게 써요", "상품 정보", "자주 묻는 질문").
+  hero 의 eyebrow 만은 자간 넓은 영문 라벨 (예: "DAILY TUMBLER", "PREMIUM SKINCARE").
+- title: 섹션 헤드라인. 줄바꿈(\\n)으로 정확히 2줄, 한 줄 12자 안팎.
+  가장 중요한 단어 하나를 **단어** 처럼 별표 두 개로 감싸 강조한다 (섹션당 1곳, hero 는 강조 없이 상품을 대표하는 짧은 타이틀).
+  공감 섹션 헤드라인은 고객이 "이것도 돼?" 하고 놀라는 질문형도 좋다.
+- body: 보조 설명 1~2문장. 단, 아래 type 은 의미가 다르다:
+  * hero: 타이틀 위에 올라갈 부제 2줄 (\\n 으로 구분, 한 줄 18자 안팎)
+  * problem: 말풍선 아래 마무리 안심 한 줄 (예: "처음이어도 괜찮아요, 바로 써보세요!")
+  * features: 장점 카드 아래 회색 바에 들어갈 이 상품의 한 줄 약속
+  * cta: 마지막 회색 안내 박스 문구 (버튼처럼 쓰지 말 것. 예: "지금 옵션을 골라 주문해 보세요")
 - imageIndex: 섹션에 쓸 사진 번호([사진 N]의 N). 어울리는 사진이 없으면 -1. hero 는 가장 대표적인 사진.
   같은 사진을 여러 번 써도 되지만, 가능하면 골고루 배치한다.
 - items 의 의미 (type 별):
@@ -68,10 +75,14 @@ ${COMMON_RULES}
   * spec: 4~8개. title=항목명, desc=값 (모르는 값은 "[입력]")
   * faq: 3~5개. title=질문, desc=답변
   * notice: 2~4개. title=안내 문장, desc=""
-  * hero, solution, cta: items 는 [] (solution 은 필요시 짧은 체크포인트 2~3개 허용)
+  * hero: 0~2개. title=배지 문구 (예: "무료배송", "KC 인증 완료"). 사용자가 준 사실만, 없으면 [].
+  * problem 의 말풍선은 4개, 고객의 혼잣말처럼 짧게 (20자 안팎).
+  * solution, cta: items 는 [] (solution 은 필요시 짧은 체크포인트 2~3개 허용)
 - 아이템의 imageIndex 는 features/detail 외에는 -1.
 - theme: primary=브랜드 메인 컬러 HEX, accent=보조 컬러 HEX(primary 의 아주 연한 톤 또는 대비 톤), background=페이지 배경 HEX,
-  style=clean|premium|vivid|natural 중 상품에 맞는 것. premium 이면 어두운 background 를 쓴다.`;
+  style=signature|clean|premium|vivid|natural. 특별한 이유가 없으면 signature (밝은 파스텔 장과 차콜 장이 번갈아 나오는 기본 스타일).
+  고가·럭셔리는 premium, 키즈·식품 등 강한 컬러는 vivid, 리빙·유기농은 natural 도 가능. premium 이면 어두운 background.
+  signature 의 primary 는 채도 있는 진한 색(흰 글씨가 잘 보이는 색, 예: #14907F)으로 고른다.`;
 
 export function planToText(plan: Plan): string {
   return [

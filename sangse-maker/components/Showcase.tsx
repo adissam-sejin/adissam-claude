@@ -7,7 +7,7 @@ import { SAMPLE_SETS } from "@/lib/sample-images";
 import type { Theme } from "@/lib/schema";
 
 const THEMES: Theme[] = [
-  { primary: "#2f6f5e", accent: "#e6f0ec", background: "#ffffff", style: "clean" },
+  { primary: "#14907F", accent: "#e3f3ef", background: "#f7f4ef", style: "signature" },
   { primary: "#c9a86a", accent: "#2a2622", background: "#141210", style: "premium" },
   { primary: "#ff5a36", accent: "#fff1ec", background: "#fffaf6", style: "vivid" },
 ];
