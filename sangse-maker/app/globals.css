@@ -200,12 +200,11 @@ img { display: block; max-width: 100%; }
 .dp-sec + .dp-sec { border-top: 1px solid transparent; }
 .dp-sec.is-selected { outline: 3px solid #ff5a36; outline-offset: -3px; }
 .dp .editable { outline: none; border-radius: 4px; transition: background .12s; cursor: text; min-width: 20px; }
-.dp .editable:hover { background: rgba(255, 90, 54, .08); }
-.dp .editable:focus { background: rgba(255, 90, 54, .14); }
+.dp:not(.exporting) .editable:hover { background: rgba(255, 90, 54, .08); }
+.dp:not(.exporting) .editable:focus { background: rgba(255, 90, 54, .14); }
 .dp .editable:empty::before { content: attr(data-placeholder); opacity: .35; }
 .dp.exporting .editable:empty { display: none; }
 .dp.exporting .dp-sec.is-selected { outline: none; }
-.dp.exporting .editable { background: none !important; }
 
 .dp-head { text-align: center; margin-bottom: 56px; }
 .dp-eyebrow { font-size: 22px; font-weight: 800; letter-spacing: .14em; color: var(--p); margin-bottom: 18px; }
@@ -458,3 +457,6 @@ table.dp-spec td { text-align: left; padding-left: 34px; }
 .style-signature .dp-compare thead th.ours { color: #fff; }
 /* 내보내기 중에는 전환 효과를 끄고 편집 하이라이트를 숨김 (반쯤 사라지는 상태가 찍히지 않도록) */
 .dp.exporting, .dp.exporting * { transition: none !important; animation: none !important; }
+.style-signature .dp-notice { padding-top: 90px; padding-bottom: 90px; }
+.style-signature .dp-notice .dp-title { font-size: 42px; }
+.style-signature .dp-notice .dp-check-title { font-size: 23px; font-weight: 600; }

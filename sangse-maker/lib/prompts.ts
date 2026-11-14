@@ -74,7 +74,8 @@ ${COMMON_RULES}
   * comparison: 3~5개. title=비교 항목, desc=우리 제품, extra=일반 제품
   * spec: 4~8개. title=항목명, desc=값 (모르는 값은 "[입력]")
   * faq: 3~5개. title=질문, desc=답변
-  * notice: 2~4개. title=안내 문장, desc=""
+  * notice: 2~4개. title=안내 문장, desc="". 섹션 title 은 "구매 전 안내" / "배송·교환 안내" 처럼 짧게(강조 없이),
+    색상 차이·주의사항 같은 긴 문장은 title 이 아니라 items 에 넣는다.
   * hero: 0~2개. title=배지 문구 (예: "무료배송", "KC 인증 완료"). 사용자가 준 사실만, 없으면 [].
   * problem 의 말풍선은 4개, 고객의 혼잣말처럼 짧게 (20자 안팎).
   * solution, cta: items 는 [] (solution 은 필요시 짧은 체크포인트 2~3개 허용)
