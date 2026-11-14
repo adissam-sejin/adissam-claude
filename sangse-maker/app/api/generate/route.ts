@@ -1,4 +1,4 @@
-import { PageSchema, emptySection, type Plan, type ProductInput } from "@/lib/schema";
+import { PageSchema, emptySection, type Plan, type ProductInput, type Section, type SectionType } from "@/lib/schema";
 import { GENERATE_SYSTEM, inputToText, planToText } from "@/lib/prompts";
 import { callStructured, imageBlocks, isDemoMode, requireAI } from "@/lib/claude";
 import { demoPage } from "@/lib/demo";
@@ -7,6 +7,18 @@ import { requireUser } from "@/lib/auth";
 import { verifyGenToken } from "@/lib/gen-token";
 
 export const maxDuration = 60;
+
+/** 섹션 type 별 최소 요건 — 비어 있는(성의 없는) 섹션을 찾아 재시도 */
+const MIN_ITEMS: Partial<Record<SectionType, number>> = { problem: 3, features: 2, detail: 2, howto: 2, target: 3, comparison: 2, spec: 3, faq: 2, notice: 2 };
+function isThin(s: Section): boolean {
+  if (!s.title.trim()) return true;
+  if (s.type === "hero" && !s.body.trim()) return true;
+  if (s.type === "solution" && !s.body.trim() && s.items.length === 0) return true;
+  const min = MIN_ITEMS[s.type];
+  return min !== undefined && s.items.filter((i) => i.title.trim()).length < min;
+}
+const thinCount = (secs: Section[], part: { type: SectionType }[]) => secs.slice(0, part.length).filter(isThin).length;
+const score = (secs: Section[], part: { type: SectionType }[]) => Math.min(secs.length, part.length) * 10 - thinCount(secs, part);
 
 /**
  * 기획 초안의 섹션 일부(from~to)를 생성. 클라이언트가 여러 묶음을 병렬로 요청해 합친다.
@@ -37,8 +49,8 @@ export async function POST(req: Request) {
     const run = () => callStructured({
       system: GENERATE_SYSTEM,
       schema: PageSchema,
-      effort: "low",
-      maxTokens: 16000,
+      effort: "medium",
+      maxTokens: 20000,
       content: [
         ...imageBlocks(images),
         {
@@ -57,11 +69,13 @@ export async function POST(req: Request) {
         },
       ],
     });
+    const t0 = Date.now();
     let page = await run();
-    if (page.sections.length < part.length) {
-      // 섹션을 합쳐서 돌려준 경우 한 번 더 시도
+    const roomForRetry = Date.now() - t0 < 25_000; // 60초 제한 안에서만 재시도
+    if (roomForRetry && (page.sections.length < part.length || thinCount(page.sections, part) > 0)) {
+      // 섹션이 빠졌거나 내용이 비어 있으면 한 번 더 시도해서 더 나은 쪽을 쓴다
       const again = await run().catch(() => null);
-      if (again && again.sections.length > page.sections.length) page = again;
+      if (again && score(again.sections, part) > score(page.sections, part)) page = again;
     }
     // 그래도 모자라면 기획 초안의 메시지로 편집 가능한 자리를 채움
     for (let i = page.sections.length; i < part.length; i++) {
