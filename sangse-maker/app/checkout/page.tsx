@@ -50,6 +50,11 @@ export default function CheckoutPage() {
       <TopBar />
       <main className="wizard" style={{ maxWidth: 640 }}>
         <h1 style={{ fontSize: 26, margin: "0 0 6px" }}>크레딧 충전</h1>
+        {process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY?.startsWith("test_") && (
+          <div className="demo-banner" style={{ borderRadius: 10, border: "1px solid #ffe7a3" }}>
+            테스트 결제 모드예요. 실제 돈은 결제되지 않고 크레딧만 충전돼요.
+          </div>
+        )}
         {pkg && (
           <div className="card row between" style={{ margin: "16px 0" }}>
             <div>

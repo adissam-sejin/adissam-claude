@@ -23,8 +23,8 @@ export function inputToText(input: ProductInput): string {
     ["추가 정보(옵션·구성·인증 등)", input.extra],
   ];
   return rows
-    .filter(([, v]) => v.trim())
-    .map(([k, v]) => `- ${k}: ${v.trim()}`)
+    .filter(([, v]) => typeof v === "string" && v.trim())
+    .map(([k, v]) => `- ${k}: ${String(v).trim().slice(0, 2000)}`)
     .join("\n");
 }
 

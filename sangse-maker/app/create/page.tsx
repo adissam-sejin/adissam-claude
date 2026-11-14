@@ -20,8 +20,13 @@ class ApiError extends Error {
   }
 }
 
-async function post<T>(url: string, body: unknown): Promise<T & { demo?: boolean; credits?: number }> {
-  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+async function post<T>(url: string, body: unknown, timeoutMs = 58000): Promise<T & { demo?: boolean; credits?: number }> {
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
+  } catch {
+    throw new ApiError("응답이 늦어 다시 시도하고 있어요.", 504);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(data.error || `요청 실패 (${res.status})`, res.status);
   return data;
@@ -44,6 +49,7 @@ export default function CreatePage() {
   const [uploading, setUploading] = useState(false);
   const [needCredits, setNeedCredits] = useState(false);
   const [genProgress, setGenProgress] = useState({ done: 0, total: 0 });
+  const genPass = useRef<{ token: string; until: number } | null>(null);
   const { me, setCredits } = useMe();
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -156,16 +162,23 @@ export default function CreatePage() {
     setBusy("generate");
     setStep("generating");
     try {
-      // 1) 크레딧 차감 + 생성 이용권
-      const start = await post<{ token: string }>("/api/generate/start", {});
-      if (typeof start.credits === "number") setCredits(start.credits);
+      // 1) 크레딧 차감 + 생성 이용권 (실패 후 재시도라면 아직 유효한 이용권을 재사용 → 중복 차감 없음)
+      let start: { token: string; credits?: number };
+      if (genPass.current && genPass.current.until > Date.now()) {
+        start = { token: genPass.current.token };
+      } else {
+        start = await post<{ token: string }>("/api/generate/start", {});
+        if (typeof start.credits === "number") setCredits(start.credits);
+        if (start.token !== "demo") genPass.current = { token: start.token, until: Date.now() + 18 * 60 * 1000 };
+      }
       const body = { images, input, plan, brandColor: brandColor || undefined, token: start.token };
       let pg: Page & { demo?: boolean; credits?: number };
       if (start.token === "demo") {
         pg = await post<Page>("/api/generate", body);
       } else {
         // 2) 섹션을 3~4개씩 나눠 병렬 생성 (실패한 묶음은 2번까지 재시도)
-        const size = Math.ceil(plan.sections.length / Math.min(3, Math.ceil(plan.sections.length / 3)));
+        // 묶음당 최대 3섹션 → 각 요청이 짧고 정확해짐
+        const size = Math.ceil(plan.sections.length / Math.ceil(plan.sections.length / 3));
         const ranges: [number, number][] = [];
         for (let i = 0; i < plan.sections.length; i += size) ranges.push([i, Math.min(i + size, plan.sections.length)]);
         setGenProgress({ done: 0, total: ranges.length });
@@ -193,10 +206,12 @@ export default function CreatePage() {
         const preset = STYLE_PRESETS.find((s) => s.id === style)!;
         pg.theme = { ...pg.theme, style, background: preset.sample.background, accent: style === "premium" ? preset.sample.accent : pg.theme.accent };
       }
+      genPass.current = null; // 성공하면 이용권 소진
       setPage(pg);
       setStep("edit");
     } catch (e) {
       onApiError(e);
+      if (genPass.current) setError(`${(e as Error).message} — 다시 누르면 추가 차감 없이 이어서 생성해요.`);
       setStep("plan");
     } finally {
       setBusy("");

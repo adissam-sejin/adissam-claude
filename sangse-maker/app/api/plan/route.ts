@@ -1,6 +1,6 @@
 import { PlanSchema, type ProductInput } from "@/lib/schema";
 import { PLAN_SYSTEM, inputToText } from "@/lib/prompts";
-import { callStructured, imageBlocks, isDemoMode } from "@/lib/claude";
+import { callStructured, imageBlocks, isDemoMode, requireAI } from "@/lib/claude";
 import { demoPlan } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser } from "@/lib/auth";
@@ -12,6 +12,7 @@ export async function POST(req: Request) {
   const { images, input } = (await req.json()) as { images: string[]; input: ProductInput };
   return handle(async () => {
     await requireUser();
+    requireAI();
     if (isDemoMode()) {
       await demoDelay(1200);
       return { ...demoPlan(input), demo: true };

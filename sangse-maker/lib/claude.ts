@@ -5,14 +5,25 @@ import type * as z from "zod/v4";
 
 export const MODEL = "claude-opus-5-5";
 
-/** API 키(또는 ant auth 프로필)가 없으면 데모 모드로 동작 */
+const hasAIKey = () => !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
+
+/**
+ * 데모 모드: DEMO_MODE=1 이거나, 로컬 개발 중 키가 없을 때만.
+ * 운영(production)에서는 키가 잠시 안 보여도 가짜 결과를 주지 않고 오류를 낸다.
+ */
 export function isDemoMode(): boolean {
-  return !process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN;
+  if (process.env.DEMO_MODE === "1") return true;
+  return process.env.NODE_ENV !== "production" && !hasAIKey();
+}
+
+/** 운영에서 AI 키가 없으면 (크레딧 차감 전에) 재시도 안내 오류 */
+export function requireAI(): void {
+  if (!isDemoMode() && !hasAIKey()) throw new GenerationError("AI 서버 연결이 잠시 불안정해요. 잠시 후 다시 시도해 주세요. (크레딧은 차감되지 않았어요)", 503);
 }
 
 let client: Anthropic | null = null;
 function getClient(): Anthropic {
-  if (!client) client = new Anthropic();
+  if (!client) client = new Anthropic(); // ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL 을 환경에서 읽음
   return client;
 }
 

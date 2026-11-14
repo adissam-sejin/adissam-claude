@@ -1,6 +1,6 @@
 import { SectionSchema, type ProductInput, type Section } from "@/lib/schema";
 import { REVISE_SYSTEM, reviseUserText } from "@/lib/prompts";
-import { callStructured, isDemoMode } from "@/lib/claude";
+import { callStructured, isDemoMode, requireAI } from "@/lib/claude";
 import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser, withCredits } from "@/lib/auth";
 import { COSTS } from "@/lib/pricing";
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
   };
   return handle(async () => {
     const { user } = await requireUser();
+    requireAI();
     if (isDemoMode()) {
       await demoDelay();
       return { ...section, body: `${section.body}\n(데모 모드: "${instruction}" 요청은 API 키 연결 후 실제로 반영돼요)`.trim(), demo: true };

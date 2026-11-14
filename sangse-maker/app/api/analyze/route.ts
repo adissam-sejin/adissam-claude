@@ -1,6 +1,6 @@
 import { AnalyzeSchema, type ProductInput } from "@/lib/schema";
 import { ANALYZE_SYSTEM, inputToText } from "@/lib/prompts";
-import { callStructured, imageBlocks, isDemoMode } from "@/lib/claude";
+import { callStructured, imageBlocks, isDemoMode, requireAI } from "@/lib/claude";
 import { demoAnalysis } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser } from "@/lib/auth";
@@ -12,6 +12,7 @@ export async function POST(req: Request) {
   const { images, input } = (await req.json()) as { images: string[]; input: Partial<ProductInput> };
   return handle(async () => {
     await requireUser();
+    requireAI();
     if (isDemoMode()) {
       await demoDelay();
       return { ...demoAnalysis(input), demo: true };

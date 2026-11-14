@@ -1,5 +1,5 @@
 import { changeCredits, requireUser } from "@/lib/auth";
-import { isDemoMode } from "@/lib/claude";
+import { isDemoMode, requireAI } from "@/lib/claude";
 import { issueGenToken } from "@/lib/gen-token";
 import { COSTS } from "@/lib/pricing";
 import { handle } from "@/lib/route-helpers";
@@ -8,6 +8,7 @@ import { handle } from "@/lib/route-helpers";
 export async function POST() {
   return handle(async () => {
     const { user } = await requireUser();
+    requireAI();
     if (isDemoMode()) return { token: "demo", demo: true };
     const credits = await changeCredits(user.id, -COSTS.generate, "상세페이지 생성");
     return { token: issueGenToken(user.id), credits };

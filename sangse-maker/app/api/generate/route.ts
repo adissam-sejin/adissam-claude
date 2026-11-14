@@ -1,6 +1,6 @@
-import { PageSchema, type Plan, type ProductInput } from "@/lib/schema";
+import { PageSchema, emptySection, type Plan, type ProductInput } from "@/lib/schema";
 import { GENERATE_SYSTEM, inputToText, planToText } from "@/lib/prompts";
-import { callStructured, imageBlocks, isDemoMode } from "@/lib/claude";
+import { callStructured, imageBlocks, isDemoMode, requireAI } from "@/lib/claude";
 import { demoPage } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser } from "@/lib/auth";
@@ -24,6 +24,7 @@ export async function POST(req: Request) {
   };
   return handle(async () => {
     const { user } = await requireUser();
+    requireAI();
     if (isDemoMode()) {
       await demoDelay(1800);
       const page = demoPage(input, images.length);
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     verifyGenToken(token, user.id);
     const end = Math.min(to ?? plan.sections.length, plan.sections.length);
     const part = plan.sections.slice(from, end);
-    const page = await callStructured({
+    const run = () => callStructured({
       system: GENERATE_SYSTEM,
       schema: PageSchema,
       effort: "low",
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
             `[기획 초안 전체 — 흐름 참고용]\n${planToText(plan)}`,
             `[이번에 작성할 섹션] 전체 ${plan.sections.length}개 중 ${from + 1}~${end}번 (${part.length}개):\n` +
               part.map((s, i) => `${from + i + 1}. [${s.type}] ${s.keyMessage}`).join("\n") +
-              `\nsections 배열에는 이 ${part.length}개만 순서대로 넣으세요. 앞뒤 섹션과 문구가 겹치지 않게 쓰세요.`,
+              `\nsections 배열에는 정확히 ${part.length}개를 위 순서·type 그대로 넣으세요. 섹션을 합치거나 빼지 마세요. 앞뒤 섹션과 문구가 겹치지 않게 쓰세요.`,
             brandColor ? `[브랜드 메인 컬러] ${brandColor} (theme.primary 로 사용)` : "",
             `사진은 총 ${images.length}장입니다 (imageIndex 0~${images.length - 1}).`,
           ]
@@ -56,6 +57,16 @@ export async function POST(req: Request) {
         },
       ],
     });
+    let page = await run();
+    if (page.sections.length < part.length) {
+      // 섹션을 합쳐서 돌려준 경우 한 번 더 시도
+      const again = await run().catch(() => null);
+      if (again && again.sections.length > page.sections.length) page = again;
+    }
+    // 그래도 모자라면 기획 초안의 메시지로 편집 가능한 자리를 채움
+    for (let i = page.sections.length; i < part.length; i++) {
+      page.sections.push({ ...emptySection(part[i].type), title: part[i].keyMessage || "제목을 입력하세요" });
+    }
     const fix = (n: number) => (n >= 0 && n < images.length ? n : -1);
     page.sections = page.sections.slice(0, part.length).map((s, i) => ({
       ...s,
