@@ -5,7 +5,7 @@ import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser, withCredits } from "@/lib/auth";
 import { COSTS } from "@/lib/pricing";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 /** 섹션 하나를 말로 수정 ("더 짧게", "20대 말투로" 등) */
 export async function POST(req: Request) {

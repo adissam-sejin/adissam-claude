@@ -5,7 +5,7 @@ import { demoPlan } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser } from "@/lib/auth";
 
-export const maxDuration = 180;
+export const maxDuration = 60;
 
 /** 기획 초안: 섹션 구성과 핵심 메시지 */
 export async function POST(req: Request) {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return callStructured({
       system: PLAN_SYSTEM,
       schema: PlanSchema,
-      effort: "medium",
+      effort: "low",
       maxTokens: 16000,
       content: [
         ...imageBlocks(images),

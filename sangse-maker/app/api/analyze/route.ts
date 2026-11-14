@@ -5,7 +5,7 @@ import { demoAnalysis } from "@/lib/demo";
 import { demoDelay, handle } from "@/lib/route-helpers";
 import { requireUser } from "@/lib/auth";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 /** 사진 → 상품 정보 자동 채우기 + USP 분석 */
 export async function POST(req: Request) {

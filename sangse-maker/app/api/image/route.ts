@@ -5,7 +5,7 @@ import { generateSceneImage, isImageEnabled, SCENE_PRESETS } from "@/lib/gemini"
 import { fetchImageBase64 } from "@/lib/remote-image";
 import { handle } from "@/lib/route-helpers";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 /** 상품 사진으로 AI 연출 컷 생성 → Storage 저장 → URL 반환 (5크레딧) */
 export async function POST(req: Request) {

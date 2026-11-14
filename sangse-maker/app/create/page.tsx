@@ -43,6 +43,7 @@ export default function CreatePage() {
   const [recent, setRecent] = useState<ProjectSummary[]>([]);
   const [uploading, setUploading] = useState(false);
   const [needCredits, setNeedCredits] = useState(false);
+  const [genProgress, setGenProgress] = useState({ done: 0, total: 0 });
   const { me, setCredits } = useMe();
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -155,9 +156,37 @@ export default function CreatePage() {
     setBusy("generate");
     setStep("generating");
     try {
-      const pg = await post<Page>("/api/generate", { images, input, plan, brandColor: brandColor || undefined });
+      // 1) 크레딧 차감 + 생성 이용권
+      const start = await post<{ token: string }>("/api/generate/start", {});
+      if (typeof start.credits === "number") setCredits(start.credits);
+      const body = { images, input, plan, brandColor: brandColor || undefined, token: start.token };
+      let pg: Page & { demo?: boolean; credits?: number };
+      if (start.token === "demo") {
+        pg = await post<Page>("/api/generate", body);
+      } else {
+        // 2) 섹션을 3~4개씩 나눠 병렬 생성 (실패한 묶음은 2번까지 재시도)
+        const size = Math.ceil(plan.sections.length / Math.min(3, Math.ceil(plan.sections.length / 3)));
+        const ranges: [number, number][] = [];
+        for (let i = 0; i < plan.sections.length; i += size) ranges.push([i, Math.min(i + size, plan.sections.length)]);
+        setGenProgress({ done: 0, total: ranges.length });
+        const runChunk = async ([from, to]: [number, number]) => {
+          let lastErr: unknown;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const r = await post<Page>("/api/generate", { ...body, from, to });
+              setGenProgress((p) => ({ ...p, done: p.done + 1 }));
+              return r;
+            } catch (e) {
+              lastErr = e;
+              if (e instanceof ApiError && [401, 402, 403].includes(e.status)) break;
+            }
+          }
+          throw lastErr;
+        };
+        const parts = await Promise.all(ranges.map(runChunk));
+        pg = { productName: parts[0].productName || input.productName, theme: parts[0].theme, sections: parts.flatMap((p) => p.sections) };
+      }
       setDemo(!!pg.demo);
-      if (typeof pg.credits === "number") setCredits(pg.credits);
       delete pg.demo;
       delete pg.credits;
       if (style) {
@@ -473,7 +502,8 @@ export default function CreatePage() {
           <div className="card loading-card">
             <div className="spinner dark big-spin" />
             <h2 style={{ margin: "0 0 8px" }}>상세페이지를 만들고 있어요</h2>
-            <p className="muted" style={{ margin: 0 }}>카피 작성 → 사진 배치 → 컬러·레이아웃 구성 중… 보통 1~3분 걸려요.</p>
+            <p className="muted" style={{ margin: 0 }}>카피 작성 → 사진 배치 → 컬러·레이아웃 구성 중… 보통 30초~1분 걸려요.</p>
+            {genProgress.total > 0 && <p style={{ margin: "12px 0 0", fontWeight: 700 }}>{genProgress.done} / {genProgress.total} 묶음 완료</p>}
           </div>
         )}
       </main>
