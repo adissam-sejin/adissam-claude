@@ -70,8 +70,12 @@
 
   const live = {
     getTree: (code) => rpc("mt_get_tree", { p_code: normCode(code) }),
-    addCard: (code, author, body) =>
-      rpc("mt_add_card", { p_code: normCode(code), p_author: author, p_body: body }),
+    async addCard(code, author, body) {
+      const card = await rpc("mt_add_card", { p_code: normCode(code), p_author: author, p_body: body });
+      // 같은 나무를 보고 있는 다른 화면들에 바로 알린다
+      try { if (channel) channel.send({ type: "broadcast", event: "changed", payload: {} }); } catch (_) {}
+      return card;
+    },
     adminListTrees: (pw) => rpc("mt_admin_list_trees", { p_pw: pw }),
     adminSaveTree: (pw, t, isNew) =>
       rpc("mt_admin_save_tree", {

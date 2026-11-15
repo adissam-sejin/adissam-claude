@@ -7,8 +7,8 @@
  * (SUPABASE_KEY 는 공개돼도 되는 publishable 키입니다)
  */
 window.TREE_CONFIG = {
-  SUPABASE_URL: "",
-  SUPABASE_KEY: "",
+  SUPABASE_URL: "https://eaibfimzdskdpgvxudgo.supabase.co",
+  SUPABASE_KEY: "sb_publishable_q8AcLbXJwTA4E9dyF_90hg_jjW6CPri",
 
   // 미리보기 모드에서만 쓰이는 관리자 비밀번호 (실제 비밀번호는 서버에 저장됩니다)
   PREVIEW_ADMIN_PASSWORD: "admin1234",
