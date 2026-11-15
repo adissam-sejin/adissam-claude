@@ -65,7 +65,7 @@
   function testView() {
     if (!test) test = { i: -1, answers: {} };
     if (test.i < 0) return `
-      <section class="card center">
+      <section class="card center narrow">
         <h1>8체질 테스트</h1>
         <p class="lead">아래 음식을 <b>평소에 먹었을 때</b> 몸이 어땠는지 떠올려 골라 주세요. 좋아하는 맛이 아니라 <b>먹고 난 뒤의 몸 상태</b>가 기준입니다.</p>
         <ul class="plain">
@@ -77,7 +77,7 @@
       </section>${disclaimer}`;
     const q = QUESTIONS[test.i], opts = ANSWERS[q.kind], cur = test.answers[q.id];
     return `
-      <section class="card quiz">
+      <section class="card quiz narrow">
         <div class="progress"><i style="width:${Math.round(test.i / QUESTIONS.length * 100)}%"></i></div>
         <p class="meta">${test.i + 1} / ${QUESTIONS.length} · ${q.kind === 'food' ? '음식 반응' : '몸의 반응'}</p>
         <h2 class="qtext">${esc(q.text)}${q.kind === 'food' ? ' 내 몸은?' : ''}</h2>
@@ -101,7 +101,7 @@
   }
   function result() {
     const cur = S.current();
-    if (!cur) return `<section class="card center"><h1>아직 결과가 없어요</h1><p class="lead">테스트를 하면 가까운 체질과 맞는 음식을 볼 수 있어요.</p><a class="btn primary" href="#/test">테스트 시작</a></section>`;
+    if (!cur) return `<section class="card center narrow"><h1>아직 결과가 없어요</h1><p class="lead">테스트를 하면 가까운 체질과 맞는 음식을 볼 수 있어요.</p><a class="btn primary" href="#/test">테스트 시작</a></section>`;
     const i = idxOf(cur.constitution), t = TYPES[i], lists = C.foodLists(i);
     const scores = cur.scores;
     const second = scores && TYPES[idxOf(scores[1].id)];
@@ -129,7 +129,7 @@
   /* ---------- 음식 확인 ---------- */
   function checkView() {
     const cur = S.current();
-    if (!cur) return `<section class="card center"><h1>음식 확인</h1><p class="lead">내 체질을 먼저 알아야 음식이 맞는지 확인할 수 있어요.</p><a class="btn primary" href="#/test">테스트 시작</a>
+    if (!cur) return `<section class="card center narrow"><h1>음식 확인</h1><p class="lead">내 체질을 먼저 알아야 음식이 맞는지 확인할 수 있어요.</p><a class="btn primary" href="#/test">테스트 시작</a>
       <p class="meta">이미 체질을 알고 있다면 <a href="#/me">내 정보</a>에서 직접 선택할 수 있어요.</p></section>`;
     const i = idxOf(cur.constitution), t = TYPES[i];
     return `
@@ -154,12 +154,19 @@
 
   /* ---------- 식단 ---------- */
   function planView() {
-    if (!S.user) return `<section class="card center"><h1>일주일 추천 식단</h1><p class="lead">가입한 회원에게 체질에 맞는 음식 위주로 일주일 식단을 추천해 드려요.</p>${loginButtons()}</section>`;
+    if (!S.user) return `<section class="card center narrow"><h1>일주일 추천 식단</h1><p class="lead">가입한 회원에게 체질에 맞는 음식 위주로 일주일 식단을 추천해 드려요.</p>${loginButtons()}</section>`;
     const p = S.profile;
-    if (!p.constitution) return `<section class="card center"><h1>일주일 추천 식단</h1><p class="lead">먼저 체질 테스트를 해 주세요.</p><a class="btn primary" href="#/test">테스트 시작</a></section>`;
+    if (!p.constitution) return `<section class="card center narrow"><h1>일주일 추천 식단</h1><p class="lead">먼저 체질 테스트를 해 주세요.</p><a class="btn primary" href="#/test">테스트 시작</a></section>`;
     const i = idxOf(p.constitution), t = TYPES[i], n = p.meals_per_day, days = C.plan(i, n, p.plan_seed);
     const avg = k => Math.round(days.reduce((s, d) => s + d.total[k], 0) / 7);
-    const d = days[openDay], e = d.total.p * 4 + d.total.c * 4 + d.total.f * 9, pc = x => Math.round(x / e * 100);
+    const dayCard = (d, k) => { const e = d.total.p * 4 + d.total.c * 4 + d.total.f * 9, pc = x => Math.round(x / e * 100); return `
+      <div class="day card${k === openDay ? ' on' : ''}">
+        <div class="row between"><h2>${d.day}요일</h2><span class="meta">${d.total.kcal.toLocaleString()} kcal</span></div>
+        <div class="macro" title="에너지 비율"><i class="mc" style="width:${pc(d.total.c * 4)}%"></i><i class="mp" style="width:${pc(d.total.p * 4)}%"></i><i class="mf" style="width:${pc(d.total.f * 9)}%"></i></div>
+        <p class="meta legend"><span class="dot mc"></span>탄수화물 ${pc(d.total.c * 4)}% <span class="dot mp"></span>단백질 ${pc(d.total.p * 4)}% <span class="dot mf"></span>지방 ${pc(d.total.f * 9)}%</p>
+        ${d.meals.map(m => `<div class="meal"><div class="row between"><h3>${m.label}</h3><span class="meta">${m.kcal} kcal</span></div>
+          <ul>${m.dishes.map(x => `<li><b>${x.name}</b>${x.plus.length ? `<span class="plus">이로운 재료 · ${x.plus.join(', ')}</span>` : ''}</li>`).join('')}</ul></div>`).join('')}
+      </div>`; };
     return `
     <section>
       <h1>일주일 추천 식단</h1>
@@ -168,13 +175,7 @@
         <div class="seg">${[2, 3, 4, 5].map(k => `<button class="${k === n ? 'on' : ''}" data-act="meals" data-n="${k}">${k === 4 ? '3끼+간식1' : k === 5 ? '3끼+간식2' : k + '끼'}</button>`).join('')}</div></div>
       <div class="stats"><div><b>${avg('kcal').toLocaleString()}</b><span>하루 평균 kcal</span></div><div><b>${avg('p')}g</b><span>단백질</span></div><div><b>${avg('c')}g</b><span>탄수화물</span></div><div><b>${avg('f')}g</b><span>지방</span></div></div>
       <div class="daytabs">${days.map((x, k) => `<button class="${k === openDay ? 'on' : ''}" data-act="day" data-k="${k}">${x.day}</button>`).join('')}</div>
-      <div class="day card">
-        <div class="row between"><h2>${d.day}요일</h2><span class="meta">${d.total.kcal.toLocaleString()} kcal</span></div>
-        <div class="macro" title="에너지 비율"><i class="mc" style="width:${pc(d.total.c * 4)}%"></i><i class="mp" style="width:${pc(d.total.p * 4)}%"></i><i class="mf" style="width:${pc(d.total.f * 9)}%"></i></div>
-        <p class="meta legend"><span class="dot mc"></span>탄수화물 ${pc(d.total.c * 4)}% <span class="dot mp"></span>단백질 ${pc(d.total.p * 4)}% <span class="dot mf"></span>지방 ${pc(d.total.f * 9)}%</p>
-        ${d.meals.map(m => `<div class="meal"><div class="row between"><h3>${m.label}</h3><span class="meta">${m.kcal} kcal</span></div>
-          <ul>${m.dishes.map(x => `<li><b>${x.name}</b>${x.plus.length ? `<span class="plus">이로운 재료 · ${x.plus.join(', ')}</span>` : ''}</li>`).join('')}</ul></div>`).join('')}
-      </div>
+      <div class="week">${days.map(dayCard).join('')}</div>
       <div class="row"><button class="btn" data-act="reroll">다른 식단으로 다시 추천</button><button class="btn ghost" data-act="print">인쇄</button></div>
       <p class="note small">매 끼니를 주식(탄수화물)·단백질 반찬·채소 반찬으로 구성하고 점심·저녁에는 국을 더했습니다. 열량과 영양소는 1인분 기준 대략값이며, 활동량과 체격에 따라 밥 양을 조절하세요.</p>
       <div class="print-only">${days.map(x => `<h3>${x.day}요일 (${x.total.kcal} kcal)</h3>${x.meals.map(m => `<p><b>${m.label}</b> ${m.dishes.map(y => y.name).join(', ')}</p>`).join('')}`).join('')}</div>
@@ -185,7 +186,7 @@
   function me() {
     if (!S.user) {
       const g = S.guest();
-      return `<section class="card center"><h1>내 정보</h1><p class="lead">가입하면 체질 테스트 결과가 저장되고, 일주일 추천 식단을 받을 수 있어요.</p>${loginButtons()}
+      return `<section class="card center narrow"><h1>내 정보</h1><p class="lead">가입하면 체질 테스트 결과가 저장되고, 일주일 추천 식단을 받을 수 있어요.</p>${loginButtons()}
         ${g ? `<p class="meta">가입하면 방금 한 테스트 결과(${TYPES[idxOf(g.constitution)].name})가 계정으로 옮겨집니다.</p>` : ''}</section>
         <section><h2>체질을 이미 알고 있나요?</h2><p class="meta">한의원에서 진단받은 체질이 있다면 직접 선택해 사용할 수 있어요.</p>${manualSelect(g && g.constitution)}</section>`;
     }
