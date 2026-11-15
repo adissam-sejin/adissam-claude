@@ -4,7 +4,7 @@
   const API = window.TreeAPI, View = window.TreeView;
   const LIST_PAGE = 20;
 
-  let tree = null, cards = [], theme = null, listShown = LIST_PAGE, pollTimer = null;
+  let tree = null, cards = [], theme = null, listShown = LIST_PAGE, pollTimer = null, mine = [];
 
   if (!API.LIVE) $("previewBanner").hidden = false;
 
@@ -134,11 +134,16 @@
       if (document.hidden || document.querySelector("dialog[open]")) return;
       try {
         const data = await API.getTree(tree.code);
-        const changed = data.cards.length !== cards.length ||
-          (data.cards.length && data.cards[data.cards.length - 1].id !== cards[cards.length - 1].id) ||
-          data.tree.start_at !== tree.start_at || data.tree.end_at !== tree.end_at;
+        // 방금 내가 쓴 카드가 서버 응답(잠깐 캐시됨)에 아직 없으면 그대로 붙여 둔다
+        const now = Date.now(), ids = new Set(data.cards.map((c) => c.id));
+        mine = mine.filter((m) => !ids.has(m.card.id) && now - m.at < 90000);
+        const next = data.cards.concat(mine.map((m) => m.card));
+        const changed = next.length !== cards.length || next.some((c, i) => c.id !== cards[i].id) ||
+          data.tree.name !== tree.name || data.tree.theme !== tree.theme;
+        if (data.tree.theme !== tree.theme) { showTree({ tree: data.tree, cards: next }); return; }
         tree = Object.assign(tree, data.tree);
-        if (changed) { cards = data.cards; drawAll(); } else drawInfo();
+        $("treeName").textContent = tree.name;
+        if (changed) { cards = next; drawAll(); } else drawInfo();
       } catch (_) {}
     }, 15000);
   }
@@ -176,6 +181,7 @@
     try {
       const card = await API.addCard(tree.code, author, body);
       cards.push(card);
+      mine.push({ card, at: Date.now() });
       $("bodyInput").value = "";
       $("bodyCount").textContent = "0";
       $("writeModal").close();

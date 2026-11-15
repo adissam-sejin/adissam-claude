@@ -1,7 +1,9 @@
-/* 데이터 계층: Supabase(실서버) 또는 localStorage(미리보기) */
+/* 데이터 계층: 서버 API(노션에 저장) 또는 localStorage(미리보기) */
 (function () {
   const cfg = window.TREE_CONFIG || {};
-  const LIVE = !!(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY);
+  // 내 컴퓨터에서 파일만 열었을 때는 서버가 없으므로 미리보기 모드로 동작한다
+  const isLocal = location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  const LIVE = cfg.PREVIEW === true ? false : cfg.PREVIEW === false ? true : !isLocal;
 
   const LIMITS = { author: 12, body: 500 };
   const THEME_KEYS = ["christmas", "persimmon", "cherry"];
@@ -16,6 +18,8 @@
     BAD_CODE: "코드는 영문 대문자·숫자 4~12자로 입력해 주세요.",
     BAD_PERIOD: "종료 일시는 시작 일시보다 뒤여야 해요.",
     NETWORK: "서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
+    NOTION_SETUP: "노션 연결 설정이 아직 끝나지 않았어요. 관리자에게 문의해 주세요.",
+    NOTION_ERROR: "노션에 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
   };
 
   function fail(code) {
@@ -26,19 +30,17 @@
 
   const normCode = (c) => String(c || "").trim().toUpperCase();
 
-  /* ---------------- Supabase ---------------- */
-  async function rpc(fn, args) {
+  /* ---------------- 실서버 (노션에 저장) ---------------- */
+  async function call(method, payload) {
     let res;
     try {
-      res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/rpc/" + fn, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: cfg.SUPABASE_ANON_KEY,
-          Authorization: "Bearer " + cfg.SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify(args || {}),
-      });
+      res = method === "GET"
+        ? await fetch(cfg.API_URL + "?code=" + encodeURIComponent(payload))
+        : await fetch(cfg.API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
     } catch (_) {
       throw fail("NETWORK");
     }
@@ -52,17 +54,16 @@
   }
 
   const live = {
-    getTree: (code) => rpc("get_tree", { p_code: normCode(code) }),
-    addCard: (code, author, body) =>
-      rpc("add_card", { p_code: normCode(code), p_author: author, p_body: body }),
-    adminListTrees: (pw) => rpc("admin_list_trees", { p_pw: pw }),
+    getTree: (code) => call("GET", normCode(code)),
+    addCard: (code, author, body) => call("POST", { action: "addCard", code: normCode(code), author, body }),
+    adminListTrees: (pw) => call("POST", { action: "adminListTrees", pw }),
     adminSaveTree: (pw, t, isNew) =>
-      rpc("admin_save_tree", {
-        p_pw: pw, p_code: normCode(t.code), p_name: t.name, p_theme: t.theme,
-        p_start: t.start_at || null, p_end: t.end_at || null, p_is_new: !!isNew,
+      call("POST", {
+        action: "adminSaveTree", pw, code: normCode(t.code), name: t.name, theme: t.theme,
+        start_at: t.start_at || null, end_at: t.end_at || null, is_new: !!isNew,
       }),
-    adminDeleteTree: (pw, code) => rpc("admin_delete_tree", { p_pw: pw, p_code: normCode(code) }),
-    adminDeleteCard: (pw, id) => rpc("admin_delete_card", { p_pw: pw, p_id: id }),
+    adminDeleteTree: (pw, code) => call("POST", { action: "adminDeleteTree", pw, code: normCode(code) }),
+    adminDeleteCard: (pw, id) => call("POST", { action: "adminDeleteCard", pw, id }),
   };
 
   /* ---------------- 미리보기(localStorage) ---------------- */

@@ -217,8 +217,16 @@
   }
 
   // 오너먼트 볼 / 감 / 벚꽃 모양 (글자 제외)
+  // 카드 id(숫자 또는 노션 페이지 id 문자열)를 색·각도를 고르는 숫자로 바꾼다
+  function seedOf(id) {
+    if (typeof id === "number") return id;
+    let h = 0;
+    for (const ch of String(id)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+    return h;
+  }
+
   function drawShape(parent, theme, card, R) {
-    const pal = PALETTE[theme], i = card.id % pal.length, fill = `url(#item${i})`;
+    const pal = PALETTE[theme], seed = seedOf(card.id), i = seed % pal.length, fill = `url(#item${i})`;
     if (theme === "christmas") {
       el("circle", { r: R, fill }, parent);
     } else if (theme === "persimmon") {
@@ -228,7 +236,7 @@
         el("ellipse", { rx: R * 0.26, ry: R * 0.1, cx: R * 0.2, transform: `rotate(${k * 90 + 45})` }, cal);
       }
     } else {
-      const rot = (card.id * 37) % 72;
+      const rot = (seed % 8) * 9;
       const fl = el("g", { transform: `rotate(${rot})`, fill }, parent);
       for (let k = 0; k < 5; k++) {
         el("circle", { cx: 0, cy: -R * 0.56, r: R * 0.5, transform: `rotate(${k * 72})` }, fl);
