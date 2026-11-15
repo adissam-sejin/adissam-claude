@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import NoteModal, { type ViewNote } from "@/components/NoteModal";
-import { Persimmon } from "@/components/Pixel";
+import { Persimmon } from "@/components/Art3D";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase, signedUrls } from "@/lib/supabase";
 import { koShort } from "@/lib/date";
@@ -43,7 +43,7 @@ export default function GalleryPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-4">
-        <h1 className="pixel text-xl font-bold">감사 갤러리</h1>
+        <h1 className="font-display text-xl font-bold">감사 갤러리</h1>
         <p className="text-sm text-ink/60">사진을 누르면 그날의 감사가 보여요.</p>
       </div>
 
@@ -52,7 +52,7 @@ export default function GalleryPage() {
           <button key={n.id} onClick={() => setOpen(n)} className="relative aspect-square overflow-hidden bg-gam-light group">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={n.photoUrl ?? ""} alt={koShort(n.note_date)} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-            <span className="absolute left-1 bottom-1 pixel text-[10px] sm:text-xs bg-black/50 text-white px-1 rounded">{koShort(n.note_date).slice(2)}</span>
+            <span className="absolute left-1 bottom-1 font-display text-[10px] sm:text-xs bg-black/50 text-white px-1 rounded">{koShort(n.note_date).slice(2)}</span>
           </button>
         ))}
       </div>
@@ -63,7 +63,7 @@ export default function GalleryPage() {
         <div className="text-center py-16">
           <Persimmon className="w-14 h-14 mx-auto opacity-60" />
           <p className="mt-3 text-ink/60">아직 사진이 있는 감사노트가 없어요.</p>
-          <Link href="/write" className="px-btn inline-block mt-4 px-5 py-2 bg-gam text-white">첫 사진 올리기</Link>
+          <Link href="/write" className="btn3d inline-block mt-4 px-5 py-2 btn-gam">첫 사진 올리기</Link>
         </div>
       )}
 

@@ -95,7 +95,7 @@ export default function Wongoji({ value, onChange, maxLength = 600, minRows = 8,
         />
       )}
       {!readOnly && (
-        <div className="mt-1 text-right text-xs text-ink/50 pixel">{chars.length} / {maxLength}자</div>
+        <div className="mt-1 text-right text-xs text-ink/50 font-display">{chars.length} / {maxLength}자</div>
       )}
     </div>
   );

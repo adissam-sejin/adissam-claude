@@ -1,7 +1,6 @@
 "use client";
 import { wongojiLayout } from "./wongoji";
 import { koDate, koShort } from "./date";
-import { PERSIMMON, gridSvg } from "./pixel";
 
 export type PdfNote = { note_date: string; content: string; photoUrl?: string | null };
 
@@ -67,7 +66,7 @@ function wongoji(text: string, maxH: number) {
 function footer(p: HTMLElement, n: number, total: number) {
   p.appendChild(el("div", {
     position: "absolute", bottom: "28px", left: "0", right: "0", textAlign: "center",
-    fontSize: "12px", color: "#3b2a1e88", fontFamily: "Galmuri11, monospace",
+    fontSize: "12px", color: "#3b2a1e88", fontFamily: "Jua, sans-serif",
   }, `감사노트 · ${n} / ${total}`));
 }
 
@@ -82,7 +81,7 @@ export async function exportNotesPdf(opts: {
   document.body.appendChild(host);
 
   const pdf = new jsPDF({ unit: "px", format: [W, H], orientation: "portrait", hotfixes: ["px_scaling"] });
-  const persimmon = `data:image/svg+xml;utf8,${encodeURIComponent(gridSvg(PERSIMMON, 10))}`;
+  const persimmon = (await toDataUrl("/3d/persimmon.webp")) ?? "";
   const total = opts.notes.length + 1;
 
   const render = async (p: HTMLElement, first: boolean) => {
@@ -98,8 +97,8 @@ export async function exportNotesPdf(opts: {
     // 표지
     const cover = page();
     cover.style.justifyContent = "center";
-    cover.appendChild(el("img", { width: "140px", height: "140px", imageRendering: "pixelated" })).setAttribute("src", persimmon);
-    cover.appendChild(el("div", { fontFamily: "Galmuri11, monospace", fontSize: "44px", fontWeight: "700", marginTop: "28px" }, "감사노트"));
+    cover.appendChild(el("img", { width: "160px", height: "160px", objectFit: "contain" })).setAttribute("src", persimmon);
+    cover.appendChild(el("div", { fontFamily: "Jua, sans-serif", fontSize: "52px", marginTop: "28px" }, "감사노트"));
     cover.appendChild(el("div", { fontSize: "22px", marginTop: "18px" }, `${opts.from.replace("-", ". ")} ~ ${opts.to.replace("-", ". ")}`));
     cover.appendChild(el("div", { fontSize: "20px", marginTop: "40px" }, `${escapeHtml(opts.nickname)}님의 감사 ${opts.notes.length}개`));
     footer(cover, 1, total);
@@ -111,13 +110,13 @@ export async function exportNotesPdf(opts: {
       const p = page();
       p.appendChild(el("div", {
         width: "100%", display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-        borderBottom: "3px solid #3b2a1e", paddingBottom: "10px", marginBottom: "24px",
-      }, `<span style="font-size:24px;font-weight:700">${koDate(n.note_date)}</span><span style="font-family:Galmuri11,monospace;font-size:13px;color:#d2601a">${koShort(n.note_date)}</span>`));
+        borderBottom: "2px solid #f1dfc8", paddingBottom: "10px", marginBottom: "24px",
+      }, `<span style="font-size:24px;font-weight:700">${koDate(n.note_date)}</span><span style="font-family:Jua,sans-serif;font-size:13px;color:#d2601a">${koShort(n.note_date)}</span>`));
       let used = 56 + 50 + 24 + 60;
       if (n.photoUrl) {
         const data = await toDataUrl(n.photoUrl);
         if (data) {
-          const img = el("img", { width: "380px", height: "380px", objectFit: "cover", border: "3px solid #3b2a1e", marginBottom: "24px" }) as HTMLImageElement;
+          const img = el("img", { width: "380px", height: "380px", objectFit: "cover", borderRadius: "20px", marginBottom: "24px" }) as HTMLImageElement;
           img.src = data;
           p.appendChild(img);
           used += 410;

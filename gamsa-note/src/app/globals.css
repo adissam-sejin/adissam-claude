@@ -1,18 +1,5 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Galmuri11";
-  src: url("/fonts/Galmuri11.woff2") format("woff2");
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Galmuri11";
-  src: url("/fonts/Galmuri11-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-display: swap;
-}
-
 @theme {
   --color-gam: #f28c28;
   --color-gam-dark: #d2601a;
@@ -21,7 +8,8 @@
   --color-ink: #3b2a1e;
   --color-leaf: #3e8e41;
   --color-grid: #e98a6c;
-  --font-pixel: "Galmuri11", ui-monospace, monospace;
+  --font-display: "Jua", "Pretendard", sans-serif;
+  --color-line: #f1dfc8;
   --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
 
@@ -36,23 +24,32 @@ html, body {
 }
 body { font-family: var(--font-sans); }
 
-.pixel { font-family: var(--font-pixel); }
-.pixelated { image-rendering: pixelated; }
+.font-display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
 
-/* 도트 스타일 버튼/박스 */
-.px-box {
+/* 부드러운 3D 카드/버튼 */
+.card {
   background: #fff;
-  border: 3px solid #3b2a1e;
-  box-shadow: 4px 4px 0 #3b2a1e;
+  border-radius: 22px;
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 6px 0 #f3e2cc, 0 14px 28px -10px rgba(120, 72, 30, .25);
 }
-.px-btn {
-  font-family: var(--font-pixel);
-  border: 3px solid #3b2a1e;
-  box-shadow: 3px 3px 0 #3b2a1e;
-  transition: transform .05s, box-shadow .05s;
+.btn3d {
+  font-family: var(--font-display);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.16), 0 8px 16px -6px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.35);
+  transition: transform .08s, box-shadow .08s, filter .15s;
 }
-.px-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #3b2a1e; }
-.px-btn:disabled { opacity: .45; }
+.btn3d:hover:not(:disabled) { filter: brightness(1.04); }
+.btn3d:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.16), 0 3px 8px -4px rgba(0,0,0,.25), inset 0 2px 0 rgba(255,255,255,.35); }
+.btn3d:disabled { opacity: .45; }
+.btn-gam { background: linear-gradient(180deg, #ff9a3d, #f2741c); color: #fff; }
+.btn-leaf { background: linear-gradient(180deg, #6cc24a, #3e9a32); color: #fff; }
+.btn-white { background: #fff; color: #3b2a1e; }
+.field { border: 2px solid var(--color-line); border-radius: 14px; background: #fff; }
+.field:focus { outline: none; border-color: #f2a25c; box-shadow: 0 0 0 4px #ffe2bf; }
+
+@keyframes pop { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+@keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.floaty { animation: floaty 4s ease-in-out infinite; }
 
 /* 원고지 */
 .wongoji {
@@ -61,6 +58,8 @@ body { font-family: var(--font-sans); }
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
   border: 2px solid var(--color-grid);
+  border-radius: 6px;
+  overflow: hidden;
   background: #fffdf8;
   row-gap: 6px;
   padding: 6px 0;
@@ -101,24 +100,26 @@ body { font-family: var(--font-sans); }
 }
 
 /* 농장 */
-.farm-sky {
-  background:
-    linear-gradient(#8fd3ff 0 55%, #b9e6ff 55% 70%, #d8f2ff 70%);
+.farm-sky { background: linear-gradient(180deg, #8fd0ff 0%, #c4e9ff 60%, #e6f6ff 100%); }
+.farm-ground { background: radial-gradient(120% 60% at 50% 0%, #b5e48c 0%, #8fd16a 45%, #7cc35a 100%); }
+.sun {
+  border-radius: 9999px;
+  background: radial-gradient(circle at 38% 35%, #fff6c4, #ffd25a 55%, #ffb43c);
+  box-shadow: 0 0 40px 10px rgba(255, 214, 102, .6);
 }
-.farm-ground {
-  background-color: #7ccc53;
-  background-image:
-    linear-gradient(45deg, #6dbb47 25%, transparent 25%, transparent 75%, #6dbb47 75%),
-    linear-gradient(45deg, #6dbb47 25%, transparent 25%, transparent 75%, #6dbb47 75%);
-  background-size: 16px 16px;
-  background-position: 0 0, 8px 8px;
+.cloud {
+  position: absolute; background: #fff; border-radius: 9999px;
+  box-shadow: 0 8px 18px -8px rgba(80, 150, 200, .5);
 }
-.fence {
-  height: 18px;
-  background:
-    linear-gradient(#c58a52 0 0) 0 4px / 100% 4px no-repeat,
-    linear-gradient(#c58a52 0 0) 0 11px / 100% 4px no-repeat,
-    repeating-linear-gradient(90deg, #8a5a32 0 6px, transparent 6px 22px);
+.cloud::before, .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 9999px; }
+.cloud::before { width: 50%; height: 140%; left: 15%; bottom: 20%; }
+.cloud::after { width: 38%; height: 120%; right: 14%; bottom: 25%; }
+.wood-sign {
+  font-family: var(--font-display);
+  background: linear-gradient(180deg, #f2c48d, #dc9d5e);
+  color: #4a2c17;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(120,60,20,.25), 0 4px 0 #a8673a, 0 8px 14px -6px rgba(0,0,0,.35);
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

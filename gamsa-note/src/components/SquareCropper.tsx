@@ -70,11 +70,11 @@ export default function SquareCropper({ file, onCancel, onDone }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="px-box w-full max-w-sm p-4 bg-cream">
-        <p className="pixel font-bold mb-3">사진 자리 잡기</p>
+      <div className="card w-full max-w-sm p-4 bg-cream">
+        <p className="font-display font-bold mb-3">사진 자리 잡기</p>
         <div
           ref={box}
-          className="relative w-full aspect-square overflow-hidden bg-ink/10 touch-none select-none border-2 border-ink"
+          className="relative w-full aspect-square overflow-hidden bg-ink/10 touch-none select-none rounded-full shadow-sm"
           onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
         >
           {img && (
@@ -93,15 +93,15 @@ export default function SquareCropper({ file, onCancel, onDone }: Props) {
           </div>
         </div>
         <label className="flex items-center gap-3 mt-3 text-sm">
-          <span className="pixel">확대</span>
+          <span className="font-display">확대</span>
           <input type="range" min={1} max={3} step={0.01} value={zoom}
             onChange={(e) => { const z = Number(e.target.value); setZoom(z); setOff((o) => clamp(o, z)); }}
             className="flex-1 accent-[#f28c28]" />
         </label>
         <p className="text-xs text-ink/60 mt-1">드래그해서 위치를 옮길 수 있어요.</p>
         <div className="flex gap-2 mt-4">
-          <button onClick={onCancel} className="px-btn flex-1 py-2 bg-white">취소</button>
-          <button onClick={done} disabled={!img} className="px-btn flex-1 py-2 bg-gam text-white">이 사진으로</button>
+          <button onClick={onCancel} className="btn3d flex-1 py-2 btn-white">취소</button>
+          <button onClick={done} disabled={!img} className="btn3d flex-1 py-2 btn-gam">이 사진으로</button>
         </div>
       </div>
     </div>

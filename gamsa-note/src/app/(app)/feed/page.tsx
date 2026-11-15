@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/AppShell";
-import { Persimmon } from "@/components/Pixel";
+import { Persimmon } from "@/components/Art3D";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase, signedUrls } from "@/lib/supabase";
 import { koDate, timeAgo } from "@/lib/date";
@@ -73,7 +73,7 @@ export default function FeedPage() {
   return (
     <div className="max-w-xl mx-auto">
       <div className="mb-4">
-        <h1 className="pixel text-xl font-bold">감사 피드</h1>
+        <h1 className="font-display text-xl font-bold">감사 피드</h1>
         <p className="text-sm text-ink/60">공개로 나눈 감사들이에요. 좋아요와 댓글로 응원해요.</p>
       </div>
       <div className="space-y-6">
@@ -144,7 +144,7 @@ function PostCard({ post, me, onChange }: { post: Post; me: string; onChange: (p
   const long = post.content.length > 120;
 
   return (
-    <article className="px-box bg-white">
+    <article className="card bg-white">
       <header className="flex items-center gap-2 p-3">
         <Avatar url={post.profiles?.avatar_url} name={post.profiles?.nickname} size={34} />
         <div className="min-w-0">
@@ -153,23 +153,23 @@ function PostCard({ post, me, onChange }: { post: Post; me: string; onChange: (p
         </div>
       </header>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={post.photoUrl} alt="" loading="lazy" className="w-full aspect-square object-cover border-y-[3px] border-ink bg-gam-light" />
+      <img src={post.photoUrl} alt="" loading="lazy" className="w-full aspect-square object-cover  bg-gam-light" />
       <div className="p-3">
         <div className="flex items-center gap-4">
           <button onClick={toggleLike} className="flex items-center gap-1.5" aria-pressed={post.liked} aria-label="좋아요">
             <Persimmon className={`w-7 h-7 transition ${post.liked ? "" : "grayscale opacity-40"}`} />
-            <span className="pixel text-sm">{post.likeCount}</span>
+            <span className="font-display text-sm">{post.likeCount}</span>
           </button>
           <button onClick={toggleComments} className="flex items-center gap-1.5 text-sm" aria-label="댓글">
             <span className="text-xl leading-none">💬</span>
-            <span className="pixel">{post.commentCount}</span>
+            <span className="font-display">{post.commentCount}</span>
           </button>
         </div>
         <p style={{ fontFamily: "'Gowun Batang', serif" }} className={`mt-2 whitespace-pre-wrap leading-relaxed ${!expanded && long ? "line-clamp-3" : ""}`}>{post.content}</p>
         {long && !expanded && <button onClick={() => setExpanded(true)} className="text-xs text-ink/50 mt-1">더 보기</button>}
 
         {showComments && (
-          <div className="mt-3 border-t-2 border-dashed border-ink/20 pt-3">
+          <div className="mt-3 border-t-2 border-dashed border-line/20 pt-3">
             {comments === null ? (
               <p className="text-xs text-ink/50">불러오는 중…</p>
             ) : comments.length === 0 ? (
@@ -195,8 +195,8 @@ function PostCard({ post, me, onChange }: { post: Post; me: string; onChange: (p
             )}
             <form onSubmit={send} className="flex gap-2 mt-3">
               <input value={text} onChange={(e) => setText(e.target.value)} maxLength={300} placeholder="따뜻한 댓글 남기기"
-                className="flex-1 min-w-0 border-2 border-ink rounded px-2 py-1.5 text-base sm:text-sm" />
-              <button disabled={busy || !text.trim()} className="px-btn px-3 bg-gam text-white text-sm">등록</button>
+                className="flex-1 min-w-0 field px-2 py-1.5 text-base sm:text-sm" />
+              <button disabled={busy || !text.trim()} className="btn3d px-3 btn-gam text-sm">등록</button>
             </form>
           </div>
         )}

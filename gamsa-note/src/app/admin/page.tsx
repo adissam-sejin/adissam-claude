@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Persimmon, PixelTree } from "@/components/Pixel";
+import { Persimmon, GamTree } from "@/components/Art3D";
 import { periodState, seedOf } from "@/components/FarmTree";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
@@ -76,9 +76,9 @@ export default function AdminPage() {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center p-6 text-center">
         <Persimmon className="w-14 h-14" />
-        <h1 className="pixel text-xl font-bold mt-4">관리자만 들어올 수 있어요</h1>
+        <h1 className="font-display text-xl font-bold mt-4">관리자만 들어올 수 있어요</h1>
         <p className="text-sm text-ink/60 mt-2">{user ? "이 계정에는 관리자 권한이 없어요." : "먼저 카카오로 로그인해주세요."}</p>
-        <Link href={user ? "/calendar" : "/?next=/admin"} className="px-btn mt-5 px-5 py-2 bg-gam text-white">{user ? "앱으로 돌아가기" : "로그인하러 가기"}</Link>
+        <Link href={user ? "/calendar" : "/?next=/admin"} className="btn3d mt-5 px-5 py-2 btn-gam">{user ? "앱으로 돌아가기" : "로그인하러 가기"}</Link>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export default function AdminPage() {
       <header className="bg-ink text-cream">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
           <Persimmon className="w-7 h-7" />
-          <span className="pixel font-bold">감농장 관리자</span>
+          <span className="font-display font-bold">감농장 관리자</span>
           <Link href="/farm" className="ml-auto text-sm underline">앱으로 →</Link>
         </div>
       </header>
@@ -96,51 +96,51 @@ export default function AdminPage() {
       <main className="max-w-5xl mx-auto px-4 py-6 grid lg:grid-cols-[1fr_1fr] gap-6">
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="pixel text-lg font-bold">감나무 목록 <span className="text-ink/50 text-sm">({trees.length})</span></h2>
-            <button onClick={() => { setForm(emptyForm()); setFormMsg(""); }} className="px-btn px-3 py-1.5 bg-leaf text-white text-sm">＋ 새 감나무</button>
+            <h2 className="font-display text-lg font-bold">감나무 목록 <span className="text-ink/50 text-sm">({trees.length})</span></h2>
+            <button onClick={() => { setForm(emptyForm()); setFormMsg(""); }} className="btn3d px-3 py-1.5 btn-leaf text-sm">＋ 새 감나무</button>
           </div>
 
           {form && (
-            <form onSubmit={save} className="px-box p-4 mb-4 space-y-3 bg-gam-light/40">
-              <p className="pixel font-bold">{form.id ? "감나무 수정" : "새 감나무 심기"}</p>
+            <form onSubmit={save} className="card p-4 mb-4 space-y-3 bg-gam-light/40">
+              <p className="font-display font-bold">{form.id ? "감나무 수정" : "새 감나무 심기"}</p>
               <label className="block text-sm">이름 (감나무에 적혀요)
                 <input value={form.name} maxLength={30} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="mt-1 w-full border-2 border-ink rounded px-3 py-2 bg-white" placeholder="예: 3기 감사 모임" />
+                  className="mt-1 w-full field px-3 py-2 bg-white" placeholder="예: 3기 감사 모임" />
               </label>
               <label className="block text-sm">참여 코드
                 <div className="mt-1 flex gap-2">
                   <input value={form.code} maxLength={16} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-                    className="flex-1 min-w-0 border-2 border-ink rounded px-3 py-2 bg-white pixel tracking-widest" />
-                  <button type="button" onClick={() => setForm({ ...form, code: randomCode() })} className="px-btn px-3 bg-white text-xs">자동 생성</button>
+                    className="flex-1 min-w-0 field px-3 py-2 bg-white font-display tracking-widest" />
+                  <button type="button" onClick={() => setForm({ ...form, code: randomCode() })} className="btn3d px-3 btn-white text-xs">자동 생성</button>
                 </div>
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <label className="block text-sm">키우기 시작
-                  <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="mt-1 w-full border-2 border-ink rounded px-2 py-2 bg-white" />
+                  <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="mt-1 w-full field px-2 py-2 bg-white" />
                 </label>
                 <label className="block text-sm">키우기 끝
-                  <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="mt-1 w-full border-2 border-ink rounded px-2 py-2 bg-white" />
+                  <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="mt-1 w-full field px-2 py-2 bg-white" />
                 </label>
               </div>
               <p className="text-xs text-ink/60">기간 안에 쓴 감사노트만 이 감나무의 감으로 집계돼요.</p>
               {formMsg && <p className="text-sm text-red-600">{formMsg}</p>}
               <div className="flex gap-2">
-                <button type="button" onClick={() => setForm(null)} className="px-btn flex-1 py-2 bg-white">취소</button>
-                <button className="px-btn flex-1 py-2 bg-gam text-white">저장</button>
+                <button type="button" onClick={() => setForm(null)} className="btn3d flex-1 py-2 btn-white">취소</button>
+                <button className="btn3d flex-1 py-2 btn-gam">저장</button>
               </div>
             </form>
           )}
 
           <ul className="space-y-3">
             {trees.map((t) => (
-              <li key={t.id} className={`px-box p-3 flex gap-3 ${selected?.id === t.id ? "bg-gam-light/50" : ""}`}>
-                <PixelTree count={t.note_count} seed={seedOf(t.id)} className="w-16 h-[70px] shrink-0" />
+              <li key={t.id} className={`card p-3 flex gap-3 ${selected?.id === t.id ? "bg-gam-light/50" : ""}`}>
+                <GamTree count={t.note_count} seed={seedOf(t.id)} className="w-20 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-bold truncate">{t.name}</p>
-                    <span className="pixel text-[10px] px-1.5 border border-ink/40 bg-white">{periodState(t).label}</span>
+                    <span className="font-display text-[10px] px-1.5 border border-line/40 bg-white">{periodState(t).label}</span>
                   </div>
-                  <p className="pixel text-sm mt-0.5">코드 <span className="bg-ink text-cream px-1.5 tracking-widest select-all">{t.code}</span></p>
+                  <p className="font-display text-sm mt-0.5">코드 <span className="bg-ink text-cream px-1.5 tracking-widest select-all">{t.code}</span></p>
                   <p className="text-xs text-ink/60 mt-0.5">{koShort(t.start_date)} ~ {koShort(t.end_date)}</p>
                   <p className="text-xs mt-0.5">참여 {t.member_count}명 · 감사 {t.note_count}개</p>
                   <div className="flex gap-3 mt-2 text-xs">
@@ -156,12 +156,12 @@ export default function AdminPage() {
         </section>
 
         <section className="lg:sticky lg:top-6 self-start">
-          <h2 className="pixel text-lg font-bold mb-3">참여자</h2>
+          <h2 className="font-display text-lg font-bold mb-3">참여자</h2>
           {!selected ? (
-            <p className="px-box p-4 text-sm text-ink/60">왼쪽에서 감나무의 ‘참여자 보기’를 눌러주세요.</p>
+            <p className="card p-4 text-sm text-ink/60">왼쪽에서 감나무의 ‘참여자 보기’를 눌러주세요.</p>
           ) : (
-            <div className="px-box p-4">
-              <p className="font-bold">{selected.name} <span className="pixel text-xs text-ink/50">{selected.code}</span></p>
+            <div className="card p-4">
+              <p className="font-bold">{selected.name} <span className="font-display text-xs text-ink/50">{selected.code}</span></p>
               <p className="text-xs text-ink/60 mb-3">감사노트 내용은 볼 수 없고, 개수만 보여요.</p>
               {members === null ? (
                 <p className="text-sm">불러오는 중…</p>
@@ -171,7 +171,7 @@ export default function AdminPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b-2 border-ink text-left">
+                      <tr className="border-b-2 border-line text-left">
                         <th className="py-1.5 pr-2">#</th>
                         <th className="py-1.5 pr-2">닉네임</th>
                         <th className="py-1.5 pr-2 text-right">기간 내</th>
@@ -181,14 +181,14 @@ export default function AdminPage() {
                     </thead>
                     <tbody>
                       {members.map((m, i) => (
-                        <tr key={m.user_id} className="border-b border-ink/10">
-                          <td className="py-2 pr-2 pixel text-xs">{i + 1}</td>
+                        <tr key={m.user_id} className="border-b border-line/10">
+                          <td className="py-2 pr-2 font-display text-xs">{i + 1}</td>
                           <td className="py-2 pr-2">
                             <p className="font-medium">{m.nickname}</p>
                             <p className="text-[11px] text-ink/50">카카오: {m.kakao_name ?? "-"} · {koShort(m.joined_at.slice(0, 10))} 참여</p>
                           </td>
-                          <td className="py-2 pr-2 text-right pixel">{m.period_count}</td>
-                          <td className="py-2 pr-2 text-right pixel text-ink/60">{m.total_count}</td>
+                          <td className="py-2 pr-2 text-right font-display">{m.period_count}</td>
+                          <td className="py-2 pr-2 text-right font-display text-ink/60">{m.total_count}</td>
                           <td className="py-2 text-right"><button onClick={() => kick(m)} className="text-[11px] underline text-ink/50">내보내기</button></td>
                         </tr>
                       ))}
@@ -196,7 +196,7 @@ export default function AdminPage() {
                     <tfoot>
                       <tr className="font-bold">
                         <td colSpan={2} className="pt-2">합계 {members.length}명</td>
-                        <td className="pt-2 pr-2 text-right pixel">{members.reduce((a, m) => a + m.period_count, 0)}</td>
+                        <td className="pt-2 pr-2 text-right font-display">{members.reduce((a, m) => a + m.period_count, 0)}</td>
                         <td colSpan={2}></td>
                       </tr>
                     </tfoot>
