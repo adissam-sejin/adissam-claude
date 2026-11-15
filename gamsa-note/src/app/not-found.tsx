@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Persimmon } from "@/components/Art3D";
+import { Persimmon } from "@/components/Illust";
 
 export default function NotFound() {
   return (

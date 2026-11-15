@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Persimmon } from "./Art3D";
+import { Persimmon } from "./Illust";
 import { useAuth } from "./AuthProvider";
 
 const sv = (d: React.ReactNode) => (
@@ -29,18 +29,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="sticky top-0 z-30 bg-white/25 backdrop-blur-md border-b border-white/50">
+      <header className="sticky top-0 z-30 bg-cream/95 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 h-14 flex items-center gap-3">
           <Link href="/calendar" className="flex items-center gap-2 shrink-0">
-            <Persimmon className="w-8 h-8" />
-            <span className="font-display text-xl text-white drop-shadow-[0_2px_6px_rgba(30,90,150,.35)]">감사노트</span>
+            <Persimmon className="w-7 h-7" />
+            <span className="text-[18px] font-extrabold text-ink">감사노트</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1 ml-6">
             {NAV.map((n) => {
               const on = path.startsWith(n.href);
               return (
                 <Link key={n.href} href={n.href}
-                  className={`font-display flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[15px] ${on ? "bg-white text-gam-dark shadow-sm" : "text-ink/60 hover:bg-white/70"}`}>
+                  className={`font-semibold flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[14px] ${on ? "bg-gam-light text-gam-dark" : "text-sub hover:bg-white"}`}>
                   <span className="w-4 h-4">{n.icon}</span>
                   {n.label}
                 </Link>
@@ -49,7 +49,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {profile?.is_admin && (
-              <Link href="/admin" className="font-display text-xs px-3 py-1.5 rounded-full shadow-sm bg-white">관리자</Link>
+              <Link href="/admin" className="text-xs font-semibold px-2.5 py-1 rounded-md border border-line bg-white">관리자</Link>
             )}
             <Link href="/settings" aria-label="내 설정"
               className={`flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full rounded-full shadow-sm bg-white ${path.startsWith("/settings") ? "bg-gam-light" : ""}`}>
@@ -62,14 +62,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1 w-full mx-auto max-w-5xl px-4 pt-4 pb-28 md:pb-12 overflow-clip">{children}</main>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md rounded-t-3xl shadow-[0_-8px_24px_-14px_rgba(120,72,30,.45)]" style={{ paddingBottom: "var(--safe-bottom)" }}>
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-line" style={{ paddingBottom: "var(--safe-bottom)" }}>
         <div className="grid grid-cols-5">
           {NAV.map((n) => {
             const on = path.startsWith(n.href);
             return (
-              <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-1 py-2 ${on ? "text-[#2f7d3a]" : "text-ink/40"}`}>
-                <span className={`w-6 h-6 transition-transform ${on ? "-translate-y-0.5 scale-110" : ""}`}>{n.icon}</span>
-                <span className="font-display text-[12px]">{n.label}</span>
+              <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-1 py-2 ${on ? "text-gam" : "text-[#b5b5b5]"}`}>
+                <span className="w-[22px] h-[22px]">{n.icon}</span>
+                <span className="text-[11px] font-semibold">{n.label}</span>
               </Link>
             );
           })}

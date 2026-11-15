@@ -238,8 +238,10 @@ begin
   from trees t order by t.start_date desc, t.created_at desc;
 end $$;
 
-revoke execute on function public.farm_stats, public.my_trees, public.join_tree(text),
-  public.admin_tree_members(uuid), public.admin_trees from anon;
+revoke execute on function public.farm_stats(), public.my_trees(), public.join_tree(text),
+  public.admin_tree_members(uuid), public.admin_trees(), public.handle_new_user() from public, anon;
+grant execute on function public.farm_stats(), public.my_trees(), public.join_tree(text),
+  public.admin_tree_members(uuid), public.admin_trees() to authenticated;
 
 -- =====================================================================
 -- Storage: 사진 버킷 (비공개) — 본인 사진 + 공개된 노트의 사진만 열람
@@ -264,3 +266,8 @@ create policy photos_delete on storage.objects for delete to authenticated
 -- 관리자 지정: 카카오로 한 번 로그인한 뒤, 아래에서 닉네임을 바꿔 실행하세요.
 --   update public.profiles set is_admin = true where nickname = '내닉네임';
 -- =====================================================================
+
+-- 함수 실행 권한 정리
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import NoteModal, { type ViewNote } from "@/components/NoteModal";
-import { Persimmon } from "@/components/Art3D";
+import { Persimmon } from "@/components/Illust";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase, signedUrls } from "@/lib/supabase";
 import { koShort } from "@/lib/date";

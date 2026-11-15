@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "assets": "node scripts/render3d/build.cjs"
+    "assets": "tsx scripts/build-assets.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -27,7 +27,7 @@
     "postcss": "^8.5.33",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.5",
-    "three": "^0.170.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }
 }

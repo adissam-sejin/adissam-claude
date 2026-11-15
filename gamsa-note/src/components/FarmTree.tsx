@@ -1,6 +1,7 @@
 "use client";
-import { GamTree, Persimmon } from "./Art3D";
-import { FULL_AT, fruitsOf, stageOf } from "@/lib/growth";
+import { GamTree, Persimmon } from "./Illust";
+import { FULL_AT, stageOf } from "@/lib/growth";
+import { fruitsOf } from "@/lib/illust";
 import { koShort, today } from "@/lib/date";
 
 export type FarmTreeData = {
@@ -32,32 +33,28 @@ export function periodState(t: { start_date: string; end_date: string }) {
 
 export function SignBoard({ name, small }: { name: string; small?: boolean }) {
   return (
-    <div className="relative flex flex-col items-center">
-      <div className={`wood-sign text-center leading-tight break-keep ${small ? "text-[13px] px-2.5 py-1 max-w-[10rem]" : "text-base px-4 py-1.5 max-w-[14rem]"}`}>
-        {name}
-      </div>
-      <div className="w-1.5 h-3 rounded-b bg-[#a8673a]" />
-    </div>
+    <span className={`wood-sign inline-block text-center leading-tight break-keep ${small ? "text-[12px] px-2.5 py-0.5 max-w-[10rem]" : "text-[14px] px-3 py-1 max-w-[14rem]"}`}>
+      {name}
+    </span>
   );
 }
 
 export default function FarmTree({ t, onClick }: { t: FarmTreeData; onClick?: () => void }) {
   const st = stageOf(t.note_count);
   const ps = periodState(t);
+  const mine = t.is_member;
   return (
-    <button onClick={onClick} className="relative flex flex-col items-center group focus:outline-none">
-      {t.is_member && (
-        <span className="absolute top-1 right-1 z-10 font-display text-[11px] btn-gam px-2 py-0.5 rounded-full shadow">내 나무</span>
-      )}
-      <GamTree count={t.note_count} seed={seedOf(t.id)} className="w-full max-w-[220px] group-hover:-translate-y-1 transition-transform duration-300" />
-      <div className="-mt-3 relative z-10"><SignBoard name={t.name} small /></div>
-      <div className="mt-1.5 flex items-center gap-1 text-[12px] bg-white/90 rounded-full shadow-sm px-2.5 py-0.5">
-        <Persimmon small className="w-4 h-4" />
-        <b>{t.note_count}</b>
-        <span className="text-ink/30">·</span>
-        <span>{st.label}</span>
+    <button onClick={onClick}
+      className={`relative w-full text-left rounded-[20px] p-3 pb-3.5 transition-transform active:scale-[.98] ${mine ? "bg-gam text-white" : "bg-white"}`}>
+      <div className="flex items-center justify-between text-[11px] font-semibold">
+        <span className={`flex items-center gap-1 ${mine ? "" : "text-sub"}`}><Persimmon className="w-3.5 h-3.5" face={false} />{t.note_count}</span>
+        <span className={`rounded-full px-1.5 py-0.5 ${mine ? "bg-white/25" : ps.tone}`}>{ps.label}</span>
       </div>
-      <span className={`mt-1 text-[11px] font-display px-2 py-0.5 rounded-full ${ps.tone}`}>{ps.label}</span>
+      <div className={`mt-2 mx-auto w-[82%] aspect-square rounded-full flex items-end justify-center overflow-hidden ${mine ? "bg-white" : "bg-peach"}`}>
+        <GamTree count={t.note_count} className="w-[88%] -mb-0.5" />
+      </div>
+      <div className="mt-2.5 flex justify-center"><span className={`text-[13px] font-bold rounded-full px-2.5 py-0.5 text-center break-keep ${mine ? "bg-white text-ink" : "bg-cream"}`}>{t.name}</span></div>
+      <p className={`mt-1.5 text-center text-[11px] ${mine ? "text-white/85" : "text-sub"}`}>{st.label}{mine ? " · 내 나무" : ""}</p>
     </button>
   );
 }
@@ -67,12 +64,14 @@ export function TreeDetail({ t, onClose }: { t: FarmTreeData; onClose: () => voi
   const { grown, shown } = fruitsOf(t.note_count);
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
-      <div className="bg-cream w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
-        <div className="farm-sky relative px-5 pt-4">
-          <button onClick={onClose} className="absolute right-4 top-4 w-9 h-9 rounded-full bg-white/90 shadow text-lg" aria-label="닫기">×</button>
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden pb-8 sm:pb-5" onClick={(e) => e.stopPropagation()}>
+        <div className="relative px-5 pt-5">
+          <button onClick={onClose} className="absolute right-4 top-4 w-9 h-9 rounded-full bg-cream text-lg" aria-label="닫기">×</button>
           <div className="flex flex-col items-center">
             <SignBoard name={t.name} />
-            <GamTree count={t.note_count} seed={seedOf(t.id)} className="w-64 -mt-2" />
+            <div className="mt-3 w-56 h-56 rounded-full bg-peach flex items-end justify-center overflow-hidden">
+              <GamTree count={t.note_count} className="w-[88%]" />
+            </div>
           </div>
         </div>
         <div className="px-5 pt-4">
@@ -83,14 +82,14 @@ export function TreeDetail({ t, onClose }: { t: FarmTreeData; onClose: () => voi
               ["모인 감사", `${t.note_count}개`],
               ["성장 단계", st.label],
             ].map(([k, v]) => (
-              <div key={k} className="bg-white rounded-2xl p-3 shadow-sm"><dt className="text-[11px] text-ink/50">{k}</dt><dd className="font-display text-base">{v}</dd></div>
+              <div key={k} className="bg-cream rounded-xl p-3"><dt className="text-[11px] text-sub">{k}</dt><dd className="font-bold text-[15px]">{v}</dd></div>
             ))}
           </dl>
           <div className="mt-4">
             {t.note_count <= FULL_AT ? (
               <>
                 <p className="text-sm mb-1.5">풍성한 나무까지 <b>{FULL_AT - t.note_count}</b>개 남았어요. 101번째 감사부터 감이 열려요!</p>
-                <div className="h-3.5 rounded-full bg-white shadow-inner overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-lime-400 to-green-600" style={{ width: `${(t.note_count / FULL_AT) * 100}%` }} /></div>
+                <div className="h-2 rounded-full bg-cream overflow-hidden"><div className="h-full rounded-full bg-gam" style={{ width: `${(t.note_count / FULL_AT) * 100}%` }} /></div>
               </>
             ) : (
               <p className="text-sm flex items-center gap-2 flex-wrap"><Persimmon className="w-7 h-7" /> 주황색 감이 <b>{grown}</b>개 열렸어요!

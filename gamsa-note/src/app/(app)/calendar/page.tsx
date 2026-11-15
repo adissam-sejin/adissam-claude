@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { GamTree, Persimmon } from "@/components/Art3D";
+import { GamTree, Persimmon } from "@/components/Illust";
 import { levelInfo } from "@/lib/growth";
 import NoteModal, { type ViewNote } from "@/components/NoteModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -20,7 +20,7 @@ function CalendarInner() {
   const [notes, setNotes] = useState<Record<string, ViewNote>>({});
   const [yearCount, setYearCount] = useState<number | null>(null);
   const [open, setOpen] = useState<ViewNote | null>(null);
-  const [toast, setToast] = useState(params.get("saved") ? "감사가 심어졌어요! 🧡" : "");
+  const [toast, setToast] = useState(params.get("saved") ? "오늘의 감사가 기록되었어요!" : "");
   const thisYear = now.getFullYear();
   const todayStr = today();
 
@@ -80,32 +80,32 @@ function CalendarInner() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <section className="relative isolate -mx-4 px-4 text-center pt-1 pb-2 text-white">
-        <div aria-hidden className="absolute left-1/2 -translate-x-1/2 top-[262px] w-[240%] sm:w-[160%] h-[3000px] rounded-[50%] bg-gradient-to-b from-[#b4de86] via-[#9dd06f] to-[#8fc664] -z-10" />
-        <p className="text-sm font-semibold drop-shadow-[0_1px_4px_rgba(30,90,150,.4)]">{profile?.nickname ?? ""}님의 {thisYear}년 감사</p>
-        <div className="flex items-end justify-center gap-2 -mt-1 drop-shadow-[0_4px_14px_rgba(30,90,150,.35)]">
-          <span className="thin-num text-[88px] leading-none">{yearCount ?? 0}</span>
-          <span className="text-xl font-semibold pb-3">/ {total}일</span>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-[20px] font-extrabold">MY 감나무</h1>
+        <Link href="/farm" className="text-[12px] font-semibold text-gam bg-gam-light rounded-full px-2.5 py-1">감농장</Link>
+      </div>
+
+      <section className="rounded-[22px] bg-gam text-white p-5 shadow-[0_8px_0_#e2600c]">
+        <div className="flex items-center justify-between text-[13px] font-semibold">
+          <span className="flex items-center gap-1.5 bg-white/20 rounded-full pl-1 pr-2.5 py-0.5"><Persimmon className="w-5 h-5" face={false} /> {yearCount ?? 0}개</span>
+          <span>{thisYear}년 감사 기록 중</span>
         </div>
-        <p className="text-[13px] font-medium opacity-95 drop-shadow-[0_1px_4px_rgba(30,90,150,.4)]">올해 총 {total}일 중 {yearCount ?? 0}일 감사노트를 작성했어요</p>
-        <div className="relative mx-auto w-56 sm:w-64 -mt-1">
-          <GamTree count={yearCount ?? 0} className="w-full floaty drop-shadow-[0_18px_18px_rgba(40,90,40,.25)]" />
+        <div className="mt-3 mx-auto w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-white flex items-end justify-center overflow-hidden">
+          <GamTree count={yearCount ?? 0} className="w-[88%] -mb-1" />
         </div>
-        <p className="font-display text-[28px] text-white drop-shadow-[0_2px_8px_rgba(40,90,40,.35)] -mt-1">Lv.{lv.level} <span className="text-lg">{lv.label}</span></p>
-        <div className="max-w-xs mx-auto mt-2 text-left">
-          <div className="flex justify-between text-[11px] font-semibold text-white mb-1 drop-shadow">
-            <span>나의 감나무 경험치</span>
-            <span>{lv.cur}/{lv.max}</span>
-          </div>
-          <div className="xp"><div style={{ width: `${(lv.cur / lv.max) * 100}%` }} /></div>
-          <p className="text-[11px] text-white/95 mt-1 text-right drop-shadow">{lv.grown ? `감 ${lv.grown}개가 열렸어요 · ` : ""}{lv.next}</p>
+        <div className="mt-3 flex justify-center">
+          <span className="bg-white text-ink text-[13px] font-bold rounded-full px-3 py-1">Lv.{lv.level} {lv.label}</span>
         </div>
+        <div className="mt-4 xp"><div style={{ width: `${(lv.cur / lv.max) * 100}%` }} /></div>
+        <p className="mt-3 text-center text-[14px] font-semibold leading-snug">
+          올해 총 {total}일 중 <b className="text-[17px]">{yearCount ?? 0}일</b><br />감사노트를 작성했어요
+        </p>
+        <p className="mt-1 text-center text-[11px] text-white/80">{lv.grown ? `감 ${lv.grown}개가 열렸어요 · ` : ""}{lv.next}</p>
       </section>
 
       {wroteToday === false && (
-        <Link href="/write" className="btn3d btn-white mt-4 flex items-center justify-between px-6 py-4 text-[17px]">
-          <span>오늘의 감사 심기</span>
-          <span className="flex items-center gap-1 text-gam-dark"><Persimmon small className="w-6 h-6" />+1</span>
+        <Link href="/write" className="btn3d btn-soft mt-5 flex items-center justify-center gap-2 py-3.5 text-[15px]">
+          <Persimmon className="w-5 h-5" /> 오늘의 감사 쓰러 가기
         </Link>
       )}
 
@@ -113,7 +113,7 @@ function CalendarInner() {
       <div className="flex items-center justify-between mb-3">
         <button onClick={() => move(-1)} className="btn3d w-9 h-9 btn-white text-lg" aria-label="이전 달">‹</button>
         <div className="text-center">
-          <h1 className="font-display text-xl font-bold">{ym.y}. {pad(ym.m + 1)}</h1>
+          <h2 className="text-lg font-extrabold">{ym.y}. {pad(ym.m + 1)}</h2>
           <p className="text-xs text-ink/60">이번 달 감 {monthCount}개</p>
         </div>
         <button onClick={() => move(1)} className="btn3d w-9 h-9 btn-white text-lg" aria-label="다음 달">›</button>
@@ -135,7 +135,7 @@ function CalendarInner() {
             return (
               <button key={i} onClick={() => openDay(d)} disabled={future && !has}
                 className={`relative aspect-square rounded-xl flex flex-col items-center justify-start pt-1 border-2
-                  ${isToday ? "border-white bg-white/70 shadow-sm" : "border-transparent hover:bg-white/40"}
+                  ${isToday ? "border-gam bg-peach" : "border-transparent hover:bg-cream"}
                   ${future ? "opacity-35" : ""}`}>
                 <span className={`font-display text-[11px] sm:text-xs leading-none ${i % 7 === 0 ? "text-red-500" : i % 7 === 6 ? "text-blue-500" : ""}`}>{d}</span>
                 {has && <Persimmon small className="w-[70%] h-[70%] drop-shadow-[0_2px_2px_rgba(0,0,0,.2)]" title="감사 기록" />}
@@ -148,7 +148,7 @@ function CalendarInner() {
 
       {open && <NoteModal note={open} onClose={() => setOpen(null)} />}
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-50 card px-4 py-2 font-display text-sm">{toast}</div>
+        <div className="fixed left-4 right-4 top-16 z-50 mx-auto max-w-md rounded-xl bg-[#34c26a] text-white px-4 py-3 text-sm font-semibold shadow-lg animate-[slidein_.25s_ease-out]">{toast}</div>
       )}
     </div>
   );

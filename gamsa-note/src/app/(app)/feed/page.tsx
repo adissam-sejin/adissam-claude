@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/AppShell";
-import { Persimmon } from "@/components/Art3D";
+import { Persimmon } from "@/components/Illust";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase, signedUrls } from "@/lib/supabase";
 import { koDate, timeAgo } from "@/lib/date";

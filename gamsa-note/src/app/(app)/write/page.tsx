@@ -3,7 +3,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Wongoji from "@/components/Wongoji";
 import SquareCropper from "@/components/SquareCropper";
-import { Persimmon } from "@/components/Art3D";
+import { Persimmon } from "@/components/Illust";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase, signedUrls, PHOTO_BUCKET } from "@/lib/supabase";
 import { koDate, today } from "@/lib/date";

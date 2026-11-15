@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Persimmon, GamTree } from "@/components/Art3D";
+import { Persimmon, GamTree } from "@/components/Illust";
 import { periodState, seedOf } from "@/components/FarmTree";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";

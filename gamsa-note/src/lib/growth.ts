@@ -1,7 +1,4 @@
-import spots from "./fruitSpots.json";
-
 export const FULL_AT = 100; // 100개까지 나무가 자라고, 101개부터 감이 열림
-export const FRUIT_SPOTS = spots as { x: number; y: number }[];
 
 export type Stage = { level: number; label: string; image: number };
 
@@ -13,11 +10,6 @@ export function stageOf(count: number): Stage {
   if (count < FULL_AT) return { level: 4, label: "자라는 나무", image: 4 };
   if (count === FULL_AT) return { level: 5, label: "풍성한 나무", image: 5 };
   return { level: 6, label: "감나무", image: 5 };
-}
-
-export function fruitsOf(count: number) {
-  const grown = Math.max(0, count - FULL_AT);
-  return { grown, shown: Math.min(grown, FRUIT_SPOTS.length) };
 }
 
 const STEPS = [0, 1, 20, 45, 70, FULL_AT];

@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#6eb6f0",
+  themeColor: "#fff8ee",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
       </head>
-      <body className="min-h-dvh antialiased"><div className="app-bg" aria-hidden />{children}</body>
+      <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );
 }
