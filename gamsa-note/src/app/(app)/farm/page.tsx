@@ -10,7 +10,7 @@ export default function FarmPage() {
   const { user } = useAuth();
   const [trees, setTrees] = useState<FarmTreeData[] | null>(null);
   const [open, setOpen] = useState<FarmTreeData | null>(null);
-  const [filter, setFilter] = useState<"all" | "mine">("all");
+  const [filter, setFilter] = useState<"all" | "mine">("mine");
 
   useEffect(() => {
     if (!user) return;
@@ -19,6 +19,8 @@ export default function FarmPage() {
 
   const list = (trees ?? []).filter((t) => filter === "all" || t.is_member);
   const totalFruits = (trees ?? []).reduce((a, t) => a + t.note_count, 0);
+  const mineList = (trees ?? []).filter((t) => t.is_member);
+  const mineFruits = mineList.reduce((a, t) => a + t.note_count, 0);
 
   return (
     <div>
@@ -31,10 +33,14 @@ export default function FarmPage() {
       </div>
       <div className="mt-4 rounded-2xl bg-peach px-4 py-3 flex items-center gap-3">
         <Persimmon className="w-9 h-9" />
-        <p className="text-[13px] leading-snug">농장 전체 감사 <b className="text-gam">{totalFruits}개</b><br /><span className="text-sub">감나무 {trees?.length ?? 0}그루가 자라고 있어요</span></p>
+        {filter === "mine" ? (
+          <p className="text-[13px] leading-snug">내 감나무에 모인 감사 <b className="text-gam">{mineFruits}개</b><br /><span className="text-sub">내가 함께 키우는 감나무 {mineList.length}그루</span></p>
+        ) : (
+          <p className="text-[13px] leading-snug">농장 전체 감사 <b className="text-gam">{totalFruits}개</b><br /><span className="text-sub">감나무 {trees?.length ?? 0}그루가 자라고 있어요</span></p>
+        )}
       </div>
       <div className="mt-4 flex gap-2">
-        {(["all", "mine"] as const).map((f) => (
+        {(["mine", "all"] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)}
             className={`rounded-full px-3.5 py-1.5 text-[13px] font-semibold border ${filter === f ? "bg-gam border-gam text-white" : "bg-white border-line text-sub"}`}>
             {f === "all" ? "전체" : "내 감나무"}
@@ -49,12 +55,21 @@ export default function FarmPage() {
             <Persimmon className="w-14 h-14 mx-auto" />
             <p className="mt-3 font-bold">{filter === "mine" ? "아직 참여한 감나무가 없어요" : "아직 심어진 감나무가 없어요"}</p>
             <p className="text-[13px] text-sub mt-1">관리자에게 받은 감나무 코드를 입력하면<br />내 감사노트가 감나무에 반영돼요.</p>
-            <Link href="/settings#tree" className="btn3d btn-gam inline-block mt-4 px-5 py-2.5 text-sm">감나무 코드 입력하기</Link>
+            <Link href="/settings#tree" className="btn3d btn-gam block mt-4 px-5 py-3 text-sm">감나무 코드 입력하기</Link>
+            {filter === "mine" && (trees?.length ?? 0) > 0 && (
+              <button onClick={() => setFilter("all")} className="btn3d btn-soft w-full mt-2 py-3 text-sm">다른 감나무 구경하기</button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-7">
-            {list.map((t) => <FarmTree key={t.id} t={t} onClick={() => setOpen(t)} />)}
-          </div>
+          filter === "mine" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-10 gap-x-6">
+              {list.map((t) => <FarmTree key={t.id} t={t} size="lg" onClick={() => setOpen(t)} />)}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-x-2 gap-y-5">
+              {list.map((t) => <FarmTree key={t.id} t={t} size="sm" onClick={() => setOpen(t)} />)}
+            </div>
+          )
         )}
       </section>
       {open && <TreeDetail t={open} onClose={() => setOpen(null)} />}

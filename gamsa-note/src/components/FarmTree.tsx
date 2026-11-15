@@ -39,17 +39,30 @@ export function SignBoard({ name, small }: { name: string; small?: boolean }) {
   );
 }
 
-export default function FarmTree({ t, onClick }: { t: FarmTreeData; onClick?: () => void }) {
+export default function FarmTree({ t, onClick, size = "lg" }: { t: FarmTreeData; onClick?: () => void; size?: "lg" | "sm" }) {
   const st = stageOf(t.note_count);
   const ps = periodState(t);
   const mine = t.is_member;
+
+  if (size === "sm") {
+    return (
+      <button onClick={onClick} className="relative w-full flex flex-col items-center transition-transform active:scale-[.97]">
+        {mine && <span className="absolute left-0 top-0 z-10 bg-gam text-white text-[9px] font-bold rounded-full px-1.5 py-px">내 나무</span>}
+        <GamTree count={t.note_count} className="w-full" />
+        <span className={`-mt-1 max-w-full truncate text-[11px] font-bold rounded-full px-2 py-0.5 ${mine ? "bg-gam text-white" : "bg-white border border-line"}`}>{t.name}</span>
+        <p className="mt-0.5 text-[10px] text-sub flex items-center gap-0.5"><Persimmon className="w-3 h-3" face={false} />{t.note_count}</p>
+      </button>
+    );
+  }
+
   return (
     <button onClick={onClick} className="relative w-full flex flex-col items-center transition-transform active:scale-[.98]">
-      {mine && <span className="absolute left-0 top-0 z-10 bg-gam text-white text-[11px] font-bold rounded-full px-2 py-0.5">내 나무</span>}
-      <span className={`absolute right-0 top-0 z-10 text-[11px] font-semibold rounded-full px-2 py-0.5 ${ps.tone}`}>{ps.label}</span>
-      <GamTree count={t.note_count} className="w-full" />
-      <span className={`-mt-1 text-[13px] font-bold rounded-full px-3 py-1 text-center break-keep ${mine ? "bg-gam text-white" : "bg-white border border-line"}`}>{t.name}</span>
-      <p className="mt-1 text-[11px] text-sub flex items-center gap-1"><Persimmon className="w-3.5 h-3.5" face={false} />{t.note_count} · {st.label}</p>
+      <span className={`absolute right-0 top-0 z-10 text-[12px] font-semibold rounded-full px-2.5 py-0.5 ${ps.tone}`}>{ps.label}</span>
+      <GamTree count={t.note_count} className="w-full max-w-[340px]" />
+      <span className="-mt-1 text-[16px] font-bold rounded-full px-4 py-1.5 text-center break-keep bg-gam text-white">{t.name}</span>
+      <p className="mt-2 text-[13px] text-sub flex items-center gap-1">
+        <Persimmon className="w-4 h-4" face={false} /><b className="text-ink">{t.note_count}개</b> · {st.label} · 함께하는 사람 {t.member_count}명
+      </p>
     </button>
   );
 }
