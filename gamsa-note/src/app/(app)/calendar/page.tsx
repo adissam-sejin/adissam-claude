@@ -85,22 +85,17 @@ function CalendarInner() {
         <Link href="/farm" className="text-[12px] font-semibold text-gam bg-gam-light rounded-full px-2.5 py-1">감농장</Link>
       </div>
 
-      <section className="rounded-[22px] bg-gam text-white p-5 shadow-[0_8px_0_#e2600c]">
-        <div className="flex items-center justify-between text-[13px] font-semibold">
-          <span className="flex items-center gap-1.5 bg-white/20 rounded-full pl-1 pr-2.5 py-0.5"><Persimmon className="w-5 h-5" face={false} /> {yearCount ?? 0}개</span>
-          <span>{thisYear}년 감사 기록 중</span>
+      <section className="text-center">
+        <GamTree count={yearCount ?? 0} className="w-full max-w-[340px] mx-auto -mt-2" />
+        <div className="-mt-1 flex justify-center items-center gap-2">
+          <span className="bg-gam text-white text-[14px] font-bold rounded-full px-3.5 py-1">Lv.{lv.level} {lv.label}</span>
+          {lv.grown > 0 && <span className="bg-white border border-line text-[13px] font-bold rounded-full px-3 py-1 flex items-center gap-1"><Persimmon className="w-4 h-4" face={false} />감 {lv.grown}개</span>}
         </div>
-        <div className="mt-3 mx-auto w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-white flex items-end justify-center overflow-hidden">
-          <GamTree count={yearCount ?? 0} className="w-[88%] -mb-1" />
-        </div>
-        <div className="mt-3 flex justify-center">
-          <span className="bg-white text-ink text-[13px] font-bold rounded-full px-3 py-1">Lv.{lv.level} {lv.label}</span>
-        </div>
-        <div className="mt-4 xp"><div style={{ width: `${(lv.cur / lv.max) * 100}%` }} /></div>
-        <p className="mt-3 text-center text-[14px] font-semibold leading-snug">
-          올해 총 {total}일 중 <b className="text-[17px]">{yearCount ?? 0}일</b><br />감사노트를 작성했어요
+        <div className="mt-4 max-w-xs mx-auto h-2.5 rounded-full bg-gam-light overflow-hidden"><div className="h-full rounded-full bg-gam" style={{ width: `${(lv.cur / lv.max) * 100}%` }} /></div>
+        <p className="mt-1.5 text-[12px] text-sub">{lv.next}</p>
+        <p className="mt-3 text-[15px] font-semibold leading-snug">
+          올해 총 {total}일 중 <b className="text-gam text-[18px]">{yearCount ?? 0}일</b> 감사노트를 작성했어요
         </p>
-        <p className="mt-1 text-center text-[11px] text-white/80">{lv.grown ? `감 ${lv.grown}개가 열렸어요 · ` : ""}{lv.next}</p>
       </section>
 
       {wroteToday === false && (

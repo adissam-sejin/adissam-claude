@@ -4,7 +4,7 @@ import { GamTree, Persimmon } from "@/components/Illust";
 export default async function Landing({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const sp = await searchParams;
   return (
-    <main className="min-h-dvh flex flex-col max-w-md mx-auto px-6 pt-14 pb-8">
+    <main className="min-h-dvh flex flex-col max-w-md mx-auto px-6 pt-12 pb-8">
       <p className="text-gam font-bold text-[14px]">Gratitude Note</p>
       <h1 className="mt-2 text-[28px] leading-[1.35] font-extrabold">
         매일 감사한 일을 적고<br />나만의 <span className="text-gam">감나무</span>를 키워요
@@ -13,15 +13,13 @@ export default async function Landing({ searchParams }: { searchParams: Promise<
         원고지에 쓰는 하루 한 줄 감사, 사진 한 장.<br />함께 감사하면 감나무에 감이 주렁주렁 열려요.
       </p>
 
-      <div className="relative mt-8 rounded-[28px] bg-gam px-6 pt-6 pb-5">
-        <div className="flex items-center justify-between text-white text-[12px] font-semibold">
-          <span>MY 감나무</span><span>Lv.6 감나무</span>
+      <div className="relative mt-4">
+        <GamTree count={150} className="w-full max-w-[360px] mx-auto" />
+        <div className="-mt-1 flex justify-center gap-2">
+          <span className="bg-gam text-white rounded-full px-3.5 py-1 text-[13px] font-bold">Lv.6 감나무</span>
+          <span className="bg-white border border-line rounded-full px-3 py-1 text-[13px] font-bold">감 50개가 열렸어요</span>
         </div>
-        <div className="mt-3 mx-auto w-48 h-48 rounded-full bg-white flex items-end justify-center overflow-hidden">
-          <GamTree count={128} className="w-[90%] -mb-1" />
-        </div>
-        <div className="mt-3 flex justify-center"><span className="bg-white rounded-full px-3 py-1 text-[13px] font-bold">감 28개가 열렸어요</span></div>
-        <Persimmon className="absolute -right-3 -top-5 w-16 h-16 rotate-12 floaty" />
+        <Persimmon className="absolute right-0 top-2 w-14 h-14 rotate-12 floaty" />
       </div>
 
       <div className="flex-1" />

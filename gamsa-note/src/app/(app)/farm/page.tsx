@@ -52,7 +52,7 @@ export default function FarmPage() {
             <Link href="/settings#tree" className="btn3d btn-gam inline-block mt-4 px-5 py-2.5 text-sm">감나무 코드 입력하기</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-7">
             {list.map((t) => <FarmTree key={t.id} t={t} onClick={() => setOpen(t)} />)}
           </div>
         )}

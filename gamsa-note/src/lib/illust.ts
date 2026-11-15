@@ -47,7 +47,7 @@ export function persimmonSvg(opts: { face?: boolean } = {}) {
   </svg>`;
 }
 
-function miniFruit(x: number, y: number, r = 7) {
+function miniFruit(x: number, y: number, r = 8) {
   return `<g>
     <circle cx="${x}" cy="${y}" r="${r}" fill="${C.persimmon}"/>
     <path d="M${x + r * 0.95} ${y + r * 0.1} A${r} ${r} 0 0 1 ${x - r * 0.4} ${y + r * 0.92} A${r * 1.1} ${r * 0.9} 0 0 0 ${x + r * 0.95} ${y + r * 0.1}Z" fill="${C.persimmonDark}" opacity=".6"/>
@@ -91,15 +91,13 @@ const FACE: Record<number, [number, number, number]> = { 3: [100, 100, 40], 4: [
 /** 감나무 5단계에서 감이 열릴 자리 (얼굴 피해서) */
 export const FRUIT_SPOTS: [number, number][] = (() => {
   const blobs = STAGE_BLOBS[5];
-  const [fx, fy] = FACE[5];
   const out: [number, number][] = [];
   let s = 11;
   const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  for (let t = 0; t < 5000 && out.length < 44; t++) {
+  for (let t = 0; t < 8000 && out.length < 60; t++) {
     const x = 14 + rnd() * 172, y = 6 + rnd() * 150;
     if (!blobs.some(([bx, by, r]) => (x - bx) ** 2 + (y - by) ** 2 < (r - 6) ** 2)) continue;
-    if (Math.abs(x - fx) < 44 && y > fy - 28 && y < fy + 36) continue;
-    if (out.some(([ox, oy]) => (ox - x) ** 2 + (oy - y) ** 2 < 15 ** 2)) continue;
+    if (out.some(([ox, oy]) => (ox - x) ** 2 + (oy - y) ** 2 < 16.5 ** 2)) continue;
     out.push([Math.round(x), Math.round(y)]);
   }
   return out;
@@ -135,7 +133,8 @@ export function treeSvg(count: number) {
     }
     body += canopy(STAGE_BLOBS[lvl]);
     const [fx, fy, fs] = FACE[lvl];
-    body += face(fx, fy, fs);
+    // 감이 열리기 전까지만 얼굴이 있음
+    if (count <= FULL_AT) body += face(fx, fy, fs);
     if (count > FULL_AT) {
       body += FRUIT_SPOTS.slice(0, count - FULL_AT).map(([x, y]) => miniFruit(x, y)).join("");
     }

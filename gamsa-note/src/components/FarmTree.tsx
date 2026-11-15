@@ -44,17 +44,12 @@ export default function FarmTree({ t, onClick }: { t: FarmTreeData; onClick?: ()
   const ps = periodState(t);
   const mine = t.is_member;
   return (
-    <button onClick={onClick}
-      className={`relative w-full text-left rounded-[20px] p-3 pb-3.5 transition-transform active:scale-[.98] ${mine ? "bg-gam text-white" : "bg-white"}`}>
-      <div className="flex items-center justify-between text-[11px] font-semibold">
-        <span className={`flex items-center gap-1 ${mine ? "" : "text-sub"}`}><Persimmon className="w-3.5 h-3.5" face={false} />{t.note_count}</span>
-        <span className={`rounded-full px-1.5 py-0.5 ${mine ? "bg-white/25" : ps.tone}`}>{ps.label}</span>
-      </div>
-      <div className={`mt-2 mx-auto w-[82%] aspect-square rounded-full flex items-end justify-center overflow-hidden ${mine ? "bg-white" : "bg-peach"}`}>
-        <GamTree count={t.note_count} className="w-[88%] -mb-0.5" />
-      </div>
-      <div className="mt-2.5 flex justify-center"><span className={`text-[13px] font-bold rounded-full px-2.5 py-0.5 text-center break-keep ${mine ? "bg-white text-ink" : "bg-cream"}`}>{t.name}</span></div>
-      <p className={`mt-1.5 text-center text-[11px] ${mine ? "text-white/85" : "text-sub"}`}>{st.label}{mine ? " · 내 나무" : ""}</p>
+    <button onClick={onClick} className="relative w-full flex flex-col items-center transition-transform active:scale-[.98]">
+      {mine && <span className="absolute left-0 top-0 z-10 bg-gam text-white text-[11px] font-bold rounded-full px-2 py-0.5">내 나무</span>}
+      <span className={`absolute right-0 top-0 z-10 text-[11px] font-semibold rounded-full px-2 py-0.5 ${ps.tone}`}>{ps.label}</span>
+      <GamTree count={t.note_count} className="w-full" />
+      <span className={`-mt-1 text-[13px] font-bold rounded-full px-3 py-1 text-center break-keep ${mine ? "bg-gam text-white" : "bg-white border border-line"}`}>{t.name}</span>
+      <p className="mt-1 text-[11px] text-sub flex items-center gap-1"><Persimmon className="w-3.5 h-3.5" face={false} />{t.note_count} · {st.label}</p>
     </button>
   );
 }
@@ -69,9 +64,7 @@ export function TreeDetail({ t, onClose }: { t: FarmTreeData; onClose: () => voi
           <button onClick={onClose} className="absolute right-4 top-4 w-9 h-9 rounded-full bg-cream text-lg" aria-label="닫기">×</button>
           <div className="flex flex-col items-center">
             <SignBoard name={t.name} />
-            <div className="mt-3 w-56 h-56 rounded-full bg-peach flex items-end justify-center overflow-hidden">
-              <GamTree count={t.note_count} className="w-[88%]" />
-            </div>
+            <GamTree count={t.note_count} className="w-72 max-w-full mt-1" />
           </div>
         </div>
         <div className="px-5 pt-4">

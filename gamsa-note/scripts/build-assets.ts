@@ -56,13 +56,15 @@ async function icon(size: number, file: string, { radius = 0, pad = 0.14, bg = "
     .card{position:absolute;right:80px;top:70px;width:400px;height:490px;border-radius:44px;background:#FF7A1A;box-shadow:0 14px 0 #e2600c}
     .circle{position:absolute;left:50px;top:60px;width:300px;height:300px;border-radius:50%;background:#fff;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
     .circle svg{width:88%;margin-bottom:-4px}
-    .chip{position:absolute;left:50%;transform:translateX(-50%);top:390px;background:#fff;border-radius:999px;padding:10px 24px;font-weight:700;font-size:26px;white-space:nowrap}
-    .pc{position:absolute;right:30px;top:30px;width:130px;transform:rotate(12deg)}
+    .tree{position:absolute;right:40px;top:20px;width:520px}
+    .tree svg{width:100%;height:auto;display:block}
+    .chip{position:absolute;right:170px;top:548px;background:#FF7A1A;color:#fff;border-radius:999px;padding:10px 26px;font-weight:700;font-size:26px;white-space:nowrap}
+    .pc{position:absolute;right:40px;top:40px;width:110px;transform:rotate(12deg)}
   </style></head><body>
   <div class="l"><div class="tag">감사노트 · Gratitude Note</div>
   <h1>매일 감사한 일을 적고<br>나만의 <b>감나무</b>를 키워요</h1>
   <p>감사한 만큼 감이 열리는 감 농장</p></div>
-  <div class="card"><div class="circle">${treeSvg(130)}</div><div class="chip">Lv.6 감나무 · 감 30개</div></div>
+  <div class="tree">${treeSvg(150)}</div><div class="chip">Lv.6 감나무 · 감 50개</div>
   <div class="pc">${persimmonSvg({ face: true })}</div>
   </body></html>`);
   await p.waitForTimeout(600);
