@@ -9,7 +9,7 @@
   const empty = () => ({ constitution: null, source: null, scores: null, answers: null, tested_at: null, meals_per_day: 3, plan_seed: 1, history: [] });
   let sb = null, listeners = [];
   const S = {
-    mode: live ? 'supabase' : 'demo', user: null, profile: null, ready: false,
+    mode: live ? 'supabase' : 'local', local: !live, user: null, profile: null, ready: false,
     onChange(cb) { listeners.push(cb); },
     emit() { listeners.forEach(cb => cb()); },
     guest: () => ls.get('c8.guest'),
@@ -23,8 +23,11 @@
         await S._setSession(data.session);
         sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') setTimeout(async () => { await S._setSession(session); S.emit(); }, 0); });
       } else {
-        const u = ls.get('c8.demoUser');
-        if (u) { S.user = u; S.profile = Object.assign(empty(), ls.get('c8.demo.' + u.id)); }
+        // 로컬 모드: 가입 없이 이 브라우저에만 저장 (이전 체험 계정 데이터가 있으면 이어받음)
+        const old = ls.get('c8.demoUser');
+        S.user = { id: 'local', name: '내 정보', provider: 'local' };
+        S.profile = Object.assign(empty(), ls.get('c8.demo.local') || (old && ls.get('c8.demo.' + old.id)));
+        await S._adoptGuest();
       }
       S.ready = true;
     },

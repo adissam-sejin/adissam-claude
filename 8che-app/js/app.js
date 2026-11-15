@@ -21,7 +21,7 @@
       <button class="btn kakao" data-act="login" data-p="kakao">카카오로 시작하기</button>
       <button class="btn naver" data-act="login" data-p="naver">네이버로 시작하기</button>
     </div>
-    ${S.mode === 'demo' ? '<p class="note small">지금은 <b>체험 모드</b>입니다. 카카오·네이버 연동 키를 설정하기 전이라, 버튼을 누르면 이 기기에만 저장되는 체험용 계정으로 로그인됩니다.</p>' : ''}`;
+`;
 
   /* ---------- 홈 ---------- */
   function home() {
@@ -42,9 +42,9 @@
         <path d="M206 74l76-40M214 82l76-40"/>
         <path d="M0 196h60l8-22 6 22 8-30 7 30 9-18 5 18h114l7-24 6 24 9-32 6 32 8-16 5 16h52"/>
       </svg>
-      <a class="btn primary wide" href="#/test">${t ? '테스트 다시 하기' : '가입 없이 테스트 시작'} <span>→</span></a>
+      <a class="btn primary wide" href="#/test">${t ? '테스트 다시 하기' : (S.local ? '테스트 시작' : '가입 없이 테스트 시작')} <span>→</span></a>
       ${t ? `<a class="btn wide" href="#/result">내 결과 보기 · ${t.name}</a>` : '<a class="btn wide" href="#/about">8체질이란?</a>'}
-      <p class="meta center">약 3분 · 회원가입 없이 가능</p>
+      <p class="meta center">약 3분 · 회원가입 없음 · 결과는 내 브라우저에만 저장</p>
     </section>
     <section>
       <h2>여덟 가지 체질</h2>
@@ -55,7 +55,7 @@
       <ol class="steps">
         <li><b>테스트</b><span>음식을 먹은 뒤의 느낌을 체크합니다. 가입은 필요 없어요.</span></li>
         <li><b>결과 확인</b><span>가까운 체질 순위와 맞는 음식·안 맞는 음식을 봅니다.</span></li>
-        <li><b>저장하고 활용</b><span>카카오·네이버로 가입하면 결과가 저장되고, 일주일 추천 식단을 받을 수 있어요.</span></li>
+        <li><b>저장하고 활용</b><span>${S.local ? '결과는 이 브라우저에 자동 저장되고, 일주일 추천 식단과 음식 확인에 바로 쓰여요.' : '카카오·네이버로 가입하면 결과가 저장되고, 일주일 추천 식단을 받을 수 있어요.'}</span></li>
       </ol>
     </section>
     ${disclaimer}`;
@@ -71,7 +71,7 @@
         <ul class="plain">
           <li>문항 ${QUESTIONS.length}개 · 약 3분</li>
           <li>잘 안 먹는 음식은 "모르겠다"를 고르면 계산에서 빠집니다</li>
-          ${S.user ? '<li>완료하면 내 계정의 체질 결과가 새 결과로 업데이트됩니다</li>' : '<li>가입 없이 결과를 볼 수 있어요</li>'}
+          ${S.local ? '<li>결과는 서버로 보내지 않고 이 브라우저에만 저장됩니다</li>' : S.user ? '<li>완료하면 내 계정의 체질 결과가 새 결과로 업데이트됩니다</li>' : '<li>가입 없이 결과를 볼 수 있어요</li>'}
         </ul>
         <button class="btn primary" data-act="start">시작하기</button>
       </section>${disclaimer}`;
@@ -89,7 +89,7 @@
     const r = C.score(test.answers);
     const result = { constitution: TYPES[r.top].id, source: 'test', scores: r.ranking.map(x => ({ id: x.id, pct: x.pct })), answers: test.answers, tested_at: new Date().toISOString(), answered: r.answered, reliable: r.reliable };
     test = null;
-    try { await S.saveResult(result); if (S.user) toast('체질 결과가 계정에 저장되었습니다'); }
+    try { await S.saveResult(result); if (S.user) toast(S.local ? '결과를 이 브라우저에 저장했어요' : '체질 결과가 계정에 저장되었습니다'); }
     catch (e) { S.setGuest(result); toast('저장에 실패해 이 기기에 임시 보관했습니다'); }
     go('result');
   }
@@ -193,12 +193,12 @@
     return `
     <section>
       <h1>내 정보</h1>
-      <div class="card profile"><div class="avatar ${esc(S.user.provider)}">${S.user.provider === 'naver' ? 'N' : 'K'}</div>
-        <div><b>${esc(S.user.name)}</b><span class="meta">${S.user.provider === 'naver' ? '네이버' : '카카오'} 계정${S.mode === 'demo' ? ' · 체험 모드(이 기기에만 저장)' : ''}</span></div></div>
+      ${S.local ? '<p class="note">회원가입 없이 사용합니다. 체질 결과와 식단 설정은 <b>지금 쓰는 이 브라우저에만</b> 저장되고 서버로 전송되지 않아요. 브라우저 데이터를 지우거나 다른 기기·브라우저에서 열면 보이지 않습니다.</p>'
+        : `<div class="card profile"><div class="avatar ${esc(S.user.provider)}">${S.user.provider === 'naver' ? 'N' : 'K'}</div><div><b>${esc(S.user.name)}</b><span class="meta">${S.user.provider === 'naver' ? '네이버' : '카카오'} 계정</span></div></div>`}
     </section>
     <section>
       <h2>나의 체질</h2>
-      ${t ? `<div class="card mine" style="--c:${t.color}"><div><b class="tname">${t.name}</b><span class="meta">${p.source === 'manual' ? '직접 선택' : `테스트 결과 · 일치도 ${p.scores ? p.scores[0].pct : '-'}%`} · ${fmtDate(p.tested_at)}</span></div><a class="btn" href="#/result">결과 보기</a></div>`
+      ${t ? `<div class="card mine" style="--c:${t.color}"><div><b class="tname">${t.name}</b><span class="meta">${p.source === 'manual' ? '직접 선택' : `일치도 ${p.scores ? p.scores[0].pct : '-'}%`} · ${fmtDate(p.tested_at)}</span></div><a class="btn" href="#/result">결과 보기</a></div>`
           : '<p class="meta">아직 저장된 체질 결과가 없어요.</p>'}
       <div class="row"><button class="btn primary" data-act="retake">${t ? '체질 테스트 다시 하기' : '체질 테스트 하기'}</button></div>
       <p class="note small">다시 테스트하면 새 결과로 내 체질이 업데이트되고, 식단과 음식 확인에도 바로 반영됩니다. 이전 결과는 아래 기록에 남아요.</p>
@@ -207,7 +207,7 @@
     <section><h2>테스트 기록</h2>
       ${p.history && p.history.length ? `<ul class="history">${p.history.map(h => `<li><b>${TYPES[idxOf(h.constitution)].name}</b><span class="meta">${h.source === 'manual' ? '직접 선택' : `일치도 ${h.top_pct}%`} · ${fmtDate(h.created_at)}</span></li>`).join('')}</ul>` : '<p class="meta">기록이 없습니다.</p>'}
     </section>
-    <section class="row"><button class="btn" data-act="logout">로그아웃</button><button class="btn ghost danger" data-act="wipe">저장된 내 데이터 삭제</button></section>`;
+    <section class="row">${S.local ? '' : '<button class="btn" data-act="logout">로그아웃</button>'}<button class="btn ghost danger" data-act="wipe">저장된 내 데이터 삭제</button></section>`;
   }
   const manualSelect = sel => `<div class="type-grid">${TYPES.map(x => `<button class="type-chip${x.id === sel ? ' on' : ''}" data-act="manual" data-id="${x.id}" style="--c:${x.color}"><b>${x.name}</b><span>${x.strong} 강 · ${x.weak} 약</span></button>`).join('')}</div>`;
 
@@ -240,6 +240,7 @@
     view.innerHTML = VIEWS[r]();
     document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.r === r));
     $('#who').textContent = S.user ? S.user.name : '로그인';
+    $('#who').hidden = S.local;
   }
 
   /* ---------- 이벤트 ---------- */

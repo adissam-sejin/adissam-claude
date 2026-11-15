@@ -9,15 +9,14 @@ const path = require('path');
   const shot = n => p.screenshot({ path: path.join(out, n + '.png'), fullPage: true });
   await p.goto('file://' + path.resolve(__dirname, '../index.html'));
   await shot('1-home');
-  await p.click('text=가입 없이 테스트 시작'); await p.click('text=시작하기'); await shot('2-quiz');
+  await p.click('text=테스트 시작'); await p.click('text=시작하기'); await shot('2-quiz');
   // 목양체질 전형 응답
   const v = await p.evaluate(() => C8.QUESTIONS.map(q => Math.sign(q.v[4])));
   for (const a of v) await p.click(`.opt >> nth=${a > 0 ? 0 : a < 0 ? 2 : 1}`);
   await p.waitForSelector('.result-hero'); await shot('3-result');
   if (!(await p.textContent('.result-hero h1')).includes('목양체질')) throw new Error('판정 오류');
-  if (await p.evaluate(() => !C8.store.guest())) throw new Error('비회원 결과 미보관');
-  await p.click('text=카카오로 시작하기'); await p.waitForSelector('text=일주일 추천 식단 보기');
-  if (await p.evaluate(() => C8.store.profile.constitution !== 'mokyang' || C8.store.guest())) throw new Error('가입 시 결과 이전 실패');
+  if (await p.locator('text=카카오').count()) throw new Error('로그인 버튼이 남아 있음');
+  if (await p.evaluate(() => C8.store.profile.constitution !== 'mokyang')) throw new Error('브라우저 저장 실패');
   await p.click('text=일주일 추천 식단 보기'); await p.click('text=3끼+간식1'); await shot('4-plan');
   if (await p.locator('.meal').count() !== 4) throw new Error('끼니 수 오류');
   await p.click('nav >> text=음식 확인'); await p.fill('#q', '고등어'); await p.press('#q', 'Enter'); await shot('5-check');
