@@ -1,0 +1,13 @@
+{
+  "name": "OOTD 다이어리",
+  "short_name": "OOTD",
+  "description": "내 옷장을 기록하고, 오늘 날씨에 맞는 코디를 추천받는 OOTD 다이어리",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F4F1EC",
+  "theme_color": "#F4F1EC",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
