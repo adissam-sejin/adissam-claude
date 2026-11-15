@@ -29,14 +29,22 @@
     const t = cur && TYPES[idxOf(cur.constitution)];
     return `
     <section class="hero">
-      <p class="eyebrow">내 몸에 맞는 음식 찾기</p>
-      <h1>먹고 난 뒤의 느낌으로<br>나의 8체질을 찾아보세요</h1>
-      <p class="lead">평소 음식을 먹고 몸이 어땠는지 ${QUESTIONS.length}가지만 체크하면, 여덟 체질 중 어디에 가까운지와 나에게 맞는 음식·안 맞는 음식을 정리해 드려요.</p>
-      <div class="row">
-        <a class="btn primary" href="#/test">${t ? '테스트 다시 하기' : '가입 없이 테스트 시작'}</a>
-        ${t ? `<a class="btn" href="#/result">내 결과 보기 · ${t.name}</a>` : '<a class="btn" href="#/about">8체질이란?</a>'}
-      </div>
-      <p class="meta">약 3분 · 회원가입 없이 가능</p>
+      <h1><span>내 몸에 맞는</span>8체질 밥상</h1>
+      <p class="lead">음식을 먹고 난 뒤의 느낌 ${QUESTIONS.length}가지를 체크하면, 여덟 체질 중 어디에 가까운지와 나에게 맞는 음식을 알려드려요.</p>
+      <svg class="art" viewBox="0 0 320 210" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M6 96c8-7 16-7 24 0s16 7 24 0M6 108c8-7 16-7 24 0s16 7 24 0"/>
+        <circle cx="276" cy="34" r="19"/><circle cx="52" cy="150" r="4"/><circle cx="262" cy="92" r="4"/><circle cx="296" cy="140" r="5"/><circle cx="84" cy="52" r="3"/>
+        <path d="M136 58c-8-10 8-14 0-26M162 52c-8-10 8-14 0-26M188 58c-8-10 8-14 0-26"/>
+        <path d="M92 112c6-30 34-44 68-44s62 14 68 44" fill="#fff"/>
+        <path d="M118 96c4-6 10-6 14 0M150 86c4-6 10-6 14 0M184 96c4-6 10-6 14 0M134 106c4-6 10-6 14 0M168 106c4-6 10-6 14 0"/>
+        <path d="M74 112h172c0 42-34 66-86 66s-86-24-86-66z" fill="#2b2b2b"/>
+        <path d="M132 178h56v12h-56z" fill="#2b2b2b"/>
+        <path d="M206 74l76-40M214 82l76-40"/>
+        <path d="M0 196h60l8-22 6 22 8-30 7 30 9-18 5 18h114l7-24 6 24 9-32 6 32 8-16 5 16h52"/>
+      </svg>
+      <a class="btn primary wide" href="#/test">${t ? '테스트 다시 하기' : '가입 없이 테스트 시작'} <span>→</span></a>
+      ${t ? `<a class="btn wide" href="#/result">내 결과 보기 · ${t.name}</a>` : '<a class="btn wide" href="#/about">8체질이란?</a>'}
+      <p class="meta center">약 3분 · 회원가입 없이 가능</p>
     </section>
     <section>
       <h2>여덟 가지 체질</h2>
@@ -101,12 +109,12 @@
     <section class="result-hero" style="--c:${t.color}">
       <p class="eyebrow">${cur.source === 'manual' ? '직접 선택한 체질' : '나와 가장 가까운 체질'}</p>
       <h1>${t.name} <small>${t.en}</small></h1>
-      <p class="organs">장부 강약 · ${t.organs}</p>
       <p class="lead">${t.summary}</p>
-      ${scores ? `<p class="match">일치도 <b>${scores[0].pct}%</b>${second ? ` · 2순위 ${second.name} ${scores[1].pct}%` : ''}</p>` : ''}
+      <p class="organs">장부 강약 · ${t.organs}</p>
+      ${scores ? `<p class="pills"><span>일치도 ${scores[0].pct}%</span>${second ? `<span>2순위 ${second.name} ${scores[1].pct}%</span>` : ''}</p>` : ''}
     </section>
     ${scores && (cur.reliable === false || scores[0].pct - scores[1].pct < 5) ? `<p class="note warn">1·2순위 차이가 작거나 응답 수가 적어 결과가 뚜렷하지 않습니다. 2순위 체질도 함께 참고하고, 음식을 먹은 뒤의 반응을 좀 더 살펴본 뒤 다시 테스트해 보세요.</p>` : ''}
-    ${scores ? `<section><h2>여덟 체질과의 가까운 정도</h2><div class="bars">${scores.map(s => { const x = TYPES[idxOf(s.id)]; return `<div class="bar"><span>${x.name}</span><div class="track"><i style="width:${s.pct}%;background:${x.color}"></i></div><b>${s.pct}%</b></div>`; }).join('')}</div>
+    ${scores ? `<section><h2>여덟 체질과의 가까운 정도</h2><div class="bars">${scores.map(s => { const x = TYPES[idxOf(s.id)]; return `<div class="bar"><span>${x.name}</span><div class="track"><i style="width:${s.pct}%"></i></div><b>${s.pct}%</b></div>`; }).join('')}</div>
       <p class="note small">같은 계열의 양·음 체질(예: 금양·금음)은 음식 반응이 비슷해 설문만으로는 구분이 어렵습니다.</p></section>` : ''}
     <section><h2>이런 특징이 있어요</h2><ul class="bullets">${t.traits.map(x => `<li>${x}</li>`).join('')}</ul></section>
     <section><h2 class="good-h">나에게 맞는 음식</h2><div class="foods">${foodBlock(lists.good, 'good')}</div></section>
@@ -127,7 +135,7 @@
     return `
     <section>
       <h1>음식 확인</h1>
-      <p class="lead"><b style="color:${t.color}">${t.name}</b> 기준으로 음식이나 재료가 나에게 맞는지 확인해요.</p>
+      <p class="lead"><b class="hl">${t.name}</b> 기준으로 음식이나 재료가 나에게 맞는지 확인해요.</p>
       <form class="search" data-form="check"><input id="q" type="search" placeholder="예: 삼겹살, 사과, 김치찌개" value="${esc(checkQuery)}" autocomplete="off" enterkeyhint="search"><button class="btn primary">확인</button></form>
       <div class="tags quick">${['쇠고기', '고등어', '우유', '커피', '사과', '김치찌개', '삼계탕', '라면'].map(n => `<button class="tag" data-act="chip" data-q="${n}">${n}</button>`).join('')}</div>
       <div id="check-out">${checkQuery ? checkResult(checkQuery, i) : ''}</div>
@@ -155,7 +163,7 @@
     return `
     <section>
       <h1>일주일 추천 식단</h1>
-      <p class="lead"><b style="color:${t.color}">${t.name}</b>에 이로운 재료 위주로, 해로운 재료는 빼고 구성했어요.</p>
+      <p class="lead"><b class="hl">${t.name}</b>에 이로운 재료 위주로, 해로운 재료는 빼고 구성했어요.</p>
       <div class="field"><span>하루 몇 끼를 추천받을까요?</span>
         <div class="seg">${[2, 3, 4, 5].map(k => `<button class="${k === n ? 'on' : ''}" data-act="meals" data-n="${k}">${k === 4 ? '3끼+간식1' : k === 5 ? '3끼+간식2' : k + '끼'}</button>`).join('')}</div></div>
       <div class="stats"><div><b>${avg('kcal').toLocaleString()}</b><span>하루 평균 kcal</span></div><div><b>${avg('p')}g</b><span>단백질</span></div><div><b>${avg('c')}g</b><span>탄수화물</span></div><div><b>${avg('f')}g</b><span>지방</span></div></div>

@@ -22,6 +22,7 @@ const path = require('path');
   if (await p.locator('.meal').count() !== 4) throw new Error('끼니 수 오류');
   await p.click('nav >> text=음식 확인'); await p.fill('#q', '고등어'); await p.press('#q', 'Enter'); await shot('5-check');
   if (!(await p.textContent('.verdict .badge')).includes('안 좋아요')) throw new Error('음식 확인 오류');
+  await p.fill('#q', '쇠고기'); await p.press('#q', 'Enter'); await shot('5b-check-good');
   await p.reload(); await p.click('nav >> text=내 정보'); await shot('6-me');
   await p.click('text=체질 테스트 다시 하기'); await p.click('text=시작하기');
   const w = await p.evaluate(() => C8.QUESTIONS.map(q => Math.sign(q.v[6])));
