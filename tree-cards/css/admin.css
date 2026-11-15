@@ -5,11 +5,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 body {
   margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
-  font-family: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: "Gothic A1", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   font-size: 16px; line-height: 1.55;
 }
 h1, h2, h3, p { margin: 0; }
-h1, h2 { font-family: "Gowun Batang", serif; }
+h1, h2 { font-weight: 700; letter-spacing: -0.02em; }
 button, input { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
