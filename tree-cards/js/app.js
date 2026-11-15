@@ -111,6 +111,13 @@
     theme = View.THEMES[tree.theme];
     document.body.dataset.theme = tree.theme;
     document.title = tree.name + " · " + theme.label;
+    // 홈 화면에 추가하면 이 나무 전용 아이콘·이름으로 저장되도록 맞춘다
+    const set = (sel, attr, val) => { const n = document.querySelector(sel); if (n) n.setAttribute(attr, val); };
+    set('link[rel="icon"]', "href", `/assets/favicon-${tree.theme}.svg`);
+    set('link[rel="apple-touch-icon"]', "href", `/assets/icon-${tree.theme}-180.png`);
+    set('link[rel="manifest"]', "href", "/manifest.webmanifest?code=" + encodeURIComponent(tree.code));
+    set('meta[name="apple-mobile-web-app-title"]', "content", tree.name);
+    set('meta[name="theme-color"]', "content", getComputedStyle(document.body).getPropertyValue("--bg-flat").trim());
     $("themeBadge").textContent = theme.label;
     $("treeName").textContent = tree.name;
     $("tagline").textContent = theme.tagline;

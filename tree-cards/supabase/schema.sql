@@ -110,6 +110,13 @@ begin
   return json_build_object('id', c.id, 'author', c.author, 'body', c.body, 'created_at', c.created_at);
 end $$;
 
+-- 링크 미리보기·앱 아이콘용: 나무 이름과 콘셉트만 돌려준다
+create or replace function public.mt_tree_info(p_code text) returns json
+language sql stable security definer set search_path = msgtree as $$
+  select json_build_object('code', t.code, 'name', t.name, 'theme', t.theme)
+  from trees t where t.code = upper(trim(p_code)) and t.deleted_at is null;
+$$;
+
 -- ───────────── 관리자용 (비밀번호 필요) ─────────────
 create or replace function public.mt_admin_list_trees(p_pw text) returns json
 language plpgsql stable security definer set search_path = msgtree as $$
@@ -279,6 +286,7 @@ grant execute on function public.mt_sync_begin(text), public.mt_sync_end(), publ
   public.mt_sync_card_purged(bigint), public.mt_sync_tree_purged(bigint) to service_role;
 
 grant execute on function public.mt_get_tree(text)                  to anon, authenticated;
+grant execute on function public.mt_tree_info(text)                 to anon, authenticated;
 grant execute on function public.mt_add_card(text, text, text)      to anon, authenticated;
 grant execute on function public.mt_admin_list_trees(text)          to anon, authenticated;
 grant execute on function public.mt_admin_save_tree(text, text, text, text, timestamptz, timestamptz, boolean) to anon, authenticated;
