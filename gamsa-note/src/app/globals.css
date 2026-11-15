@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Galmuri11";
+  src: url("/fonts/Galmuri11.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Galmuri11";
+  src: url("/fonts/Galmuri11-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+@theme {
+  --color-gam: #f28c28;
+  --color-gam-dark: #d2601a;
+  --color-gam-light: #ffe2bf;
+  --color-cream: #fff8ee;
+  --color-ink: #3b2a1e;
+  --color-leaf: #3e8e41;
+  --color-grid: #e98a6c;
+  --font-pixel: "Galmuri11", ui-monospace, monospace;
+  --font-sans: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  background: #fff8ee;
+  color: #3b2a1e;
+  -webkit-tap-highlight-color: transparent;
+}
+body { font-family: var(--font-sans); }
+
+.pixel { font-family: var(--font-pixel); }
+.pixelated { image-rendering: pixelated; }
+
+/* 도트 스타일 버튼/박스 */
+.px-box {
+  background: #fff;
+  border: 3px solid #3b2a1e;
+  box-shadow: 4px 4px 0 #3b2a1e;
+}
+.px-btn {
+  font-family: var(--font-pixel);
+  border: 3px solid #3b2a1e;
+  box-shadow: 3px 3px 0 #3b2a1e;
+  transition: transform .05s, box-shadow .05s;
+}
+.px-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #3b2a1e; }
+.px-btn:disabled { opacity: .45; }
+
+/* 원고지 */
+.wongoji {
+  --cols: 15;
+  --cell: calc((100% - 2px) / var(--cols));
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  border: 2px solid var(--color-grid);
+  background: #fffdf8;
+  row-gap: 6px;
+  padding: 6px 0;
+  background-image: linear-gradient(#fbf1e6, #fbf1e6);
+}
+.wongoji .cell {
+  aspect-ratio: 1;
+  border-top: 1px solid var(--color-grid);
+  border-bottom: 1px solid var(--color-grid);
+  border-right: 1px solid var(--color-grid);
+  background: #fffdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Gowun Batang", "Nanum Myeongjo", serif;
+  font-size: clamp(14px, 4.2vw, 22px);
+  line-height: 1;
+  position: relative;
+  user-select: none;
+}
+.wongoji .cell:nth-child(15n + 1) { border-left: 1px solid var(--color-grid); }
+.wongoji .cell.caret::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 18%;
+  bottom: 18%;
+  width: 2px;
+  background: #d2601a;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+@media (min-width: 640px) {
+  .wongoji { --cols: 20; }
+  .wongoji .cell:nth-child(15n + 1) { border-left: 0; }
+  .wongoji .cell:nth-child(20n + 1) { border-left: 1px solid var(--color-grid); }
+  .wongoji .cell { font-size: 20px; }
+}
+
+/* 농장 */
+.farm-sky {
+  background:
+    linear-gradient(#8fd3ff 0 55%, #b9e6ff 55% 70%, #d8f2ff 70%);
+}
+.farm-ground {
+  background-color: #7ccc53;
+  background-image:
+    linear-gradient(45deg, #6dbb47 25%, transparent 25%, transparent 75%, #6dbb47 75%),
+    linear-gradient(45deg, #6dbb47 25%, transparent 25%, transparent 75%, #6dbb47 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}
+.fence {
+  height: 18px;
+  background:
+    linear-gradient(#c58a52 0 0) 0 4px / 100% 4px no-repeat,
+    linear-gradient(#c58a52 0 0) 0 11px / 100% 4px no-repeat,
+    repeating-linear-gradient(90deg, #8a5a32 0 6px, transparent 6px 22px);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
