@@ -30,7 +30,7 @@
     for (let i = 0; i < n; i++) {
       const s = document.createElement("span");
       s.className = "flake flake-" + kind;
-      const size = 6 + Math.random() * 10;
+      const size = 3 + Math.random() * 6;
       s.style.cssText =
         `left:${Math.random() * 100}%;width:${size}px;height:${size}px;` +
         `animation-duration:${8 + Math.random() * 10}s;animation-delay:${-Math.random() * 18}s;` +
@@ -111,7 +111,7 @@
     theme = View.THEMES[tree.theme];
     document.body.dataset.theme = tree.theme;
     document.title = tree.name + " · " + theme.label;
-    $("themeBadge").textContent = theme.emoji + " " + theme.label;
+    $("themeBadge").textContent = theme.label;
     $("treeName").textContent = tree.name;
     $("tagline").textContent = theme.tagline;
     $("countUnit").textContent = theme.unit;
@@ -145,7 +145,7 @@
 
   /* ---------- 메시지 보기 ---------- */
   function openCard(card) {
-    $("viewIcon").textContent = theme.emoji;
+    $("viewIcon").replaceChildren(View.icon(tree.theme, card));
     $("viewBody").textContent = card.body;
     $("viewAuthor").textContent = card.author;
     $("viewDate").textContent = fmtDay.format(new Date(card.created_at));
