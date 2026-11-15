@@ -1,7 +1,7 @@
 // 메시지 나무 → 노션 복사 (Supabase Edge Function)
 // Supabase 에 쌓인 나무·카드를 노션 DB 로 옮겨 적는다. 10초마다 DB 가 깨운다.
 //
-// 시크릿: NOTION_TOKEN (노션 통합 시크릿), SYNC_SECRET (DB 와 공유하는 호출 암호)
+// 시크릿: NOTION_TOKEN (노션 통합 시크릿)
 // 선택:   NOTION_TREES_DB, NOTION_CARDS_DB, NOTION_API_BASE
 
 const NOTION = Deno.env.get("NOTION_API_BASE") ?? "https://api.notion.com/v1";
@@ -110,10 +110,11 @@ Deno.serve(async (req) => {
   const json = (o: unknown, status = 200) =>
     new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
 
-  const secret = Deno.env.get("SYNC_SECRET");
-  if (!secret || req.headers.get("x-sync-secret") !== secret) return json({ error: "forbidden" }, 401);
+  // 호출 암호는 DB 가 만들어 보관하고, 여기서는 DB 에 맞는지 물어본다
+  const secret = req.headers.get("x-sync-secret") ?? "";
+  if (secret.length < 20) return json({ error: "forbidden" }, 401);
   if (!Deno.env.get("NOTION_TOKEN")) return json({ skipped: "NOTION_TOKEN 이 아직 없습니다" });
-  if (!(await rpc("mt_sync_begin"))) return json({ skipped: "이미 실행 중" });
+  if (!(await rpc("mt_sync_begin", { p_secret: secret }))) return json({ skipped: "암호가 다르거나 이미 실행 중" });
   try {
     return json({ ok: true, ...(await run()) });
   } catch (e) {

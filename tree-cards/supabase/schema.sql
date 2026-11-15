@@ -184,12 +184,14 @@ begin
 end $$;
 
 -- ───────────── 노션 복사용 (서버 함수 notion-sync 만 호출) ─────────────
-create or replace function public.mt_sync_begin() returns boolean
+-- 호출 암호(DB 가 만들어 보관)가 맞고, 다른 실행이 없을 때만 시작한다
+create or replace function public.mt_sync_begin(p_secret text) returns boolean
 language plpgsql security definer set search_path = msgtree as $$
 declare ok boolean;
 begin
   update settings set sync_locked_until = now() + interval '50 seconds'
-  where id = 1 and (sync_locked_until is null or sync_locked_until < now())
+  where id = 1 and sync_secret is not null and sync_secret = p_secret
+    and (sync_locked_until is null or sync_locked_until < now())
   returning true into ok;
   return coalesce(ok, false);
 end $$;
@@ -268,11 +270,11 @@ end $$;
 -- ───────────── 권한 ─────────────
 revoke all on all functions in schema msgtree from public, anon, authenticated;
 revoke all on function public.mt_set_admin_password(text) from public, anon, authenticated;
-revoke all on function public.mt_sync_begin(), public.mt_sync_end(), public.mt_sync_pending(),
+revoke all on function public.mt_sync_begin(text), public.mt_sync_end(), public.mt_sync_pending(),
   public.mt_sync_tree_done(bigint, text), public.mt_sync_card_done(bigint, text),
   public.mt_sync_card_purged(bigint), public.mt_sync_tree_purged(bigint), public.mt_sync_kick()
   from public, anon, authenticated;
-grant execute on function public.mt_sync_begin(), public.mt_sync_end(), public.mt_sync_pending(),
+grant execute on function public.mt_sync_begin(text), public.mt_sync_end(), public.mt_sync_pending(),
   public.mt_sync_tree_done(bigint, text), public.mt_sync_card_done(bigint, text),
   public.mt_sync_card_purged(bigint), public.mt_sync_tree_purged(bigint) to service_role;
 
