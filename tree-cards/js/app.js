@@ -132,6 +132,7 @@
     fillSky(tree.theme);
     drawAll();
     startPolling();
+    showInstall();
   }
 
   /* ---------- 새 카드 자동 반영 ---------- */
@@ -164,6 +165,77 @@
     API.subscribe(tree.code, () => { clearTimeout(soon); soon = setTimeout(refresh, 250); });
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+
+  /* ---------- 홈 화면에 저장 안내 ---------- */
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  const isKakao = /KAKAOTALK/i.test(ua);
+  const isInApp = isKakao || /Instagram|FBAN|FBAV|NAVER\(inapp|Line\//i.test(ua);
+  const isInstalled = () =>
+    window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let installEvent = null, installTimer = null;
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // 브라우저 기본 안내 대신 우리 안내 띠를 쓴다
+    installEvent = e;
+    if (tree) showInstall();
+  });
+  window.addEventListener("appinstalled", () => { $("installBar").hidden = true; });
+
+  const dismissedKey = () => "tree-cards-install-off:" + tree.code;
+  function showInstall() {
+    clearTimeout(installTimer);
+    const bar = $("installBar");
+    bar.hidden = true;
+    if (!API.LIVE || isInstalled()) return;
+    try { if (localStorage.getItem(dismissedKey())) return; } catch (_) {}
+
+    const btn = $("installBtn"), desc = $("installDesc");
+    $("installIcon").src = `/assets/icon-${tree.theme}-192.png`;
+    $("installTitle").textContent = "이 나무를 홈 화면에 저장할까요?";
+    btn.hidden = false;
+    if (isInApp) {
+      // 카카오톡 등 앱 안 브라우저에서는 저장이 안 되므로 바깥 브라우저로 보낸다
+      $("installTitle").textContent = "홈 화면에 저장하려면 브라우저에서 열어주세요";
+      desc.textContent = isKakao ? "버튼을 누르면 기본 브라우저로 열려요." : "메뉴에서 ‘다른 브라우저로 열기’를 눌러주세요.";
+      btn.textContent = "브라우저로 열기";
+      btn.hidden = !isKakao;
+      btn.onclick = () => { location.href = "kakaotalk://web/openExternal?url=" + encodeURIComponent(location.href); };
+    } else if (installEvent) {
+      desc.textContent = "앱처럼 아이콘으로 바로 열 수 있어요.";
+      btn.textContent = "저장";
+      btn.onclick = async () => {
+        const ev = installEvent;
+        installEvent = null;
+        ev.prompt();
+        try { await ev.userChoice; } catch (_) {}
+        bar.hidden = true;
+      };
+    } else if (isIOS) {
+      desc.textContent = "아래(또는 위)의 공유 버튼을 누른 뒤 ‘홈 화면에 추가’를 선택하세요.";
+      btn.hidden = true;
+    } else if (isAndroid) {
+      // 설치 안내 이벤트를 주지 않는 브라우저: 조금 기다려 보고 직접 하는 방법을 알려준다
+      installTimer = setTimeout(() => {
+        if (installEvent || !tree) return;
+        desc.textContent = "브라우저 메뉴(⋮)에서 ‘홈 화면에 추가’를 선택하세요.";
+        btn.hidden = true;
+        bar.hidden = false;
+      }, 3500);
+      return;
+    } else {
+      return; // PC 등: 브라우저가 설치를 지원할 때만(위 installEvent) 보여준다
+    }
+    bar.hidden = false;
+  }
+  $("installClose").addEventListener("click", () => {
+    $("installBar").hidden = true;
+    try { localStorage.setItem(dismissedKey(), "1"); } catch (_) {}
+  });
+  if (API.LIVE && "serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
 
   /* ---------- 메시지 보기 ---------- */
   function openCard(card) {
