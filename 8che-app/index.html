@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>8체질 밥상 · 내 몸에 맞는 음식 찾기</title>
+<meta name="description" content="음식을 먹은 뒤의 느낌으로 나의 8체질을 찾아보고, 맞는 음식과 일주일 추천 식단을 받아보세요.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/home"><span class="logo">八</span>8체질 밥상</a>
+  <a class="who" id="who" href="#/me">로그인</a>
+</header>
+<main id="view"></main>
+<nav class="tabs">
+  <a data-r="home" href="#/home"><i>⌂</i>홈</a>
+  <a data-r="test" href="#/test"><i>✓</i>테스트</a>
+  <a data-r="check" href="#/check"><i>⌕</i>음식 확인</a>
+  <a data-r="plan" href="#/plan"><i>▤</i>식단</a>
+  <a data-r="me" href="#/me"><i>☺</i>내 정보</a>
+</nav>
+<div id="toast" role="status"></div>
+<script src="config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
