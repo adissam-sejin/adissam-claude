@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>인스타 → 노션 정리</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Instagram → Notion</p>
+      <h1>받은 DM과 저장한 게시물을<br>노션에 한 번에 정리</h1>
+      <p class="lead">인스타그램에서 내려받은 내 정보 파일을 올리면, 받은 메시지와 저장한 게시물을 노션 데이터베이스로 만들어 드립니다. 파일은 이 브라우저 안에서만 읽고, 노션으로만 전송합니다.</p>
+    </header>
+
+    <section class="card" id="step-notion">
+      <h2><span class="num">1</span>노션 연결</h2>
+      <details>
+        <summary>토큰은 어떻게 만드나요?</summary>
+        <ol>
+          <li><a href="https://www.notion.so/profile/integrations" target="_blank" rel="noopener">notion.so/profile/integrations</a>에서 <b>새 API 통합</b>을 만들고 <b>프라이빗 API 통합 시크릿</b>을 복사합니다.</li>
+          <li>노션에서 정리 결과를 넣을 페이지를 하나 만듭니다.</li>
+          <li>그 페이지 오른쪽 위 <b>⋯ → 연결</b>에서 방금 만든 통합을 추가합니다.</li>
+          <li>페이지 링크를 복사해 아래에 붙여 넣습니다.</li>
+        </ol>
+      </details>
+      <label>노션 통합 시크릿
+        <input id="token" type="password" placeholder="ntn_..." autocomplete="off">
+      </label>
+      <label>정리할 노션 페이지 링크
+        <input id="page" type="text" placeholder="https://www.notion.so/...">
+      </label>
+      <label class="check"><input id="remember" type="checkbox"> 이 브라우저에 시크릿 저장</label>
+      <div class="row">
+        <button id="connect" class="secondary">연결 확인</button>
+        <span id="connect-status" class="status" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card" id="step-file">
+      <h2><span class="num">2</span>인스타그램 파일 올리기</h2>
+      <details>
+        <summary>파일은 어디서 받나요?</summary>
+        <ol>
+          <li>인스타그램 앱 <b>설정 → 계정 센터 → 내 정보 및 권한 → 내 정보 내보내기</b>로 들어갑니다.</li>
+          <li><b>내보내기 만들기 → 기기로 내보내기</b>를 선택합니다.</li>
+          <li>정보 맞춤 설정에서 <b>메시지</b>와 <b>저장된 항목</b>만 남기면 파일이 훨씬 작아집니다.</li>
+          <li>형식을 반드시 <b>JSON</b>으로 바꾸고, 기간은 <b>전체 기간</b>으로 둡니다.</li>
+          <li>준비가 끝나면(몇 분~몇 시간) 받은 ZIP 파일을 그대로 아래에 올립니다.</li>
+        </ol>
+      </details>
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="ZIP 파일 선택">
+        <strong>ZIP 파일을 여기에 끌어다 놓거나 눌러서 선택</strong>
+        <span>여러 개로 나뉜 ZIP은 한꺼번에 선택하세요</span>
+      </div>
+      <input id="zip-input" type="file" accept=".zip" multiple hidden>
+      <input id="dir-input" type="file" webkitdirectory hidden>
+      <div class="row">
+        <button id="pick-dir" class="link">압축을 이미 풀었다면 폴더 선택</button>
+        <span id="file-status" class="status" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card" id="step-preview" hidden>
+      <h2><span class="num">3</span>정리할 내용 확인</h2>
+      <label>내 계정 이름 <small>(이 이름으로 보낸 메시지는 제외됩니다)</small>
+        <select id="owner"></select>
+      </label>
+
+      <div class="group">
+        <label class="check big"><input id="use-dm" type="checkbox" checked> 받은 DM <span id="dm-count" class="pill"></span></label>
+        <label class="check"><input id="use-requests" type="checkbox" checked> 메시지 요청함도 포함</label>
+        <div class="row tools">
+          <input id="search" type="search" placeholder="대화 검색">
+          <button id="all" class="link">모두 선택</button>
+          <button id="none" class="link">모두 해제</button>
+        </div>
+        <ul id="threads" class="list"></ul>
+      </div>
+
+      <div class="group">
+        <label class="check big"><input id="use-saved" type="checkbox" checked> 저장한 게시물 <span id="saved-count" class="pill"></span></label>
+        <ul id="saved" class="list short"></ul>
+      </div>
+
+      <div class="row">
+        <button id="run">노션에 정리하기</button>
+        <span id="run-status" class="status" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card" id="step-run" hidden>
+      <h2><span class="num">4</span>진행 상황</h2>
+      <div class="bar"><div id="bar-fill"></div></div>
+      <p id="progress-text" class="status"></p>
+      <div id="result"></div>
+      <ul id="errors" class="errors"></ul>
+    </section>
+
+    <footer>
+      <p>저장한 게시물은 인스타그램이 링크·작성자·저장일만 내보내기 때문에, 노션에는 게시물이 임베드와 링크로 들어갑니다. 사진·동영상 DM은 개수만 표시됩니다.</p>
+    </footer>
+  </main>
+
+  <script src="vendor/zip.min.js"></script>
+  <script src="parser.js"></script>
+  <script src="sync.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

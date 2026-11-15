@@ -1,0 +1,12 @@
+{
+  "name": "insta-to-notion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "인스타그램 받은 DM과 저장한 게시물을 노션으로 정리하는 사이트",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
