@@ -71,9 +71,7 @@ create table if not exists public.notes (
   is_public   boolean not null default false,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
-  unique (user_id, note_date),
-  -- 공개는 사진이 있어야만 가능
-  constraint public_needs_photo check (not is_public or photo_path is not null)
+  unique (user_id, note_date)
 );
 create index if not exists notes_public_idx on public.notes (created_at desc) where is_public;
 create index if not exists notes_user_date_idx on public.notes (user_id, note_date);
@@ -271,3 +269,41 @@ create policy photos_delete on storage.objects for delete to authenticated
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 revoke execute on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated;
+
+-- =====================================================================
+-- 피드: 같은 감나무에 속한 사람의 공개 글만 보이기 (사진 없어도 공개 가능)
+-- =====================================================================
+alter table public.notes drop constraint if exists public_needs_photo;
+
+create or replace function public.shares_tree(other uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from tree_members a join tree_members b on a.tree_id = b.tree_id
+    where a.user_id = auth.uid() and b.user_id = other
+  );
+$$;
+revoke execute on function public.shares_tree(uuid) from public, anon;
+grant execute on function public.shares_tree(uuid) to authenticated;
+
+drop policy if exists notes_select on public.notes;
+create policy notes_select on public.notes for select to authenticated
+  using (user_id = (select auth.uid()) or (is_public and public.shares_tree(user_id)));
+
+drop policy if exists likes_select on public.likes;
+create policy likes_select on public.likes for select to authenticated
+  using (exists (select 1 from public.notes n where n.id = note_id and (n.user_id = (select auth.uid()) or (n.is_public and public.shares_tree(n.user_id)))));
+drop policy if exists likes_insert on public.likes;
+create policy likes_insert on public.likes for insert to authenticated
+  with check (user_id = (select auth.uid()) and exists (select 1 from public.notes n where n.id = note_id and (n.user_id = (select auth.uid()) or (n.is_public and public.shares_tree(n.user_id)))));
+drop policy if exists comments_select on public.comments;
+create policy comments_select on public.comments for select to authenticated
+  using (exists (select 1 from public.notes n where n.id = note_id and (n.user_id = (select auth.uid()) or (n.is_public and public.shares_tree(n.user_id)))));
+drop policy if exists comments_insert on public.comments;
+create policy comments_insert on public.comments for insert to authenticated
+  with check (user_id = (select auth.uid()) and exists (select 1 from public.notes n where n.id = note_id and (n.user_id = (select auth.uid()) or (n.is_public and public.shares_tree(n.user_id)))));
+
+drop policy if exists photos_select on storage.objects;
+create policy photos_select on storage.objects for select to authenticated
+  using (bucket_id = 'photos' and (
+    (storage.foldername(name))[1] = (select auth.uid())::text
+    or exists (select 1 from public.notes n where n.photo_path = storage.objects.name and n.is_public and public.shares_tree(n.user_id))));

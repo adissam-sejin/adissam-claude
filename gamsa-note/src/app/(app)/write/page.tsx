@@ -49,7 +49,6 @@ function WriteInner() {
     return () => { alive = false; };
   }, [user, date]);
 
-  const hasPhoto = !!photoUrl;
 
   const save = async () => {
     if (!user) return;
@@ -67,7 +66,7 @@ function WriteInner() {
       }
       const row = {
         user_id: user.id, note_date: date, content: content.trim(),
-        photo_path, is_public: !!photo_path && isPublic, updated_at: new Date().toISOString(),
+        photo_path, is_public: isPublic, updated_at: new Date().toISOString(),
       };
       const { error } = await sb.from("notes").upsert(row, { onConflict: "user_id,note_date" });
       if (error) throw error;
@@ -118,7 +117,7 @@ function WriteInner() {
                 <img src={photoUrl} alt="오늘의 사진" className="w-full aspect-square object-cover rounded-2xl shadow-md" />
                 <div className="flex gap-2 mt-2">
                   <button onClick={() => fileRef.current?.click()} className="btn3d px-3 py-1.5 text-sm btn-white">바꾸기</button>
-                  <button onClick={() => { setPhotoUrl(null); setNewPhoto(null); setRemovePhoto(true); setIsPublic(false); }} className="btn3d px-3 py-1.5 text-sm btn-white">지우기</button>
+                  <button onClick={() => { setPhotoUrl(null); setNewPhoto(null); setRemovePhoto(true); }} className="btn3d px-3 py-1.5 text-sm btn-white">지우기</button>
                 </div>
               </div>
             ) : (
@@ -130,13 +129,13 @@ function WriteInner() {
             )}
           </section>
 
-          <label className={`mt-5 flex items-start gap-3 p-3 border-2 rounded ${hasPhoto ? "border-line bg-white" : "border-line/20 bg-ink/5 text-ink/50"}`}>
-            <input type="checkbox" checked={isPublic && hasPhoto} disabled={!hasPhoto}
+          <label className="mt-5 flex items-start gap-3 p-3 rounded-xl bg-white border border-line">
+            <input type="checkbox" checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)} className="mt-1 w-5 h-5 accent-[#f28c28]" />
             <span>
               <span className="font-bold">피드에 공개하기</span>
               <span className="block text-xs mt-0.5">
-                {hasPhoto ? "공개하면 사진과 감사 내용이 피드에 함께 보이고, 좋아요·댓글을 받을 수 있어요." : "공개는 사진이 있을 때만 할 수 있어요. 기본은 비공개예요."}
+                공개하면 같은 감나무 사람들의 피드에 보이고, 좋아요·댓글을 받을 수 있어요. 기본은 비공개예요.
               </span>
             </span>
           </label>

@@ -13,7 +13,7 @@ type Post = {
   user_id: string;
   note_date: string;
   content: string;
-  photo_path: string;
+  photo_path: string | null;
   created_at: string;
   profiles: { nickname: string; avatar_url: string | null } | null;
   likeCount: number;
@@ -36,7 +36,7 @@ export default function FeedPage() {
     setLoading(true);
     const sb = supabase();
     let q = sb.from("notes")
-      .select("id,user_id,note_date,content,photo_path,created_at,profiles(nickname,avatar_url),likes(count),comments(count)")
+      .select("id,user_id,note_date,content,photo_path,created_at,profiles!notes_user_id_fkey(nickname,avatar_url),likes(count),comments(count)")
       .eq("is_public", true).order("created_at", { ascending: false }).limit(PAGE);
     const last = posts[posts.length - 1];
     if (last) q = q.lt("created_at", last.created_at);
@@ -53,7 +53,7 @@ export default function FeedPage() {
       likeCount: r.likes?.[0]?.count ?? 0,
       commentCount: r.comments?.[0]?.count ?? 0,
       liked: likedSet.has(r.id),
-      photoUrl: urls[r.photo_path],
+      photoUrl: r.photo_path ? urls[r.photo_path] : undefined,
     }))]);
     if (rows.length < PAGE) setDone(true);
     setLoading(false);
@@ -74,7 +74,7 @@ export default function FeedPage() {
     <div className="max-w-xl mx-auto">
       <div className="mb-4">
         <h1 className="font-display text-xl font-bold">감사 피드</h1>
-        <p className="text-sm text-ink/60">공개로 나눈 감사들이에요. 좋아요와 댓글로 응원해요.</p>
+        <p className="text-sm text-ink/60">같은 감나무 사람들이 공개한 감사예요. 좋아요와 댓글로 응원해요.</p>
       </div>
       <div className="space-y-6">
         {posts.map((p) => <PostCard key={p.id} post={p} me={user!.id} onChange={(patch) => update(p.id, patch)} />)}
@@ -84,7 +84,7 @@ export default function FeedPage() {
       {done && posts.length === 0 && (
         <div className="text-center py-16 text-ink/60">
           <Persimmon className="w-14 h-14 mx-auto opacity-60" />
-          <p className="mt-3">아직 공개된 감사가 없어요.<br />사진과 함께 기록하고 ‘공개’를 체크해보세요.</p>
+          <p className="mt-3">아직 공개된 감사가 없어요.<br />감사를 기록할 때 ‘피드에 공개하기’를 체크하면<br />같은 감나무 사람들에게 보여요.</p>
         </div>
       )}
     </div>
@@ -110,7 +110,7 @@ function PostCard({ post, me, onChange }: { post: Post; me: string; onChange: (p
 
   const loadComments = async () => {
     const { data } = await supabase().from("comments")
-      .select("id,user_id,content,created_at,profiles(nickname,avatar_url)")
+      .select("id,user_id,content,created_at,profiles!comments_user_id_fkey(nickname,avatar_url)")
       .eq("note_id", post.id).order("created_at");
     setComments((data ?? []) as unknown as Comment[]);
   };
@@ -153,7 +153,13 @@ function PostCard({ post, me, onChange }: { post: Post; me: string; onChange: (p
         </div>
       </header>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={post.photoUrl} alt="" loading="lazy" className="w-full aspect-square object-cover  bg-gam-light" />
+      {post.photoUrl ? (
+        <img src={post.photoUrl} alt="" loading="lazy" className="w-full aspect-square object-cover bg-gam-light" />
+      ) : (
+        <div className="w-full aspect-[4/3] bg-peach flex items-center justify-center">
+          <Persimmon className="w-28 h-28 drop-shadow-sm" />
+        </div>
+      )}
       <div className="p-3">
         <div className="flex items-center gap-4">
           <button onClick={toggleLike} className="flex items-center gap-1.5" aria-pressed={post.liked} aria-label="좋아요">
