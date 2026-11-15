@@ -48,12 +48,18 @@ const mat = {
   persimmon: new THREE.MeshPhysicalMaterial({ color: "#f0600c", roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.35, sheen: 0.25, sheenColor: new THREE.Color("#ff9a4a") }),
   calyx: new THREE.MeshStandardMaterial({ color: "#4f8a22", roughness: 0.55 }),
   stem: new THREE.MeshStandardMaterial({ color: "#6b4423", roughness: 0.8 }),
-  bark: new THREE.MeshStandardMaterial({ color: "#8a5a35", roughness: 0.85 }),
+  bark: new THREE.MeshPhysicalMaterial({ color: "#9a6a43", roughness: 0.7, sheen: 0.3, sheenColor: new THREE.Color("#e0b088") }),
   soil: new THREE.MeshStandardMaterial({ color: "#a86b3c", roughness: 0.95 }),
-  soilDark: new THREE.MeshStandardMaterial({ color: "#7f4f2b", roughness: 0.95 }),
+  soilDark: new THREE.MeshStandardMaterial({ color: "#6e4428", roughness: 0.95 }),
   grass: new THREE.MeshStandardMaterial({ color: "#7cc24a", roughness: 0.85, side: THREE.DoubleSide }),
-  sprout: new THREE.MeshStandardMaterial({ color: "#7cc84a", roughness: 0.6 }),
-  leaves: ["#3f9a2e", "#358c28", "#4ea836", "#47a032"].map((c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.78 })),
+  sprout: new THREE.MeshPhysicalMaterial({ color: "#8cc65e", roughness: 0.55, sheen: 0.5, sheenColor: new THREE.Color("#e0ffc0") }),
+  leaves: ["#7fb85a", "#74ad50", "#8cc466", "#79b354"].map((c) => new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.62, sheen: 0.6, sheenRoughness: 0.5, sheenColor: new THREE.Color("#d8f5b0") })),
+  pot: new THREE.MeshPhysicalMaterial({ color: "#d39056", roughness: 0.55, sheen: 0.4, sheenColor: new THREE.Color("#ffd2a0") }),
+  potRim: new THREE.MeshPhysicalMaterial({ color: "#dfa067", roughness: 0.5, sheen: 0.4, sheenColor: new THREE.Color("#ffe0b8") }),
+  eye: new THREE.MeshPhysicalMaterial({ color: "#1d1712", roughness: 0.15, clearcoat: 1 }),
+  white: new THREE.MeshBasicMaterial({ color: "#ffffff" }),
+  mouth: new THREE.MeshStandardMaterial({ color: "#3a2116", roughness: 0.5 }),
+  blush: new THREE.MeshStandardMaterial({ color: "#ff8f8f", roughness: 0.8, transparent: true, opacity: 0.55 }),
   stone: new THREE.MeshStandardMaterial({ color: "#c9c2b6", roughness: 0.9 }),
 };
 
@@ -63,7 +69,7 @@ function shadowAll(o) {
 }
 
 // ---------- 감 ----------
-export function makePersimmon() {
+export function makePersimmon(withFace = false) {
   const g = new THREE.SphereGeometry(1, 128, 96);
   const p = g.attributes.position;
   const v = new THREE.Vector3();
@@ -107,6 +113,12 @@ export function makePersimmon() {
   const disk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.08, 24), mat.calyx);
   disk.position.y = top + 0.02;
   group.add(disk);
+  if (withFace) {
+    const face = makeFace(1.35);
+    face.position.set(0, -0.04, 1.0);
+    face.rotation.x = 0.05;
+    group.add(face);
+  }
   const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.22, 16), mat.stem);
   stem.position.y = top + 0.14;
   stem.rotation.z = 0.15;
@@ -126,14 +138,16 @@ function island(r = 1.6) {
   // 돌멩이·풀
   reseed(42);
   for (let i = 0; i < 4; i++) {
-    const a = rnd() * Math.PI * 2, d = r * (0.55 + rnd() * 0.3);
+    let a = rnd() * Math.PI * 2; const d = r * (0.55 + rnd() * 0.3);
+    if (Math.sin(a) > 0.5) a += Math.PI; // 앞쪽(얼굴 앞)은 비움
     const s = new THREE.Mesh(lumpy(0.08 + rnd() * 0.06, 2, 0.15, i), mat.stone);
     s.scale.y = 0.6;
     s.position.set(Math.cos(a) * d, 0.08, Math.sin(a) * d);
     g.add(s);
   }
   for (let i = 0; i < 7; i++) {
-    const a = rnd() * Math.PI * 2, d = r * (0.4 + rnd() * 0.5);
+    let a = rnd() * Math.PI * 2; const d = r * (0.45 + rnd() * 0.45);
+    if (Math.sin(a) > 0.45 && Math.abs(Math.cos(a)) < 0.6) a += Math.PI;
     const tuft = new THREE.Group();
     for (let j = 0; j < 3; j++) {
       const b = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 6), mat.sprout);
@@ -184,6 +198,87 @@ function roundedDisk(r, h) {
   }
   g.computeVertexNormals();
   return g;
+}
+
+
+// ---------- 귀여운 얼굴 ----------
+// surfaceZ: 얼굴이 붙을 표면까지의 z, size: 얼굴 크기
+export function makeFace(size = 1) {
+  const g = new THREE.Group();
+  const eyeG = new THREE.SphereGeometry(0.075 * size, 32, 24);
+  [-1, 1].forEach((sd) => {
+    const e = new THREE.Mesh(eyeG, mat.eye);
+    e.scale.set(1, 1.15, 0.6);
+    e.position.set(sd * 0.21 * size, 0.05 * size, 0);
+    g.add(e);
+    const hl = new THREE.Mesh(new THREE.SphereGeometry(0.022 * size, 12, 8), mat.white);
+    hl.position.set(sd * 0.21 * size + 0.025 * size, 0.085 * size, 0.04 * size);
+    g.add(hl);
+    const bl = new THREE.Mesh(new THREE.SphereGeometry(0.075 * size, 24, 16), mat.blush);
+    bl.scale.set(1.3, 0.75, 0.25);
+    bl.position.set(sd * 0.36 * size, -0.07 * size, -0.01 * size);
+    g.add(bl);
+  });
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.075 * size, 0.017 * size, 12, 32, Math.PI), mat.mouth);
+  smile.rotation.z = Math.PI;
+  smile.position.set(0, -0.03 * size, 0.03 * size);
+  g.add(smile);
+  return g;
+}
+
+// ---------- 화분 ----------
+const POT_H = 1.05;
+function pot() {
+  const g = new THREE.Group();
+  // 몸통: 아래로 좁아지는 화분 + 세로 홈
+  const prof = [];
+  const steps = 24;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const y = t * 0.82;
+    let r = 0.6 + t * 0.2;
+    if (t < 0.08) r -= (0.08 - t) * 1.2; // 바닥 라운드
+    prof.push(new THREE.Vector2(r, y));
+  }
+  prof.unshift(new THREE.Vector2(0, 0));
+  const body = new THREE.LatheGeometry(prof, 128);
+  const p = body.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const a = Math.atan2(v.z, v.x);
+    const r = Math.hypot(v.x, v.z);
+    if (r > 0.01) {
+      const k = 1 - 0.022 * Math.pow(Math.max(0, Math.cos(a * 20)), 6); // 홈
+      v.x *= k; v.z *= k;
+    }
+    p.setXYZ(i, v.x, v.y, v.z);
+  }
+  body.computeVertexNormals();
+  g.add(new THREE.Mesh(body, mat.pot));
+  // 테두리
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.84, 0.11, 32, 128), mat.potRim);
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.86;
+  rim.scale.z = 1.5;
+  g.add(rim);
+  const rimBand = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.86, 0.22, 128, 1, true), mat.potRim);
+  rimBand.position.y = 0.88;
+  g.add(rimBand);
+  const rimTop = new THREE.Mesh(new THREE.TorusGeometry(0.88, 0.06, 24, 128), mat.potRim);
+  rimTop.rotation.x = Math.PI / 2;
+  rimTop.position.y = 0.99;
+  g.add(rimTop);
+  // 흙
+  const soil = new THREE.Mesh(lumpy(0.82, 4, 0.04, 9), mat.soilDark);
+  soil.scale.set(1, 0.12, 1);
+  soil.position.y = 0.94;
+  g.add(soil);
+  // 얼굴 (화분 앞면)
+  const face = makeFace(1.25);
+  face.position.set(0, 0.5, 0.735);
+  face.rotation.x = -0.22;
+  g.add(face);
+  return shadowAll(g);
 }
 
 // ---------- 나무 부품 ----------
@@ -251,45 +346,66 @@ const FULL_BLOBS = [
 
 export function makeTree(stage) {
   const root = new THREE.Group();
-  root.add(island(stage >= 5 ? 1.75 : 1.5));
-  const soilMound = new THREE.Mesh(lumpy(0.42, 3, 0.08, 3), mat.soilDark);
-  soilMound.scale.set(1, 0.32, 1);
-  soilMound.position.y = 0.05;
-  root.add(soilMound);
+  root.add(island(stage >= 5 ? 1.8 : stage >= 3 ? 1.6 : 1.45));
+  const plant = new THREE.Group();
+  plant.position.y = 0.04;
+  root.add(plant);
+  const add = (...o) => plant.add(...o);
+  const putFace = (size, x, y, z, tilt = 0) => {
+    const f = makeFace(size);
+    f.position.set(x, y, z);
+    f.rotation.x = tilt;
+    f.name = "face";
+    add(f);
+  };
 
-  if (stage === 0) {
-    const seedM = new THREE.Mesh(new THREE.SphereGeometry(0.11, 24, 16), mat.stem);
-    seedM.scale.set(1, 0.7, 0.75);
-    seedM.position.set(0.02, 0.19, 0.05);
-    seedM.rotation.z = 0.6;
-    root.add(seedM);
-  } else if (stage === 1) {
-    root.add(stemTube([[0, 0.1, 0], [0.02, 0.35, 0], [-0.01, 0.6, 0]], 0.035, 0.03, mat.sprout));
-    const l1 = leaf(0.42, 0.24); l1.position.set(-0.01, 0.6, 0); l1.rotation.set(0, 0.2, 0.55);
-    const l2 = leaf(0.42, 0.24); l2.position.set(-0.01, 0.6, 0); l2.rotation.set(0, Math.PI + 0.2, 0.55);
-    root.add(l1, l2);
-  } else if (stage === 2) {
-    root.add(stemTube([[0, 0.1, 0], [0.05, 0.6, 0], [-0.03, 1.15, 0]], 0.05, 0.035, mat.sprout));
-    [[0.45, 0.4, 0.4], [0.75, 2.2, 0.45], [1.15, 1.0, 0.35], [1.15, 4.1, 0.38]].forEach(([y, ry, len], i) => {
-      const l = leaf(len + 0.1, 0.26); l.position.set(0.02, y, 0); l.rotation.set(0, ry, 0.5 + (i % 2) * 0.1);
-      root.add(l);
-    });
+  if (stage <= 2) {
+    // 얼굴이 있는 흙 둔덕에서 싹이 남
+    const mound = new THREE.Mesh(lumpy(0.62, 4, 0.05, 5), mat.soil);
+    mound.scale.set(1, 0.55, 0.9);
+    add(mound);
+    putFace(0.95, 0, 0.13, 0.555, -0.5);
+    const top = 0.32;
+    if (stage === 0) {
+      const seedM = new THREE.Mesh(new THREE.SphereGeometry(0.1, 24, 16), mat.stem);
+      seedM.scale.set(1, 0.7, 0.75);
+      seedM.position.set(0.05, top + 0.02, -0.05);
+      seedM.rotation.z = 0.6;
+      add(seedM);
+    } else if (stage === 1) {
+      add(stemTube([[0, top - 0.05, -0.05], [0.02, top + 0.25, -0.05], [-0.01, top + 0.5, -0.05]], 0.035, 0.03, mat.sprout));
+      const l1 = leaf(0.42, 0.24); l1.position.set(-0.01, top + 0.5, -0.05); l1.rotation.set(0, 0.2, 0.55);
+      const l2 = leaf(0.42, 0.24); l2.position.set(-0.01, top + 0.5, -0.05); l2.rotation.set(0, Math.PI + 0.2, 0.55);
+      add(l1, l2);
+    } else {
+      add(stemTube([[0, top - 0.05, -0.05], [0.05, top + 0.5, -0.05], [-0.03, top + 1.05, -0.05]], 0.05, 0.035, mat.sprout));
+      [[0.4, 0.4, 0.4], [0.65, 2.2, 0.45], [1.05, 1.0, 0.35], [1.05, 4.1, 0.38]].forEach(([y, ry, len], i) => {
+        const l = leaf(len + 0.1, 0.26); l.position.set(0.02, top + y, -0.05); l.rotation.set(0, ry, 0.5 + (i % 2) * 0.1);
+        add(l);
+      });
+    }
   } else {
+    const roots = new THREE.Mesh(lumpy(0.5, 3, 0.08, 3), mat.soilDark);
+    roots.scale.set(1, 0.18, 1);
+    add(roots);
     const H = { 3: 1.25, 4: 1.85, 5: 2.3 }[stage];
-    const R0 = { 3: 0.08, 4: 0.14, 5: 0.24 }[stage];
-    root.add(stemTube([[0, 0, 0], [0.05, H * 0.5, 0.02], [-0.03, H, 0]], R0, R0 * 0.55, mat.bark));
+    const R0 = { 3: 0.09, 4: 0.15, 5: 0.25 }[stage];
+    add(stemTube([[0, 0, 0], [0.05, H * 0.5, 0.02], [-0.03, H, 0]], R0, R0 * 0.55, mat.bark));
     if (stage >= 4) {
-      root.add(stemTube([[0.02, H * 0.6, 0], [0.4, H * 0.82, 0.05], [0.65, H * 0.98, 0.1]], R0 * 0.45, R0 * 0.25, mat.bark));
-      root.add(stemTube([[0, H * 0.55, 0], [-0.4, H * 0.78, 0.02], [-0.7, H * 0.92, 0.05]], R0 * 0.45, R0 * 0.25, mat.bark));
+      add(stemTube([[0.02, H * 0.6, 0], [0.4, H * 0.82, 0.05], [0.65, H * 0.98, 0.1]], R0 * 0.45, R0 * 0.25, mat.bark));
+      add(stemTube([[0, H * 0.55, 0], [-0.4, H * 0.78, 0.02], [-0.7, H * 0.92, 0.05]], R0 * 0.45, R0 * 0.25, mat.bark));
     }
     if (stage === 3) {
-      root.add(canopy([[0, 1.55, 0, 0.5], [-0.38, 1.38, 0.1, 0.36], [0.38, 1.4, 0.05, 0.38], [0, 1.9, 0, 0.34]], 11));
+      add(canopy([[0, 1.55, 0, 0.55], [-0.4, 1.4, -0.1, 0.36], [0.4, 1.42, -0.1, 0.38], [0, 1.95, -0.1, 0.34]], 11));
+      putFace(0.62, 0, 1.5, 0.57, -0.1);
     } else if (stage === 4) {
-      root.add(canopy([[0, 2.2, 0, 0.72], [-0.65, 1.95, 0.1, 0.52], [0.65, 2.0, 0.05, 0.54], [-0.3, 2.6, -0.05, 0.5], [0.35, 2.62, 0, 0.48], [0, 1.85, 0.45, 0.5]], 21));
+      add(canopy([[0, 2.2, 0, 0.72], [-0.65, 1.95, 0.1, 0.52], [0.65, 2.0, 0.05, 0.54], [-0.3, 2.6, -0.05, 0.5], [0.35, 2.62, 0, 0.48], [0, 1.85, 0.45, 0.5]], 21));
+      putFace(0.8, 0, 1.86, 0.97, -0.05);
     } else {
       const c = canopy(FULL_BLOBS, 31);
       c.name = "canopy";
-      root.add(c);
+      add(c);
+      putFace(1.05, 0, 2.3, 1.33, -0.05);
     }
   }
   return shadowAll(root);
@@ -310,7 +426,7 @@ function scene(obj) {
   key.shadow.camera.top = 6; key.shadow.camera.bottom = -2;
   key.shadow.radius = 6;
   key.shadow.bias = -0.0006;
-  key.shadow.normalBias = 0.02;
+  key.shadow.normalBias = 0.05;
   s.add(key);
   const rim = new THREE.DirectionalLight("#ffd9b0", 0.8);
   rim.position.set(-4, 3, -3);
@@ -330,8 +446,8 @@ function shoot(s, cam, w, h) {
 // 모든 나무 단계에 같은 카메라 → 크기가 자연스럽게 커짐
 function treeCam() {
   const cam = new THREE.PerspectiveCamera(26, 1, 0.1, 100);
-  cam.position.set(0, 3.9, 11.6);
-  cam.lookAt(0, 1.95, 0);
+  cam.position.set(0, 3.6, 13.2);
+  cam.lookAt(0, 2.45, 0);
   return cam;
 }
 
@@ -344,6 +460,8 @@ function fruitSpots(tree, cam, max = 60) {
   const spots = [];
   reseed(2024);
   const camPos = cam.position.clone();
+  const faceObj = tree.getObjectByName("face");
+  const facePos = faceObj ? faceObj.getWorldPosition(new THREE.Vector3()) : null;
   for (let tries = 0; tries < 6000 && spots.length < max; tries++) {
     const b = blobs[Math.floor(rnd() * blobs.length)];
     const dir = new THREE.Vector3(rnd() * 2 - 1, rnd() * 1.6 - 0.7, rnd() * 2 - 1).normalize();
@@ -354,6 +472,7 @@ function fruitSpots(tree, cam, max = 60) {
     if (!hit) continue;
     const p = hit.point;
     const n = hit.face.normal.clone().transformDirection(b.matrixWorld);
+    if (facePos && p.distanceTo(facePos) < 0.62) continue;
     const toCam = camPos.clone().sub(p).normalize();
     if (n.dot(toCam) < 0.45) continue;
     // 가려짐 체크
@@ -369,10 +488,10 @@ function fruitSpots(tree, cam, max = 60) {
 }
 
 // ---------- 외부 API ----------
-window.renderPersimmon = (size = 512, angle = 0) => {
-  const p = makePersimmon();
-  p.rotation.y = 0.5 + angle;
-  p.rotation.x = 0.28;
+window.renderPersimmon = (size = 512, angle = 0, withFace = true) => {
+  const p = makePersimmon(withFace);
+  p.rotation.y = withFace ? 0 : 0.5 + angle;
+  p.rotation.x = withFace ? 0.12 : 0.28;
   const s = scene(p);
   const cam = new THREE.PerspectiveCamera(22, 1, 0.1, 50);
   cam.position.set(0, 1.4, 6.2);
@@ -384,7 +503,19 @@ window.renderTree = (stage, w = 600, h = 660, withFruits = 0) => {
   const t = makeTree(stage);
   const s = scene(t);
   const cam = treeCam();
-  cam.aspect = w / h; cam.updateProjectionMatrix();
+  cam.aspect = w / h;
+  // 단계마다 캐릭터가 화면에 꽉 차도록 맞춤
+  t.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(t);
+  const size = box.getSize(new THREE.Vector3());
+  const cy = (box.min.y + box.max.y) / 2;
+  const fov = (cam.fov * Math.PI) / 180;
+  const fitH = (size.y * 0.5 * 1.12) / Math.tan(fov / 2);
+  const fitW = (size.x * 0.5 * 1.12) / Math.tan(fov / 2) / cam.aspect;
+  const dist = Math.max(fitH, fitW, 5.4);
+  cam.position.set(0, cy + dist * 0.16, dist);
+  cam.lookAt(0, cy, 0);
+  cam.updateProjectionMatrix();
   let meta = null;
   cam.updateMatrixWorld(true);
   if (stage === 5) {

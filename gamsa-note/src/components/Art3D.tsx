@@ -18,7 +18,7 @@ export function GamTree({ count, className = "", seed = 0 }: { count: number; cl
     <div className={`relative aspect-[10/11] ${className}`}>
       <img src={`/3d/tree-${st.image}.webp`} alt={`${st.label} (감사 ${count}개)`} className="absolute inset-0 w-full h-full object-contain select-none" draggable={false} />
       {order.slice(0, shown).map((s, i) => (
-        <img key={i} src="/3d/persimmon-sm.webp" alt="" aria-hidden
+        <img key={i} src="/3d/fruit.webp" alt="" aria-hidden
           className="absolute w-[8.5%] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)] animate-[pop_.4s_ease-out_both]"
           style={{ left: `${s.x * 100}%`, top: `${s.y * 100}%`, animationDelay: `${Math.min(i, 30) * 25}ms`, rotate: `${((i * 37) % 30) - 15}deg` }} />
       ))}

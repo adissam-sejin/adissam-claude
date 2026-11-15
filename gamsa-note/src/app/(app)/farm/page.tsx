@@ -27,8 +27,8 @@ export default function FarmPage() {
         <div className="cloud floaty left-6 top-8 w-24 h-7" />
         <div className="cloud floaty left-[55%] top-16 w-16 h-5" style={{ animationDelay: "1.5s" }} />
         <div className="relative text-center">
-          <h1 className="font-display text-3xl text-[#4a2c17] drop-shadow-[0_3px_0_#fff]">감 농장</h1>
-          <p className="font-display text-xs mt-1 text-ink/80">감사한 만큼 감이 열리는 우리들의 농장</p>
+          <h1 className="font-display text-3xl text-white drop-shadow-[0_2px_8px_rgba(30,90,150,.35)]">감 농장</h1>
+          <p className="text-[13px] font-medium mt-1 text-white/95">감사한 만큼 감이 열리는 우리들의 농장</p>
           <p className="mt-2 inline-flex items-center gap-1.5 font-display text-xs bg-white/80 rounded-full shadow-sm px-3 py-1">
             <Persimmon small className="w-5 h-5" /> 농장 전체 감사 {totalFruits}개 · 감나무 {trees?.length ?? 0}그루
           </p>

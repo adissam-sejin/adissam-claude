@@ -19,3 +19,20 @@ export function fruitsOf(count: number) {
   const grown = Math.max(0, count - FULL_AT);
   return { grown, shown: Math.min(grown, FRUIT_SPOTS.length) };
 }
+
+const STEPS = [0, 1, 20, 45, 70, FULL_AT];
+
+/** 레벨(Lv.1~6)과 다음 단계까지의 경험치 */
+export function levelInfo(count: number) {
+  const st = stageOf(count);
+  const level = st.level + 1;
+  if (count > FULL_AT) {
+    // 감나무가 된 뒤엔 감 10개마다 한 바퀴
+    const grown = count - FULL_AT;
+    return { level, label: st.label, cur: grown % 10, max: 10, next: "다음 감 10개", grown };
+  }
+  const i = STEPS.findIndex((v) => v > count);
+  const to = i === -1 ? FULL_AT + 1 : STEPS[i];
+  const from = i === -1 ? FULL_AT : i === 0 ? 0 : STEPS[i - 1];
+  return { level, label: st.label, cur: count - from, max: to - from, next: `다음 단계까지 ${to - count}개`, grown: 0 };
+}

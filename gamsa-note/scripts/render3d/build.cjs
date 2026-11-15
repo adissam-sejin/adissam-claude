@@ -21,7 +21,9 @@ const buf = (d) => Buffer.from(d.split(',')[1], 'base64');
   await p.waitForFunction(() => window.ready, null, { timeout: 60000 });
 
   // 감
-  const per = buf(await p.evaluate(() => window.renderPersimmon(1024)));
+  const per = buf(await p.evaluate(() => window.renderPersimmon(1024, 0, true)));
+  const fruit = buf(await p.evaluate(() => window.renderPersimmon(256, 0, false)));
+  await sharp(fruit).trim().resize(96).webp({ quality: 90 }).toFile(path.join(A3D, 'fruit.webp'));
   fs.writeFileSync(path.join(A3D, 'persimmon-1024.png'), per);
   await sharp(per).resize(256).webp({ quality: 90 }).toFile(path.join(A3D, 'persimmon.webp'));
   await sharp(per).resize(128).webp({ quality: 90 }).toFile(path.join(A3D, 'persimmon-sm.webp'));
@@ -83,24 +85,26 @@ const buf = (d) => Buffer.from(d.split(',')[1], 'base64');
   const d = (x) => 'data:image/png;base64,' + x.toString('base64');
   const og = await b.newPage({ viewport: { width: 1200, height: 630 } });
   await og.setContent(`<!doctype html><html><head><meta charset="utf-8">
-  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
   <style>
-  html,body{margin:0;width:1200px;height:630px;overflow:hidden;font-family:Jua,sans-serif}
-  body{background:linear-gradient(180deg,#9fd8ff 0%,#cdeeff 55%,#fff1db 100%);position:relative}
-  .sun{position:absolute;right:90px;top:50px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#fff3b0,#ffc94a 60%,#ffb13b);box-shadow:0 0 80px #ffd76a}
+  html,body{margin:0;width:1200px;height:630px;overflow:hidden;font-family:Pretendard,sans-serif}
+  body{background:radial-gradient(170% 80% at 50% 128%,#a9d97a 0 50%,transparent 50.4%),linear-gradient(180deg,#6fb8f2 0%,#a8d8ff 55%,#d7f0ff 100%);position:relative}
+  .sun{display:none}
   .cloud{position:absolute;background:#fff;border-radius:999px;filter:drop-shadow(0 8px 10px #8fc6e855)}
   .t{position:absolute}
   .card{position:absolute;left:60px;top:150px;width:680px}
-  h1{margin:0;font-size:110px;color:#4a2c17;display:flex;align-items:center;gap:18px;text-shadow:0 6px 0 #fff}
+  .card h1, .card p{color:#fff;text-shadow:0 3px 12px #2a6aa055}
+  .chip{color:#2d4a2b !important}
+  h1{margin:0;font-size:104px;font-weight:800;display:flex;align-items:center;gap:18px;letter-spacing:-3px}
   h1 img{width:120px;height:120px;filter:drop-shadow(0 10px 12px #0002)}
-  p{margin:18px 0 0;font-size:40px;color:#d4560a}
-  .chip{display:inline-block;white-space:nowrap;margin-top:30px;font-size:26px;color:#4a2c17;background:#fff;padding:12px 26px;border-radius:999px;box-shadow:0 8px 0 #f0c79a}
+  p{margin:14px 0 0;font-size:38px;font-weight:600}
+  .chip{display:inline-block;white-space:nowrap;margin-top:30px;font-size:26px;font-weight:600;background:rgba(255,255,255,.75);padding:14px 28px;border-radius:999px;border:2px solid #fff}
   </style></head><body>
   <div class="sun"></div>
   <div class="cloud" style="left:90px;top:50px;width:180px;height:56px"></div>
   <div class="cloud" style="left:560px;top:80px;width:130px;height:42px"></div>
-  <img class="t" src="${d(young)}" style="left:560px;top:250px;width:300px">
-  <img class="t" src="${d(fullPng)}" style="left:740px;top:70px;width:520px">
+  <img class="t" src="${d(young)}" style="left:600px;top:300px;width:250px">
+  <img class="t" src="${d(fullPng)}" style="left:770px;top:40px;width:520px">
   <div class="card"><h1><img src="${d(per)}">감사노트</h1>
   <p>감사한 만큼 감이 열리는 감 농장</p>
   <div class="chip">매일 감사 한 줄 · 사진 한 장 · 함께 키우는 감나무</div></div>

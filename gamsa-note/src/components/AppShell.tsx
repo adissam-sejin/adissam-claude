@@ -29,11 +29,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="sticky top-0 z-30 bg-cream/85 backdrop-blur-md shadow-[0_6px_20px_-14px_rgba(120,72,30,.45)]">
+      <header className="sticky top-0 z-30 bg-white/25 backdrop-blur-md border-b border-white/50">
         <div className="mx-auto max-w-5xl px-4 h-14 flex items-center gap-3">
           <Link href="/calendar" className="flex items-center gap-2 shrink-0">
             <Persimmon className="w-8 h-8" />
-            <span className="font-display text-xl text-[#4a2c17]">감사노트</span>
+            <span className="font-display text-xl text-white drop-shadow-[0_2px_6px_rgba(30,90,150,.35)]">감사노트</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1 ml-6">
             {NAV.map((n) => {
@@ -60,14 +60,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 w-full mx-auto max-w-5xl px-4 pt-4 pb-28 md:pb-12">{children}</main>
+      <main className="flex-1 w-full mx-auto max-w-5xl px-4 pt-4 pb-28 md:pb-12 overflow-clip">{children}</main>
 
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md rounded-t-3xl shadow-[0_-8px_24px_-14px_rgba(120,72,30,.45)]" style={{ paddingBottom: "var(--safe-bottom)" }}>
         <div className="grid grid-cols-5">
           {NAV.map((n) => {
             const on = path.startsWith(n.href);
             return (
-              <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-1 py-2 ${on ? "text-gam-dark" : "text-ink/45"}`}>
+              <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-1 py-2 ${on ? "text-[#2f7d3a]" : "text-ink/40"}`}>
                 <span className={`w-6 h-6 transition-transform ${on ? "-translate-y-0.5 scale-110" : ""}`}>{n.icon}</span>
                 <span className="font-display text-[12px]">{n.label}</span>
               </Link>
