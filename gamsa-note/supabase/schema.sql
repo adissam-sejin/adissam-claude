@@ -307,3 +307,11 @@ create policy photos_select on storage.objects for select to authenticated
   using (bucket_id = 'photos' and (
     (storage.foldername(name))[1] = (select auth.uid())::text
     or exists (select 1 from public.notes n where n.photo_path = storage.objects.name and n.is_public and public.shares_tree(n.user_id))));
+
+-- likes 를 연결 테이블로 인식하지 않게(피드의 notes→profiles 관계 모호성 방지)
+alter table public.likes add column if not exists id bigint generated always as identity;
+alter table public.likes drop constraint if exists likes_pkey;
+alter table public.likes add constraint likes_pkey primary key (id);
+alter table public.likes drop constraint if exists likes_note_user_key;
+alter table public.likes add constraint likes_note_user_key unique (note_id, user_id);
+notify pgrst, 'reload schema';
