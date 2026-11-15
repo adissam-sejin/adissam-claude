@@ -5,7 +5,7 @@
 
 - **Next.js 15 (App Router)** + **Tailwind CSS 4**
 - **Supabase**: 카카오 로그인(Auth), Postgres + RLS(권한), Storage(사진)
-- 배포: **Vercel** 추천 (어디든 Node 서버면 가능)
+- 배포: **Netlify** (https://gamsa-note.netlify.app) — `netlify.toml` 포함
 
 ## 화면 구성
 
@@ -16,7 +16,7 @@
 | `/calendar` | 달력에 감 아이콘, “올해 총 365일 중 N일 작성” 카운트 |
 | `/gallery` | 내 사진 3열 그리드(최신순), 누르면 감사 내용 |
 | `/feed` | 공개된 감사 피드, 좋아요(감)·댓글 |
-| `/farm` | 도트 감 농장. 감나무에 그룹 이름 팻말, 기간·D-day |
+| `/farm` | 3D 감 농장. 감나무에 그룹 이름 팻말, 기간·D-day |
 | `/settings` | 닉네임 변경, 감나무 코드 입력, 월 단위 PDF 저장, 로그아웃 |
 | `/admin` | 관리자: 감나무 생성/수정/삭제(이름·코드·기간), 참여자 목록과 **개수만** 보기 |
 
@@ -56,7 +56,7 @@ NEXT_PUBLIC_SITE_URL=https://내도메인
 npm install
 npm run dev        # http://localhost:3000
 ```
-Vercel: 저장소 import → **Root Directory = `gamsa-note`** → 위 환경변수 3개 입력 → Deploy.
+Netlify: 사이트 환경변수에 위 3개를 넣고 `gamsa-note` 폴더를 배포합니다 (`netlify.toml` 포함).
 
 ### 5. 관리자 지정
 카카오로 한 번 로그인한 뒤, Supabase SQL Editor에서:
@@ -74,6 +74,6 @@ update public.profiles set is_admin = true where nickname = '내닉네임';
 ## 아이콘 · 오픈그래프
 `public/` 에 파비콘(`favicon.ico`, `icons/favicon-*.png`, `icons/icon.svg`), 홈 화면 아이콘
 (`apple-touch-icon.png`, `icon-192/512.png`, `maskable-512.png`), `og-image.png`(1200×630)가 들어 있습니다.
-도트 디자인을 바꾼 뒤 다시 만들려면 `npm run icons` (OG 이미지는 Playwright 필요).
+3D 감·감나무 에셋과 아이콘은 Three.js로 렌더링합니다: `npm run assets` (Playwright 필요, `scripts/render3d/`).
 
-폰트: 도트 폰트 [Galmuri](https://github.com/quiple/galmuri) (SIL OFL), 원고지 글씨 Gowun Batang, 본문 Pretendard.
+폰트: 제목 Jua, 원고지 글씨 Gowun Batang, 본문 Pretendard.
