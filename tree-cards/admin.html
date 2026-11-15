@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>메시지 나무 · 관리자</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="preview-banner" id="previewBanner" hidden>
+    미리보기 모드 · 데이터가 이 브라우저에만 저장돼요 (비밀번호: <code id="previewPw"></code>)
+  </div>
+
+  <!-- 로그인 -->
+  <main class="login" id="login" hidden>
+    <form class="box" id="loginForm">
+      <h1>관리자 모드</h1>
+      <label for="pwInput">관리자 비밀번호</label>
+      <input id="pwInput" type="password" autocomplete="current-password" required>
+      <p class="error" id="loginError" role="alert"></p>
+      <button class="btn primary block" type="submit">들어가기</button>
+      <a class="plain-link" href="index.html">← 사용자 화면으로</a>
+    </form>
+  </main>
+
+  <!-- 대시보드 -->
+  <main class="dash" id="dash" hidden>
+    <header class="top">
+      <h1>메시지 나무 관리</h1>
+      <div class="top-actions">
+        <a class="btn" href="index.html">사용자 화면</a>
+        <button class="btn" id="logoutBtn" type="button">로그아웃</button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="요약">
+      <div class="stat"><span>전체 나무</span><b id="statTrees">0</b></div>
+      <div class="stat"><span>전체 카드</span><b id="statCards">0</b></div>
+      <div class="stat"><span>작성 가능한 나무</span><b id="statOpen">0</b></div>
+    </section>
+
+    <section class="box">
+      <h2 id="formTitle">새 나무 만들기</h2>
+      <form id="treeForm" class="tree-form" novalidate>
+        <div class="field">
+          <label for="fCode">코드</label>
+          <div class="with-btn">
+            <input id="fCode" type="text" maxlength="12" autocomplete="off" spellcheck="false" placeholder="영문 대문자·숫자 4~12자">
+            <button class="btn" id="genBtn" type="button">자동 생성</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fName">나무 이름 <small>(어떤 나무인지)</small></label>
+          <input id="fName" type="text" maxlength="40" placeholder="예: 2026 디자인 클래스 송년 트리">
+        </div>
+        <fieldset class="field wide">
+          <legend>콘셉트</legend>
+          <div class="themes">
+            <label class="theme-opt"><input type="radio" name="theme" value="christmas" checked>
+              <span><i>🎄</i><b>크리스마스 트리</b><small>카드 → 오너먼트 볼</small></span></label>
+            <label class="theme-opt"><input type="radio" name="theme" value="persimmon">
+              <span><i>🍊</i><b>감사 감나무</b><small>감사 → 주황 감</small></span></label>
+            <label class="theme-opt"><input type="radio" name="theme" value="cherry">
+              <span><i>🌸</i><b>벚꽃나무</b><small>소감·리뷰 → 벚꽃</small></span></label>
+          </div>
+        </fieldset>
+        <div class="field">
+          <label for="fStart">작성 시작 <small>(비우면 바로 시작)</small></label>
+          <input id="fStart" type="datetime-local">
+        </div>
+        <div class="field">
+          <label for="fEnd">작성 종료 <small>(비우면 제한 없음)</small></label>
+          <input id="fEnd" type="datetime-local">
+        </div>
+        <p class="error wide" id="formError" role="alert"></p>
+        <div class="form-actions wide">
+          <button class="btn primary" id="saveBtn" type="submit">나무 만들기</button>
+          <button class="btn" id="cancelEditBtn" type="button" hidden>수정 취소</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="box">
+      <h2>나무 목록</h2>
+      <p class="muted" id="noTrees" hidden>아직 만든 나무가 없어요. 위에서 첫 나무를 만들어 보세요.</p>
+      <div class="tree-list" id="treeList"></div>
+    </section>
+  </main>
+
+  <!-- 카드 관리 -->
+  <dialog class="dialog" id="cardsDialog" aria-labelledby="cardsTitle">
+    <div class="dialog-head">
+      <h2 id="cardsTitle"></h2>
+      <button class="btn" type="button" id="cardsClose">닫기</button>
+    </div>
+    <p class="muted" id="noCards" hidden>아직 작성된 카드가 없어요.</p>
+    <ul class="cards" id="cardsList"></ul>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/tree.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>메시지 나무</title>
+  <meta name="description" content="이름과 메시지를 남기면 나무에 카드가 달려요.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="home">
+  <div class="sky" id="sky" aria-hidden="true"></div>
+  <div class="preview-banner" id="previewBanner" hidden>
+    미리보기 모드 · 지금은 이 브라우저에만 저장돼요
+  </div>
+
+  <!-- 코드 입력 화면 -->
+  <main class="home" id="home" hidden>
+    <div class="home-card">
+      <div class="home-icons" aria-hidden="true">🎄 🍊 🌸</div>
+      <h1>메시지 나무</h1>
+      <p class="home-lead">받으신 코드를 입력하면<br>함께 꾸미는 나무로 이동해요.</p>
+      <form id="codeForm" novalidate>
+        <label class="sr-only" for="codeInput">입장 코드</label>
+        <input id="codeInput" class="code-input" type="text" inputmode="latin" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="코드 입력">
+        <p class="form-error" id="codeError" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit">나무 보러 가기</button>
+      </form>
+      <a class="admin-link" href="admin.html">관리자</a>
+    </div>
+  </main>
+
+  <!-- 나무 화면 -->
+  <main class="page" id="page" hidden>
+    <header class="head">
+      <a class="back" href="index.html" aria-label="코드 입력 화면으로">←</a>
+      <p class="badge" id="themeBadge"></p>
+      <h1 id="treeName"></h1>
+      <p class="tagline" id="tagline"></p>
+    </header>
+
+    <div class="layout">
+      <section class="stage-wrap" aria-label="나무">
+        <div class="stage-scroll" id="stageScroll">
+          <div class="stage" id="stage">
+            <svg id="treeSvg" role="group" aria-label="메시지가 달린 나무"></svg>
+          </div>
+        </div>
+        <p class="zoom-hint" id="zoomHint" hidden>카드가 많아 나무를 키웠어요 · 밀어서 둘러보세요</p>
+      </section>
+
+      <aside class="side">
+        <div class="panel info">
+          <div class="info-row">
+            <span class="chip" id="statusChip"></span>
+            <span class="count"><b id="countNum">0</b><span id="countUnit"></span></span>
+          </div>
+          <p class="period"><span class="period-label">작성 기간</span><span id="periodText"></span></p>
+          <button class="btn btn-primary btn-block" id="writeBtn" type="button"></button>
+          <p class="closed-note" id="closedNote" hidden></p>
+        </div>
+
+        <div class="panel list-panel">
+          <h2 id="listTitle"></h2>
+          <p class="empty" id="emptyText" hidden></p>
+          <ul class="card-list" id="cardList"></ul>
+          <button class="btn btn-ghost btn-block" id="moreBtn" type="button" hidden>더 보기</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="cta-bar" id="ctaBar">
+      <button class="btn btn-primary btn-block" id="writeBtnMobile" type="button"></button>
+    </div>
+  </main>
+
+  <!-- 메시지 보기 -->
+  <dialog class="modal" id="viewModal" aria-labelledby="viewAuthor">
+    <article class="letter">
+      <button class="modal-close" type="button" data-close aria-label="닫기">×</button>
+      <div class="letter-icon" id="viewIcon" aria-hidden="true"></div>
+      <p class="letter-body" id="viewBody"></p>
+      <p class="letter-from">From. <b id="viewAuthor"></b></p>
+      <p class="letter-date" id="viewDate"></p>
+    </article>
+  </dialog>
+
+  <!-- 메시지 쓰기 -->
+  <dialog class="modal" id="writeModal" aria-labelledby="writeTitle">
+    <form class="sheet" id="writeForm" novalidate>
+      <button class="modal-close" type="button" data-close aria-label="닫기">×</button>
+      <h2 id="writeTitle"></h2>
+      <label for="authorInput">이름</label>
+      <input id="authorInput" type="text" maxlength="12" autocomplete="nickname" placeholder="이름 또는 닉네임 (최대 12자)">
+      <label for="bodyInput">내용</label>
+      <textarea id="bodyInput" rows="6" maxlength="500"></textarea>
+      <p class="counter"><span id="bodyCount">0</span> / 500</p>
+      <p class="form-error" id="writeError" role="alert"></p>
+      <button class="btn btn-primary btn-block" id="submitBtn" type="submit"></button>
+    </form>
+  </dialog>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/tree.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
