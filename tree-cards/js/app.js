@@ -128,25 +128,35 @@
   }
 
   /* ---------- 새 카드 자동 반영 ---------- */
+  async function refresh() {
+    if (!tree || document.querySelector("#writeModal[open]")) return;
+    try {
+      const data = await API.getTree(tree.code);
+      // 방금 내가 쓴 카드가 응답에 아직 없으면 그대로 붙여 둔다
+      const now = Date.now(), ids = new Set(data.cards.map((c) => c.id));
+      mine = mine.filter((m) => !ids.has(m.card.id) && now - m.at < 15000);
+      const next = data.cards.concat(mine.map((m) => m.card));
+      const fresh = next.filter((c) => !cards.some((o) => o.id === c.id));
+      const changed = next.length !== cards.length || next.some((c, i) => c.id !== cards[i].id);
+      if (data.tree.theme !== tree.theme) { showTree({ tree: data.tree, cards: next }); return; }
+      tree = Object.assign(tree, data.tree);
+      $("treeName").textContent = tree.name;
+      if (changed) {
+        cards = next;
+        // 새로 달린 카드가 하나면 톡 튀어나오게 보여준다
+        drawAll(fresh.length === 1 ? fresh[0].id : undefined);
+      } else drawInfo();
+    } catch (_) {}
+  }
+
   function startPolling() {
     clearInterval(pollTimer);
-    pollTimer = setInterval(async () => {
-      if (document.hidden || document.querySelector("dialog[open]")) return;
-      try {
-        const data = await API.getTree(tree.code);
-        // 방금 내가 쓴 카드가 서버 응답(잠깐 캐시됨)에 아직 없으면 그대로 붙여 둔다
-        const now = Date.now(), ids = new Set(data.cards.map((c) => c.id));
-        mine = mine.filter((m) => !ids.has(m.card.id) && now - m.at < 90000);
-        const next = data.cards.concat(mine.map((m) => m.card));
-        const changed = next.length !== cards.length || next.some((c, i) => c.id !== cards[i].id) ||
-          data.tree.name !== tree.name || data.tree.theme !== tree.theme;
-        if (data.tree.theme !== tree.theme) { showTree({ tree: data.tree, cards: next }); return; }
-        tree = Object.assign(tree, data.tree);
-        $("treeName").textContent = tree.name;
-        if (changed) { cards = next; drawAll(); } else drawInfo();
-      } catch (_) {}
-    }, 15000);
+    // 실시간 알림이 기본이고, 놓친 경우를 대비해 주기적으로도 확인한다
+    pollTimer = setInterval(() => { if (!document.hidden) refresh(); }, 12000);
+    let soon;
+    API.subscribe(tree.code, () => { clearTimeout(soon); soon = setTimeout(refresh, 250); });
   }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 
   /* ---------- 메시지 보기 ---------- */
   function openCard(card) {

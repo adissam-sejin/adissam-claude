@@ -1,9 +1,7 @@
-/* 데이터 계층: 서버 API(노션에 저장) 또는 localStorage(미리보기) */
+/* 데이터 계층: Supabase(실서버) 또는 localStorage(미리보기) */
 (function () {
   const cfg = window.TREE_CONFIG || {};
-  // 내 컴퓨터에서 파일만 열었을 때는 서버가 없으므로 미리보기 모드로 동작한다
-  const isLocal = location.protocol === "file:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-  const LIVE = cfg.PREVIEW === true ? false : cfg.PREVIEW === false ? true : !isLocal;
+  const LIVE = !!(cfg.SUPABASE_URL && cfg.SUPABASE_KEY);
 
   const LIMITS = { author: 12, body: 500 };
   const THEME_KEYS = ["christmas", "persimmon", "cherry"];
@@ -18,8 +16,6 @@
     BAD_CODE: "코드는 영문 대문자·숫자 4~12자로 입력해 주세요.",
     BAD_PERIOD: "종료 일시는 시작 일시보다 뒤여야 해요.",
     NETWORK: "서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
-    NOTION_SETUP: "노션 연결 설정이 아직 끝나지 않았어요. 관리자에게 문의해 주세요.",
-    NOTION_ERROR: "노션에 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
   };
 
   function fail(code) {
@@ -30,17 +26,21 @@
 
   const normCode = (c) => String(c || "").trim().toUpperCase();
 
-  /* ---------------- 실서버 (노션에 저장) ---------------- */
-  async function call(method, payload) {
+  /* ---------------- 실서버 (Supabase) ---------------- */
+  const BASE = String(cfg.SUPABASE_URL || "").replace(/\/$/, "");
+
+  async function rpc(fn, args) {
     let res;
     try {
-      res = method === "GET"
-        ? await fetch(cfg.API_URL + "?code=" + encodeURIComponent(payload))
-        : await fetch(cfg.API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
+      res = await fetch(BASE + "/rest/v1/rpc/" + fn, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: cfg.SUPABASE_KEY,
+          Authorization: "Bearer " + cfg.SUPABASE_KEY,
+        },
+        body: JSON.stringify(args || {}),
+      });
     } catch (_) {
       throw fail("NETWORK");
     }
@@ -53,17 +53,42 @@
     return data;
   }
 
+  // 누군가 카드를 달면 바로 알려주는 실시간 채널
+  let realtime = null, channel = null;
+  function loadRealtime() {
+    if (!realtime) {
+      realtime = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js";
+        s.onload = () => resolve(window.supabase.createClient(BASE, cfg.SUPABASE_KEY));
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    return realtime;
+  }
+
   const live = {
-    getTree: (code) => call("GET", normCode(code)),
-    addCard: (code, author, body) => call("POST", { action: "addCard", code: normCode(code), author, body }),
-    adminListTrees: (pw) => call("POST", { action: "adminListTrees", pw }),
+    getTree: (code) => rpc("mt_get_tree", { p_code: normCode(code) }),
+    addCard: (code, author, body) =>
+      rpc("mt_add_card", { p_code: normCode(code), p_author: author, p_body: body }),
+    adminListTrees: (pw) => rpc("mt_admin_list_trees", { p_pw: pw }),
     adminSaveTree: (pw, t, isNew) =>
-      call("POST", {
-        action: "adminSaveTree", pw, code: normCode(t.code), name: t.name, theme: t.theme,
-        start_at: t.start_at || null, end_at: t.end_at || null, is_new: !!isNew,
+      rpc("mt_admin_save_tree", {
+        p_pw: pw, p_code: normCode(t.code), p_name: t.name, p_theme: t.theme,
+        p_start: t.start_at || null, p_end: t.end_at || null, p_is_new: !!isNew,
       }),
-    adminDeleteTree: (pw, code) => call("POST", { action: "adminDeleteTree", pw, code: normCode(code) }),
-    adminDeleteCard: (pw, id) => call("POST", { action: "adminDeleteCard", pw, id }),
+    adminDeleteTree: (pw, code) => rpc("mt_admin_delete_tree", { p_pw: pw, p_code: normCode(code) }),
+    adminDeleteCard: (pw, id) => rpc("mt_admin_delete_card", { p_pw: pw, p_id: id }),
+    // 실패해도 화면은 주기적으로 새로 읽으므로 조용히 넘어간다
+    subscribe(code, onChange) {
+      loadRealtime().then((client) => {
+        if (channel) client.removeChannel(channel);
+        channel = client.channel("tree:" + normCode(code))
+          .on("broadcast", { event: "changed" }, onChange)
+          .subscribe();
+      }).catch(() => {});
+    },
   };
 
   /* ---------------- 미리보기(localStorage) ---------------- */
@@ -88,6 +113,7 @@
   }
 
   const preview = {
+    subscribe() {},
     async getTree(code) {
       const db = load();
       const t = db.trees[normCode(code)];
