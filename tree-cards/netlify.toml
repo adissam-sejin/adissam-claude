@@ -1,3 +1,9 @@
 [build]
   publish = "."
   command = ""
+
+# 나무 전용 주소 /t/코드/ 는 모두 같은 화면(index.html)을 보여준다
+[[redirects]]
+  from = "/t/*"
+  to = "/index.html"
+  status = 200

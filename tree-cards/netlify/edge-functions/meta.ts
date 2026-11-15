@@ -1,5 +1,5 @@
 // 링크마다 나무 이름·콘셉트에 맞는 미리보기(오픈그래프)와 앱 아이콘을 내려준다.
-//   /?code=XXXX                  → HTML 의 <!--meta--> 구간을 그 나무 것으로 바꿈
+//   /t/XXXX/                     → HTML 의 <!--meta--> 구간을 그 나무 것으로 바꿈 (?code=XXXX 는 여기로 이동)
 //   /manifest.webmanifest?code=  → 그 나무 전용 홈 화면 앱 정보
 import type { Config, Context } from "@netlify/edge-functions";
 
@@ -37,8 +37,7 @@ function metaTags(origin: string, tree: { code: string; name: string; theme: str
   const theme = tree ? tree.theme : DEFAULT.theme;
   const title = tree ? `${tree.name} · ${THEMES[theme].label}` : DEFAULT.name;
   const desc = tree ? THEMES[theme].desc : DEFAULT.desc;
-  const page = tree ? `${origin}/?code=${tree.code}` : `${origin}/`;
-  const manifest = tree ? `/manifest.webmanifest?code=${tree.code}` : "/manifest.webmanifest";
+  const page = tree ? `${origin}/t/${tree.code}/` : `${origin}/`;
   return `
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(desc)}">
@@ -55,20 +54,21 @@ function metaTags(origin: string, tree: { code: string; name: string; theme: str
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" type="image/svg+xml" href="/assets/favicon-${theme}.svg">
   <link rel="apple-touch-icon" href="/assets/icon-${theme}-180.png">
-  <link rel="manifest" href="${manifest}">
+  ${tree ? `<link rel="manifest" href="/manifest.webmanifest?code=${tree.code}">` : ""}
   `;
 }
 
 function manifest(tree: { code: string; name: string; theme: string } | null) {
   const theme = tree ? tree.theme : DEFAULT.theme;
-  const start = tree ? `/?code=${tree.code}` : "/";
+  // 나무마다 범위(scope)를 따로 줘야 여러 나무를 각각 홈 화면 앱으로 저장할 수 있다
+  const start = tree ? `/t/${tree.code}/` : "/";
   return {
     id: start,
     name: tree ? tree.name : DEFAULT.name,
     short_name: tree ? Array.from(tree.name).slice(0, 12).join("") : DEFAULT.name,
     description: tree ? THEMES[theme].desc : DEFAULT.desc,
     start_url: start,
-    scope: "/",
+    scope: start,
     display: "standalone",
     lang: "ko",
     background_color: THEMES[theme].color,
@@ -83,7 +83,9 @@ function manifest(tree: { code: string; name: string; theme: string } | null) {
 
 export default async (request: Request, context: Context) => {
   const url = new URL(request.url);
-  const code = (url.searchParams.get("code") ?? "").trim().toUpperCase();
+  const inPath = url.pathname.match(/^\/t\/([^/]+)\/?$/);
+  const raw = inPath ? decodeURIComponent(inPath[1]) : (url.searchParams.get("code") ?? "");
+  const code = raw.trim().toUpperCase();
 
   if (url.pathname === "/manifest.webmanifest") {
     return new Response(JSON.stringify(manifest(code ? await treeInfo(code) : null)), {
@@ -92,6 +94,11 @@ export default async (request: Request, context: Context) => {
   }
 
   if (!code) return; // 코드가 없으면 기본 HTML 그대로
+  // 예전 주소(?code=)나 소문자·슬래시 없는 주소는 나무 전용 주소로 모은다
+  const canonical = `/t/${code}/`;
+  if (/^[A-Z0-9]{4,12}$/.test(code) && url.pathname !== canonical) {
+    return Response.redirect(new URL(canonical, url.origin), 302);
+  }
   const tree = await treeInfo(code);
   if (!tree) return;
   const res = await context.next();
@@ -104,6 +111,6 @@ export default async (request: Request, context: Context) => {
 };
 
 export const config: Config = {
-  path: ["/", "/index.html", "/manifest.webmanifest"],
+  path: ["/", "/index.html", "/t/*", "/manifest.webmanifest"],
   onError: "bypass",
 };

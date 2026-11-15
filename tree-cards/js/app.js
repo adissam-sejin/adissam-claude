@@ -115,7 +115,11 @@
     const set = (sel, attr, val) => { const n = document.querySelector(sel); if (n) n.setAttribute(attr, val); };
     set('link[rel="icon"]', "href", `/assets/favicon-${tree.theme}.svg`);
     set('link[rel="apple-touch-icon"]', "href", `/assets/icon-${tree.theme}-180.png`);
-    set('link[rel="manifest"]', "href", "/manifest.webmanifest?code=" + encodeURIComponent(tree.code));
+    if (API.LIVE) {
+      let mf = document.querySelector('link[rel="manifest"]');
+      if (!mf) { mf = document.createElement("link"); mf.rel = "manifest"; document.head.appendChild(mf); }
+      mf.href = "/manifest.webmanifest?code=" + encodeURIComponent(tree.code);
+    }
     set('meta[name="apple-mobile-web-app-title"]', "content", tree.name);
     set('meta[name="theme-color"]', "content", getComputedStyle(document.body).getPropertyValue("--bg-flat").trim());
     $("themeBadge").textContent = theme.label;
@@ -311,7 +315,11 @@
     if (!code) { err.textContent = "코드를 입력해 주세요."; return; }
     try {
       const data = await API.getTree(code);
-      if (fromForm) history.pushState(null, "", "?code=" + encodeURIComponent(code));
+      if (fromForm) {
+        // 실서버에서는 나무 전용 주소(/t/코드/)로 이동한다
+        if (API.LIVE) { location.assign("/t/" + encodeURIComponent(code) + "/"); return; }
+        history.pushState(null, "", "?code=" + encodeURIComponent(code));
+      }
       showTree(data);
     } catch (ex) {
       $("page").hidden = true;
@@ -328,7 +336,8 @@
   });
   window.addEventListener("popstate", () => location.reload());
 
-  const initial = new URLSearchParams(location.search).get("code");
+  const inPath = location.pathname.match(/^\/t\/([^/]+)/);
+  const initial = inPath ? decodeURIComponent(inPath[1]) : new URLSearchParams(location.search).get("code");
   if (initial) enter(initial, false);
   else { $("home").hidden = false; fillSky("christmas"); }
 })();

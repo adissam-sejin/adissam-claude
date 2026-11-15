@@ -43,7 +43,10 @@
     if (t.end_at) return fmt.format(new Date(t.end_at)) + "까지";
     return "기간 제한 없음";
   }
-  const linkOf = (code) => new URL("index.html?code=" + encodeURIComponent(code), location.href).href;
+  // 나무마다 주소가 따로 있어야 홈 화면 앱으로 각각 저장된다
+  const linkOf = (code) => new URL(
+    API.LIVE ? "/t/" + encodeURIComponent(code) + "/" : "/index.html?code=" + encodeURIComponent(code),
+    location.href).href;
 
   function h(tag, cls, text) {
     const n = document.createElement(tag);

@@ -334,3 +334,11 @@ body::after {
   color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer;
 }
 @media (min-width: 960px) { .install { max-width: 720px; } }
+
+/* 홈 화면 앱으로 열었을 때는 그 나무만 보여준다 */
+@media (display-mode: standalone) { .back { display: none; } }
+
+/* 메시지 보기: 본문은 왼쪽 정렬, 단어 중간에서 끊기지 않게 */
+.letter-body { text-align: left; word-break: keep-all; overflow-wrap: anywhere; }
+.letter-from, .letter-date { text-align: right; }
+.letter-icon svg { width: 64px; height: 64px; padding: 8px; border-radius: 50%; background: var(--bg-flat); }
