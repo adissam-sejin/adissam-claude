@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useApp } from './ctx'
 import { configured } from './lib/supabase'
 import { Loading, Stars, TabBar } from './components/ui'
+import { Guide } from './components/Guide'
 import Start from './pages/Start'
 import Onboard from './pages/Onboard'
 import TodayPage from './pages/Today'
@@ -14,7 +16,8 @@ import Admin from './pages/Admin'
 import Place from './pages/Place'
 
 export default function App() {
-  const { status, today, isAdmin, reload } = useApp()
+  const { status, me, today, isAdmin, reload } = useApp()
+  const [guide, setGuide] = useState(false)
   const loc = useLocation()
 
   // 공개 건물은 로그인과 상관없이 열린다.
@@ -60,9 +63,12 @@ export default function App() {
         <Link to="/" className="logo"><b>NFb</b> 브랜드 타운</Link>
         <div className="row">
           <TabBar admin={isAdmin} />
-          <Stars n={today?.balance ?? 0} />
+          <button className="stars-btn" onClick={() => setGuide(true)} aria-label={`별 ${today?.balance ?? 0}개. 별과 도장 받는 법 보기`}>
+            <Stars n={today?.balance ?? 0} />
+          </button>
         </div>
       </header>
+      {guide && <Guide goal={me?.week.goal ?? 3} onClose={() => setGuide(false)} />}
       <Routes>
         <Route path="/" element={<TodayPage />} />
         <Route path="/building" element={<MyBuilding />} />

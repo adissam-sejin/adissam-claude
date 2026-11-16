@@ -5,6 +5,7 @@ import { rpc } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import { BuildingView } from '../components/Building'
 import { RecordSheet } from '../components/RecordSheet'
+import { Guide } from '../components/Guide'
 import { channelInfo, floorTitle, fmtDay } from '../lib/util'
 
 export default function TodayPage() {
@@ -12,6 +13,7 @@ export default function TodayPage() {
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   const [goalOpen, setGoalOpen] = useState(false)
+  const [guide, setGuide] = useState(false)
   const [busy, run] = useRun()
   if (!me || !today) return null
 
@@ -70,6 +72,7 @@ export default function TodayPage() {
               ))}
             </div>
           )}
+          <button className="btn wide" onClick={() => setGuide(true)}>⭐ 별과 도장은 어떻게 받나요?</button>
         </section>
 
         {today.recent_cheers.length > 0 && (
@@ -115,6 +118,7 @@ export default function TodayPage() {
           <p className="muted small">일주일 목표를 채우면 그 주에 도장 하나와 별 5개를 받아요. 한 판은 8주(두 달)치이고, 8칸을 다 채우면 새 판이 이어져요.</p>
         </section>
       </div>
+      {guide && <Guide goal={goal} onClose={() => setGuide(false)} />}
       {open && <RecordSheet floors={sns} onClose={() => setOpen(false)} />}
     </div>
   )
