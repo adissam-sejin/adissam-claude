@@ -38,6 +38,11 @@ SHEETS = {
     'books': (2, 5, [f'book{i}' for i in range(1, 11)], 'books', 200),
 }
 
+# 하늘에서 내려다본 건물(마을 지도용). 낱개로 자른 뒤 브랜드 색 칠할 자리도 함께 만든다.
+TINT_SHEETS = {
+    'ext': (2, 2, ['ext1', 'ext2', 'ext3', 'ext4'], 'town', 520),
+}
+
 
 def blue_mask(rgb: np.ndarray) -> np.ndarray:
     """선명한 파란색(색상 205~255도)인 정도를 0~1 로 돌려준다."""
@@ -110,7 +115,7 @@ def bands(profile: np.ndarray, want: int):
     return segs
 
 
-def split_sheet(path: Path, rows: int, cols: int, names, folder: Path, size: int):
+def split_sheet(path: Path, rows: int, cols: int, names, folder: Path, size: int, tint=False):
     im = Image.open(path).convert('RGBA')
     a = np.array(im)[..., 3] > 24
     row_segs = bands(a.sum(axis=1), rows)
@@ -125,10 +130,14 @@ def split_sheet(path: Path, rows: int, cols: int, names, folder: Path, size: int
             return
         for x0, x1 in col_segs:
             cell = im.crop((x0, y0, x1, y1))
-            cell = cell.crop(cell.getbbox())
+            # 투명한 테두리를 잘라낸다 (투명한 곳에도 색 값이 남아 있을 수 있어 투명도만 보고 자른다)
+            cell = cell.crop(cell.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox())
             scale = min(1, size / max(cell.size))
             cell = cell.resize((max(1, round(cell.size[0] * scale)), max(1, round(cell.size[1] * scale))), Image.LANCZOS)
-            cell.save(folder / f'{names[k]}.webp', quality=90, method=4)
+            if tint:
+                tintable(cell, names[k], folder)
+            else:
+                cell.save(folder / f'{names[k]}.webp', quality=90, method=4)
             k += 1
     print(f'  {path.name}: {k}개')
 
@@ -165,6 +174,12 @@ def main():
             continue
         (OUT / folder).mkdir(parents=True, exist_ok=True)
         split_sheet(p, rows, cols, names, OUT / folder, size)
+    for sheet, (rows, cols, names, folder, size) in TINT_SHEETS.items():
+        p = RAW / f'{sheet}.png'
+        if not p.exists() or (ONLY and sheet not in ONLY):
+            continue
+        (OUT / folder).mkdir(parents=True, exist_ok=True)
+        split_sheet(p, rows, cols, names, OUT / folder, size, tint=True)
 
 
 main()
