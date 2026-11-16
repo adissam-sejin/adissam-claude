@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp, useRun } from '../ctx'
-import { rpc } from '../lib/api'
+import { rpc, removeMemberFiles } from '../lib/api'
 import { supabase } from '../lib/supabase'
 import { BuildingView } from '../components/Building'
 import { Celebrate, Sheet } from '../components/ui'
@@ -12,7 +12,7 @@ import type { ChannelType } from '../lib/types'
 export default function MyBuilding() {
   const { me, signOut } = useApp()
   const nav = useNavigate()
-  const [sheet, setSheet] = useState<null | 'floor' | 'edit' | 'share' | 'photo'>(null)
+  const [sheet, setSheet] = useState<null | 'floor' | 'edit' | 'share' | 'photo' | 'leave'>(null)
   if (!me) return null
   const p = me.profile
 
@@ -43,10 +43,12 @@ export default function MyBuilding() {
           <span className="muted">{p.nickname}님으로 들어와 있어요</span>
           <button className="btn small" onClick={() => void signOut()}>로그아웃</button>
         </section>
+        <button className="linkish" onClick={() => setSheet('leave')}>마을 떠나기 (건물 없애기)</button>
       </div>
       {sheet === 'floor' && <AddFloor onClose={() => setSheet(null)} />}
       {sheet === 'edit' && <EditProfile onClose={() => setSheet(null)} />}
       {sheet === 'share' && <Share onClose={() => setSheet(null)} />}
+      {sheet === 'leave' && <Leave onClose={() => setSheet(null)} />}
       {sheet === 'photo' && <PhotoSheet b={me} onClose={() => setSheet(null)} />}
     </div>
   )
@@ -163,6 +165,32 @@ function Share({ onClose }: { onClose: () => void }) {
       ) : (
         <p className="empty">지금은 마을 이웃만 볼 수 있어요.</p>
       )}
+    </Sheet>
+  )
+}
+
+function Leave({ onClose }: { onClose: () => void }) {
+  const { me, signOut, toast } = useApp()
+  const [busy, run] = useRun()
+  const [sure, setSure] = useState(false)
+  if (!me) return null
+  return (
+    <Sheet title="마을 떠나기" onClose={onClose}>
+      <div className="stack">
+        <p>마을을 떠나면 <b>내 건물과 기록, 도장, 별, 물건이 모두 지워져요.</b> 지운 뒤에는 되돌릴 수 없어요.</p>
+        <p className="muted">잠깐 쉬고 싶은 거라면 떠나지 않아도 괜찮아요. 쉬는 동안에도 건물은 그대로 있어요.</p>
+        <label className="check"><input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} /> 모두 지워지는 것을 알고 있어요</label>
+        <button className="btn danger big" disabled={busy || !sure}
+          onClick={() => run(async () => {
+            await removeMemberFiles(me.profile.id)
+            await rpc('leave_town')
+            toast('마을을 떠났어요. 그동안 고마웠어요.')
+            await signOut()
+          })}>
+          건물을 없애고 떠나기
+        </button>
+        <button className="btn wide" onClick={onClose}>그만두기</button>
+      </div>
     </Sheet>
   )
 }

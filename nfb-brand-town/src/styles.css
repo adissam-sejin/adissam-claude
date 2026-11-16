@@ -76,6 +76,11 @@ img { max-width: 100%; }
 .btn.wide { width: 100%; }
 .btn.ghost { background: transparent; box-shadow: none; border: 2px solid var(--line); }
 .btn.small { min-height: 48px; padding: 0 16px; font-size: 0.92rem; border-radius: 14px; }
+.btn.danger { background: #8a2626; color: #fff; box-shadow: 0 4px 0 #641a1a; }
+.linkish { background: none; border: 0; color: var(--on-night-sub); text-decoration: underline; font-size: 0.95rem; min-height: 48px; cursor: pointer; justify-self: center; padding: 0 12px; }
+.mem-dot { width: 28px; height: 28px; border-radius: 50%; flex: none; border: 3px solid #fff; box-shadow: 0 0 0 1.5px var(--line); }
+.mem-nums { display: block; color: var(--sub); font-size: 0.92rem; margin-top: 2px; }
+.mem-act { flex: 1 1 100%; background: var(--card-2); border-radius: 14px; padding: 14px; }
 .btn.kakao { background: #fee500; color: #191600; box-shadow: 0 4px 0 #d6c100; }
 .btn.on { background: var(--ink); color: #fff; box-shadow: none; }
 :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }

@@ -29,6 +29,8 @@ const MESSAGES: Record<string, string> = {
   NO_USER: '찾을 수 없는 건물이에요.',
   NO_CONSENT: '회원이 소개에 동의하지 않은 소식이에요.',
   TOO_MANY: '더 넣을 수 없어요.',
+  SELF_REMOVE: '내 계정은 여기서 내보낼 수 없어요. 「내 건물」 맨 아래의 [마을 떠나기]를 써 주세요.',
+  LAST_ADMIN: '관리자가 한 명뿐이라 떠날 수 없어요. 마을을 돌볼 사람이 없어지기 때문이에요.',
   PLAZA_MAX: '오늘은 방명록을 충분히 남기셨어요. 내일 또 남겨 주세요.',
 }
 
@@ -87,4 +89,13 @@ export async function uploadPhoto(bucket: 'shared' | 'proofs', userId: string, f
   const { error } = await supabase.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg' })
   if (error) throw new AppError('NO_PHOTO')
   return path
+}
+
+// 회원이 올린 사진 파일을 치운다. 계정을 지우기 전에 부른다. 파일이 남아도 계정 지우기는 계속한다.
+export async function removeMemberFiles(userId: string): Promise<void> {
+  try {
+    const paths = await rpc<{ proofs: string[]; shared: string[] }>('member_photo_paths', { p_user_id: userId })
+    if (paths.proofs.length) await supabase.storage.from('proofs').remove(paths.proofs)
+    if (paths.shared.length) await supabase.storage.from('shared').remove(paths.shared)
+  } catch { /* 파일 정리는 못 해도 넘어간다 */ }
 }

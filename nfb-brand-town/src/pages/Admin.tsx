@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useApp, useRun } from '../ctx'
-import { rpc, shrinkImage } from '../lib/api'
+import { rpc, shrinkImage, removeMemberFiles } from '../lib/api'
 import { supabase, sharedUrl } from '../lib/supabase'
 import type { Book, Course, Item } from '../lib/types'
 import { fmtDay, fmtFullDay, newsInfo } from '../lib/util'
 import { Loading, Sprite } from '../components/ui'
 import { SHELF_FLOORS, type Exhibition, type PlazaNote, type ShelfBook, type TownPost, type Work } from './Place'
 
-const TABS = ['요약', '광장', '수료', '소식', '강의', '책', '오브북', '전시', '물건', '초대', '기록', '설정'] as const
+const TABS = ['요약', '회원', '광장', '수료', '소식', '강의', '책', '오브북', '전시', '물건', '초대', '기록', '설정'] as const
 type Tab = (typeof TABS)[number]
 
 export default function Admin() {
@@ -21,6 +22,7 @@ export default function Admin() {
         ))}
       </div>
       {tab === '요약' && <Summary />}
+      {tab === '회원' && <Members />}
       {tab === '광장' && <PlazaAdmin />}
       {tab === '수료' && <Completions />}
       {tab === '소식' && <NewsAdmin />}
@@ -790,5 +792,81 @@ function PlazaAdmin() {
         </ul>
       </section>
     </>
+  )
+}
+
+interface Member {
+  id: string; nickname: string; brand_name: string; brand_color: string; role: 'member' | 'admin'; plot_no: number
+  created_at: string; is_me: boolean; floors: number; records: number; last_record: string | null; stamps: number; balance: number
+}
+
+function Members() {
+  const { toast } = useApp()
+  const [busy, run] = useRun()
+  const [rows, reload] = useLoad(() => rpc<Member[]>('admin_members'))
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState<{ id: string; what: 'stars' | 'remove' } | null>(null)
+  const [amount, setAmount] = useState('5')
+  const [note, setNote] = useState('')
+  if (!rows) return <Loading />
+  const word = q.trim().toLowerCase()
+  const shown = word ? rows.filter((m) => `${m.nickname} ${m.brand_name}`.toLowerCase().includes(word)) : rows
+  const n = Number(amount)
+  return (
+    <section className="card stack">
+      <div className="row between">
+        <h2>회원 {rows.length}명</h2>
+        <button className="btn small" onClick={reload}>새로 고침</button>
+      </div>
+      <p className="muted small">가입한 순서대로 보여요. 이름과 활동 숫자만 보이고, 이메일이나 연락처는 모으지 않아요.</p>
+      {rows.length > 8 && <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름이나 간판으로 찾기" />}
+      {shown.length === 0 && <p className="empty">찾는 회원이 없어요.</p>}
+      <ul className="list">
+        {shown.map((m) => (
+          <li key={m.id}>
+            <span className="mem-dot" style={{ background: m.brand_color }} aria-hidden />
+            <span className="txt">
+              <b>{m.nickname}{m.role === 'admin' ? ' (관리자)' : ''}{m.is_me ? ' · 나' : ''}</b>
+              {m.brand_name || '간판 없음'} · {fmtFullDay(m.created_at)} 가입
+              <span className="mem-nums">층 {m.floors} · 기록 {m.records} · 도장 {m.stamps} · 별 {m.balance}{m.last_record ? ` · 마지막 기록 ${fmtDay(m.last_record)}` : ' · 아직 기록 없음'}</span>
+            </span>
+            <Link className="btn ghost small" to={`/visit/${m.id}`}>건물 보기</Link>
+            <button className="btn ghost small" onClick={() => { setOpen(open?.id === m.id && open.what === 'stars' ? null : { id: m.id, what: 'stars' }); setAmount('5'); setNote('') }}>별 주기</button>
+            {!m.is_me && <button className="btn ghost small" onClick={() => setOpen(open?.id === m.id && open.what === 'remove' ? null : { id: m.id, what: 'remove' })}>내보내기</button>}
+            {open?.id === m.id && open.what === 'stars' && (
+              <div className="mem-act stack">
+                <label className="field">별 몇 개를 줄까요?<input className="input" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))} /></label>
+                <label className="field">왜 주는지 (메모)<input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 공동 전시 참여" /></label>
+                <div className="row">
+                  <button className="btn primary grow" disabled={busy || !(n >= 1 && n <= 100)}
+                    onClick={() => run(async () => {
+                      await rpc('admin_give_stars', { p_user_id: m.id, p_amount: n, p_note: note.trim() })
+                      setOpen(null); reload()
+                      toast(`${m.nickname}님에게 별 ${n}개를 줬어요.`)
+                    })}>별 {n || 0}개 주기</button>
+                  <button className="btn grow" onClick={() => setOpen(null)}>그만두기</button>
+                </div>
+                <p className="muted small">한 번에 1개부터 100개까지 줄 수 있어요.</p>
+              </div>
+            )}
+            {open?.id === m.id && open.what === 'remove' && (
+              <div className="mem-act stack">
+                <p><b>{m.nickname}님을 마을에서 내보낼까요?</b> 건물과 기록, 도장, 별, 물건이 모두 지워지고 되돌릴 수 없어요.</p>
+                <div className="row">
+                  <button className="btn danger grow" disabled={busy}
+                    onClick={() => run(async () => {
+                      await removeMemberFiles(m.id)
+                      await rpc('admin_remove_member', { p_user_id: m.id })
+                      setOpen(null); reload()
+                      toast(`${m.nickname}님을 내보냈어요.`)
+                    })}>내보내기</button>
+                  <button className="btn grow" onClick={() => setOpen(null)}>그만두기</button>
+                </div>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

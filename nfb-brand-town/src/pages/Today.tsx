@@ -80,6 +80,7 @@ export default function TodayPage() {
 
         <section className="card stack">
           <h2>이번 주에 남긴 기록</h2>
+          <p className="muted small">월요일부터 오늘까지 [기록 남기기]로 남긴 것들이 여기에 모여요. 잘못 남겼으면 [되돌리기]를 눌러 주세요.</p>
           {today.week_records.length === 0 ? (
             <p className="empty">아직 비어 있어요. 작은 것 하나부터 남겨 보세요.</p>
           ) : (
@@ -104,14 +105,14 @@ export default function TodayPage() {
         <section className="card stack">
           <div className="row between">
             <h2>도장판</h2>
-            <span className="muted">지금까지 {today.stamp_weeks.length}개</span>
+            <span className="muted">지금까지 받은 도장 {today.stamp_weeks.length}개</span>
           </div>
           <div className="stampcard">
             {Array.from({ length: Math.max(8, Math.ceil((today.stamp_weeks.length + 1) / 8) * 8) }, (_, i) => (
               <span key={i} className={`stamp${i < today.stamp_weeks.length ? ' on' : ''}`}>{i < today.stamp_weeks.length ? '잘했어요' : i + 1}</span>
             ))}
           </div>
-          <p className="muted small">일주일 목표를 채우면 도장 하나와 별 5개를 받아요.</p>
+          <p className="muted small">일주일 목표를 채우면 그 주에 도장 하나와 별 5개를 받아요. 한 판은 8주(두 달)치이고, 8칸을 다 채우면 새 판이 이어져요.</p>
         </section>
       </div>
       {open && <RecordSheet floors={sns} onClose={() => setOpen(false)} />}
