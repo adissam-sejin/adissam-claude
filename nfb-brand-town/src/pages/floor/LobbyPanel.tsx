@@ -6,13 +6,15 @@ import type { Course, MyBook, News, NewsKind, Taste } from '../../lib/types'
 import { BOOK_STAGES, NEWS_KINDS, channelInfo, floorNumber, floorTitle, fmtDay, josa, newsInfo } from '../../lib/util'
 import { Celebrate, Sheet } from '../../components/ui'
 import { EditProfile } from '../MyBuilding'
+import { tasteArt, tasteArtByLabel } from '../../lib/rooms'
 
 interface Cat { id: string; label: string; emoji: string; tag: string }
 
 export function TasteChip({ t, onClick }: { t: Taste; onClick?: () => void }) {
+  const art = t.kind === 'photo' ? sharedUrl(t.photo_path) : tasteArt(t)
   const body = (
     <>
-      {t.kind === 'photo' && t.photo_path ? <img src={sharedUrl(t.photo_path)!} alt="" /> : <span aria-hidden>{t.emoji ?? (t.shape === 'book' ? '📕' : t.shape === 'record' ? '💿' : '📝')}</span>}
+      {art ? <img src={art} alt="" /> : <span aria-hidden>{t.emoji ?? '📝'}</span>}
       {t.label}
     </>
   )
@@ -164,7 +166,7 @@ function AddTaste({ onClose }: { onClose: () => void }) {
             {cats.filter((c) => c.tag === tag).map((c) => (
               <button key={c.id} className={`chip${have.has(c.label) ? ' on' : ''}`} disabled={busy || have.has(c.label)}
                 onClick={() => add({ p_kind: 'pick', p_shape: 'object', p_label: c.label, p_emoji: c.emoji }, `${josa(c.label, '을', '를')} 놓았어요.`)}>
-                <span aria-hidden>{c.emoji}</span>{c.label}
+                {tasteArtByLabel(c.label) ? <img className="chip-art" src={tasteArtByLabel(c.label)!} alt="" /> : <span aria-hidden>{c.emoji}</span>}{c.label}
               </button>
             ))}
           </div>

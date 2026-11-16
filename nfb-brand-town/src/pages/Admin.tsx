@@ -220,63 +220,86 @@ function Courses() {
   const [busy, run] = useRun()
   const [rows, reload] = useLoad(async () => (await supabase.from('courses').select('*').order('sort').order('title')).data as Course[])
   const [items] = useLoad(async () => (await supabase.from('items').select('*').eq('source', 'reward').order('sort')).data as Item[])
+  const [q, setQ] = useState('')
+  const [onlyShown, setOnlyShown] = useState(false)
   const [title, setTitle] = useState('')
-  const [kind, setKind] = useState<'course' | 'free'>('course')
-  const [count, setCount] = useState(8)
-  const [reward, setReward] = useState('')
+  const [open, setOpen] = useState<string | null>(null)
   if (!rows || !items) return <Loading />
+
   const patch = (id: string, v: Partial<Course>) =>
     run(async () => {
       const { error } = await supabase.from('courses').update(v).eq('id', id)
       if (error) return fail(error)
       reload()
     })
+  const shown = rows.filter((c) => c.active).length
+  const list = rows.filter((c) => (!onlyShown || c.active) && (!q.trim() || c.title.toLowerCase().includes(q.trim().toLowerCase())))
+
   return (
     <>
       <section className="card stack">
-        <h2>강의 추가</h2>
+        <div className="row between">
+          <h2>눈보라피팅룸 강의 {rows.length}개</h2>
+          <span className="muted">수강생에게 보이는 강의 {shown}개</span>
+        </div>
+        <p className="muted small">체크한 강의만 수강생의 강의실에 보여요. 유료 강의는 회차마다 도장을, 무료특강은 도장 하나를 받아요.</p>
+        <input className="input" placeholder="강의 이름으로 찾기" value={q} onChange={(e) => setQ(e.target.value)} />
+        <label className="check"><input type="checkbox" checked={onlyShown} onChange={(e) => setOnlyShown(e.target.checked)} /><span>보이는 강의만 보기</span></label>
+        <ul className="list">
+          {list.map((c) => (
+            <li key={c.id} style={{ alignItems: 'flex-start' }}>
+              <label className="check" style={{ flex: '1 1 220px', padding: 0 }}>
+                <input type="checkbox" checked={c.active} disabled={busy} onChange={(e) => patch(c.id, { active: e.target.checked })} aria-label={`${c.title} 수강생에게 보이기`} />
+                <span><b style={{ display: 'block' }}>{c.title}</b>
+                  <span className="muted small">{c.kind === 'free' ? '무료특강 · 도장 1개' : `유료 강의 · ${c.session_count}강`}{c.stamp_open ? '' : ' · 도장 닫힘'}</span></span>
+              </label>
+              <button className="btn ghost small" onClick={() => setOpen(open === c.id ? null : c.id)}>{open === c.id ? '접기' : '자세히'}</button>
+              {open === c.id && (
+                <div className="stack" style={{ flex: '1 1 100%', gap: 10 }}>
+                  <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                    <button className={`chip${c.kind === 'course' ? ' on' : ''}`} disabled={busy} onClick={() => patch(c.id, { kind: 'course' })}>유료 강의</button>
+                    <button className={`chip${c.kind === 'free' ? ' on' : ''}`} disabled={busy} onClick={() => patch(c.id, { kind: 'free', session_count: 1 })}>무료특강</button>
+                  </div>
+                  {c.kind === 'course' && (
+                    <>
+                      <div className="row">
+                        <span className="grow"><b>모두 몇 강인가요?</b></span>
+                        <button className="btn small" disabled={busy || c.session_count <= 1} onClick={() => patch(c.id, { session_count: c.session_count - 1 })} aria-label="한 강 줄이기">−</button>
+                        <b style={{ minWidth: 48, textAlign: 'center' }}>{c.session_count}강</b>
+                        <button className="btn small" disabled={busy || c.session_count >= 60} onClick={() => patch(c.id, { session_count: c.session_count + 1 })} aria-label="한 강 늘리기">＋</button>
+                      </div>
+                      <label className="field">수료 기념품
+                        <select className="input" value={c.reward_item_id ?? ''} disabled={busy} onChange={(e) => patch(c.id, { reward_item_id: e.target.value || null })}>
+                          <option value="">없음</option>
+                          {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+                        </select>
+                      </label>
+                    </>
+                  )}
+                  <label className="check"><input type="checkbox" checked={c.stamp_open} disabled={busy} onChange={(e) => patch(c.id, { stamp_open: e.target.checked })} /><span>지금 도장을 받을 수 있게 열어 두기</span></label>
+                </div>
+              )}
+            </li>
+          ))}
+          {list.length === 0 && <li><span className="txt">찾는 강의가 없어요.</span></li>}
+        </ul>
+      </section>
+      <section className="card stack">
+        <h2>목록에 없는 강의 직접 넣기</h2>
+        <p className="muted small">눈보라피팅룸에 새 강의가 생기면 목록을 다시 가져올 수 있어요. 급할 때는 여기서 직접 넣으세요.</p>
         <label className="field">강의 이름
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>
-          <button className={`chip${kind === 'course' ? ' on' : ''}`} onClick={() => setKind('course')}>유료 강의 (회차 도장)</button>
-          <button className={`chip${kind === 'free' ? ' on' : ''}`} onClick={() => setKind('free')}>무료특강 (도장 1개)</button>
-        </div>
-        {kind === 'course' && (
-          <>
-            <label className="field">모두 몇 강인가요?
-              <input className="input" type="number" min={1} max={60} value={count} onChange={(e) => setCount(Number(e.target.value))} />
-            </label>
-            <label className="field">수료 기념품
-              <select className="input" value={reward} onChange={(e) => setReward(e.target.value)}>
-                <option value="">없음</option>
-                {items.map((i) => <option key={i.id} value={i.id}>{i.emoji} {i.name}</option>)}
-              </select>
-            </label>
-          </>
-        )}
         <button className="btn primary big" disabled={busy || !title.trim()}
           onClick={() => run(async () => {
-            const { error } = await supabase.from('courses').insert({ title: title.trim(), kind, session_count: kind === 'free' ? 1 : count, reward_item_id: kind === 'course' && reward ? reward : null, sort: rows.length + 1 })
+            const { error } = await supabase.from('courses').insert({ title: title.trim(), kind: title.includes('무료특강') ? 'free' : 'course', session_count: 1, active: false, sort: 0 })
             if (error) return fail(error)
             setTitle('')
             reload()
-            toast('강의를 추가했어요.')
+            toast('강의를 넣었어요. 목록에서 체크하면 수강생에게 보여요.')
           })}>
-          추가하기
+          넣기
         </button>
-      </section>
-      <section className="card stack">
-        <h2>강의 {rows.length}개</h2>
-        <ul className="list">
-          {rows.map((c) => (
-            <li key={c.id} style={{ flexWrap: 'wrap' }}>
-              <span className="txt"><b>{c.title}</b>{c.kind === 'free' ? '무료특강' : `유료 강의 · ${c.session_count}강`}{c.active ? '' : ' · 숨김'}</span>
-              <button className={`btn small${c.stamp_open ? ' on' : ''}`} disabled={busy} onClick={() => patch(c.id, { stamp_open: !c.stamp_open })}>{c.stamp_open ? '도장 열림' : '도장 닫힘'}</button>
-              <button className="btn ghost small" disabled={busy} onClick={() => patch(c.id, { active: !c.active })}>{c.active ? '숨기기' : '다시 보이기'}</button>
-            </li>
-          ))}
-        </ul>
       </section>
     </>
   )

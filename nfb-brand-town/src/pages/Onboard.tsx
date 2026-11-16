@@ -44,9 +44,9 @@ export default function Onboard() {
   }
 
   const preview = (
-    <div style={{ width: 130, margin: '0 auto' }}>
-      <MiniBuilding t={{ id: 'p', nickname, brand_name: brand, brand_color: color, plot_no: 0, week_count: 0, banner: null, cheered_today: false,
-        floors: [{ kind: 'lobby', channel_type: null, wall_color: null }, { kind: 'classroom', channel_type: null, wall_color: null }, { kind: 'library', channel_type: null, wall_color: null }, { kind: 'sns', channel_type: 'blog', wall_color: null }] }} />
+    <div style={{ width: 170, margin: '0 auto' }}>
+      <MiniBuilding t={{ brand_color: color, banner: null,
+        floors: [{ kind: 'lobby', channel_type: null, wall_color: null }, { kind: 'classroom', channel_type: null, wall_color: null }, { kind: 'library', channel_type: null, wall_color: null }, { kind: 'sns', channel_type: channel ?? 'blog', wall_color: null }, { kind: 'rooftop', channel_type: null, wall_color: null }] }} />
     </div>
   )
 

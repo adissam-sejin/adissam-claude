@@ -5,6 +5,10 @@ import { BuildingView } from '../components/Building'
 import { PaintSheet, SlotSheet } from '../components/Decorate'
 import type { Placement } from '../lib/types'
 import { floorNumber, floorTitle } from '../lib/util'
+import { ROOMS, roomArt, slotKeys } from '../lib/rooms'
+import { PhotoSheet } from '../components/PhotoSheet'
+import { Sprite } from '../components/ui'
+import { sharedUrl } from '../lib/supabase'
 import SnsPanel from './floor/SnsPanel'
 import ClassroomPanel from './floor/ClassroomPanel'
 import LibraryPanel from './floor/LibraryPanel'
@@ -16,6 +20,7 @@ export default function FloorPage() {
   const nav = useNavigate()
   const [slot, setSlot] = useState<{ key: string; cur?: Placement } | null>(null)
   const [paint, setPaint] = useState(false)
+  const [photo, setPhoto] = useState(false)
   if (!me) return null
   const f = me.floors.find((x) => x.id === id)
   if (!f) return <Navigate to="/building" replace />
@@ -25,10 +30,27 @@ export default function FloorPage() {
       <div className="sticky stack">
         <button className="backlink" onClick={() => nav('/building')}>← 내 건물로</button>
         <BuildingView b={me} only={f.id} onSlot={(_, key, cur) => setSlot({ key, cur })} />
-        <p className="on-night-sub small center">＋ 표시가 있는 빈 자리를 누르면 물건을 놓을 수 있어요.</p>
-        {f.kind !== 'rooftop' && (
-          <button className="btn wide" onClick={() => setPaint(true)}>벽 색 바꾸기</button>
-        )}
+        <div className="row">
+          <button className="btn grow" onClick={() => setPhoto(true)}>📸 이 층 인증사진</button>
+          {f.kind !== 'rooftop' && <button className="btn grow" onClick={() => setPaint(true)}>벽 색 바꾸기</button>}
+        </div>
+        <section className="card tight stack">
+          <h3>꾸미기 자리</h3>
+          <ul className="list">
+            {slotKeys(roomArt(f)).map((key) => {
+              const cur = f.placements.find((x) => x.slot_key === key)
+              const wall = key[0] === 'w'
+              return (
+                <li key={key}>
+                  <span className="ico">{cur ? <Sprite emoji={cur.item.emoji} image={sharedUrl(cur.item.image_url)} label={cur.item.name} /> : <span aria-hidden>＋</span>}</span>
+                  <span className="txt"><b>{wall ? '벽' : '바닥'} 자리 {key.slice(1)}</b>{cur ? cur.item.name : '비어 있어요'}</span>
+                  <button className={`btn small${cur ? '' : ' primary'}`} onClick={() => setSlot({ key, cur })}>{cur ? '바꾸기' : '놓기'}</button>
+                </li>
+              )
+            })}
+          </ul>
+          {ROOMS[roomArt(f)].wall.length === 0 && <p className="muted small">이 방에는 바닥에 놓는 물건만 둘 수 있어요.</p>}
+        </section>
       </div>
       <div className="stack">
         <h1 className="on-night">{f.kind === 'rooftop' ? '옥상' : `${floorNumber(me.floors, f)} · ${floorTitle(f)}`}</h1>
@@ -45,6 +67,7 @@ export default function FloorPage() {
       </div>
       {slot && <SlotSheet floor={f} slotKey={slot.key} current={slot.cur} onClose={() => setSlot(null)} />}
       {paint && <PaintSheet floor={f} onClose={() => setPaint(false)} />}
+      {photo && <PhotoSheet b={me} floorId={f.id} onClose={() => setPhoto(false)} />}
     </div>
   )
 }

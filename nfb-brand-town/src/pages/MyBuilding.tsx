@@ -6,12 +6,13 @@ import { supabase } from '../lib/supabase'
 import { BuildingView } from '../components/Building'
 import { Celebrate, Sheet } from '../components/ui'
 import { BRAND_COLORS, CHANNELS } from '../lib/util'
+import { PhotoSheet } from '../components/PhotoSheet'
 import type { ChannelType } from '../lib/types'
 
 export default function MyBuilding() {
   const { me, signOut } = useApp()
   const nav = useNavigate()
-  const [sheet, setSheet] = useState<null | 'floor' | 'edit' | 'share'>(null)
+  const [sheet, setSheet] = useState<null | 'floor' | 'edit' | 'share' | 'photo'>(null)
   if (!me) return null
   const p = me.profile
 
@@ -33,7 +34,8 @@ export default function MyBuilding() {
           <p className="muted">층을 누르면 방으로 들어가 꾸밀 수 있어요. 모은 별은 건물 위 밤하늘에 떠요.</p>
         </section>
         <section className="card stack">
-          <button className="btn primary big" onClick={() => setSheet('floor')}>층 올리기</button>
+          <button className="btn primary big" onClick={() => setSheet('photo')}>📸 건물 인증사진 찍기</button>
+          <button className="btn wide" onClick={() => setSheet('floor')}>층 올리기</button>
           <button className="btn wide" onClick={() => setSheet('edit')}>이름과 브랜드 색 바꾸기</button>
           <button className="btn wide" onClick={() => setSheet('share')}>내 건물 보여주기</button>
         </section>
@@ -42,6 +44,7 @@ export default function MyBuilding() {
       {sheet === 'floor' && <AddFloor onClose={() => setSheet(null)} />}
       {sheet === 'edit' && <EditProfile onClose={() => setSheet(null)} />}
       {sheet === 'share' && <Share onClose={() => setSheet(null)} />}
+      {sheet === 'photo' && <PhotoSheet b={me} onClose={() => setSheet(null)} />}
     </div>
   )
 }

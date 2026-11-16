@@ -1,25 +1,28 @@
-import type { CSSProperties } from 'react'
-import type { Building, Floor, FloorKind, Placement, TownBuilding } from '../lib/types'
-import { channelInfo, floorNumber, floorTitle, newsInfo, seeded, shade } from '../lib/util'
+import type { CSSProperties, ReactNode } from 'react'
+import type { Building, ChannelType, Floor, FloorKind, Placement, TownBuilding } from '../lib/types'
+import { floorNumber, floorTitle, newsInfo, seeded, shade } from '../lib/util'
+import { LOBBY, ROOMS, artUrl, maskUrl, roomArt, roomUrl, tasteArt, type RoomArt } from '../lib/rooms'
 import { sharedUrl } from '../lib/supabase'
 import { Sprite } from './ui'
 
-// 방 종류마다 물건을 놓을 수 있는 자리. f = 바닥(왼쪽 %, 폭 %), w = 벽(왼쪽 %, 위 %)
-export const SLOTS: Record<FloorKind, { f: [number, number][]; w: [number, number][] }> = {
-  sns: { f: [[4, 17], [24, 17], [53, 17], [76, 17]], w: [[62, 12], [81, 12]] },
-  classroom: { f: [[3, 17], [22, 17], [60, 17], [80, 17]], w: [[5, 12], [81, 12]] },
-  library: { f: [[6, 17], [28, 17], [55, 17], [78, 17]], w: [[69, 12], [85, 12]] },
-  lobby: { f: [[30, 13], [56, 12]], w: [] },
-  rooftop: { f: [[5, 16], [23, 16], [41, 16], [59, 16], [77, 16]], w: [] },
+const MEMO_HUES = [0, -28, 60, 150, 200, 300, 95, 0, 240]
+const pct = (n: number) => `${n}%`
+
+function brandVars(color: string): CSSProperties {
+  return { '--brand': color, '--brand-dark': shade(color, -0.14), '--brand-light': shade(color, 0.16) } as CSSProperties
 }
 
-export const slotKeys = (kind: FloorKind) => [
-  ...SLOTS[kind].f.map((_, i) => `f${i + 1}`),
-  ...SLOTS[kind].w.map((_, i) => `w${i + 1}`),
-]
-
-const DEFAULT_WALL = '#F4E4C8'
-const SPINE_COLORS = ['#B5403A', '#2F7D5B', '#C9A227', '#3E8FC2', '#6B4FA0', '#E0705A', '#7A5236', '#14907F']
+// 방 그림 한 장: 그림 + 브랜드 색 칠 + 벽 색
+function RoomPicture({ art, wallColor, small }: { art: RoomArt; wallColor: string | null; small?: boolean }) {
+  const mask = `url(${maskUrl(art, small)})`
+  return (
+    <>
+      <img className="fl-art" src={roomUrl(art, small)} alt="" draggable={false} />
+      {wallColor && art !== 'rooftop' && <i className="fl-paint" style={{ background: wallColor }} />}
+      {ROOMS[art].tinted && <i className="fl-tint" style={{ maskImage: mask, WebkitMaskImage: mask }} />}
+    </>
+  )
+}
 
 interface Props {
   b: Building
@@ -30,19 +33,13 @@ interface Props {
 }
 
 export function BuildingView({ b, onFloor, only, onSlot, sky = true }: Props) {
-  const color = b.profile.brand_color
-  const style = {
-    '--brand': color,
-    '--brand-dark': shade(color, -0.14),
-    '--brand-light': shade(color, 0.16),
-  } as CSSProperties
   const all = [...b.floors].sort((x, y) => y.position - x.position)
   const shown = only ? all.filter((f) => f.id === only) : all
   const banner = b.news.find((n) => n.on_banner)
   const topFloorId = all.find((f) => f.kind !== 'rooftop')?.id
 
   return (
-    <div className={`bld${only ? ' bld-single' : ''}`} style={style}>
+    <div className={`bld${only ? ' bld-single' : ''}`} style={brandVars(b.profile.brand_color)}>
       {sky && !only && <Sky n={b.stars_earned} seed={b.profile.id} />}
       <div className="bld-body">
         {shown.map((f) => (
@@ -62,7 +59,7 @@ export function BuildingView({ b, onFloor, only, onSlot, sky = true }: Props) {
   )
 }
 
-function Sky({ n, seed }: { n: number; seed: string }) {
+export function Sky({ n, seed }: { n: number; seed: string }) {
   const count = Math.min(n, 70)
   const r = seeded(seed, count * 3)
   return (
@@ -94,13 +91,18 @@ function FloorRow({
   onSlot?: (f: Floor, slotKey: string, current?: Placement) => void
   banner?: string
 }) {
-  const layout = SLOTS[f.kind]
+  const art = roomArt(f)
+  const L = ROOMS[art]
   const byKey = new Map(f.placements.map((p) => [p.slot_key, p]))
-  const tappable = Boolean(onFloor)
 
-  const slot = (key: string, st: CSSProperties, wall: boolean) => {
+  const slot = (key: string, wall: boolean, x: number, y: number): ReactNode => {
     const p = byKey.get(key)
+    const size = (p?.item.size ?? 1) * (L.scale ?? 1)
+    const st: CSSProperties = wall
+      ? { left: pct(x), top: pct(y), height: pct(p ? size * 30 : 28) }
+      : { left: pct(x), bottom: pct(y), height: pct(p ? size * 36 : 30 * (L.scale ?? 1)) }
     const cls = `slot ${wall ? 'slot-w' : 'slot-f'}`
+    const pic = p && <Sprite emoji={p.item.emoji} image={sharedUrl(p.item.image_url)} label={p.item.name} />
     if (onSlot) {
       return (
         <button
@@ -113,167 +115,156 @@ function FloorRow({
           }}
           aria-label={p ? `${p.item.name} 바꾸기` : '빈 자리에 물건 놓기'}
         >
-          {p ? <Sprite emoji={p.item.emoji} image={sharedUrl(p.item.image_url)} label={p.item.name} /> : <span aria-hidden>＋</span>}
+          {pic ?? <span aria-hidden>＋</span>}
         </button>
       )
     }
     if (!p) return null
-    return (
-      <span key={key} className={cls} style={st}>
-        <Sprite emoji={p.item.emoji} image={sharedUrl(p.item.image_url)} label={p.item.name} />
-      </span>
-    )
+    return <span key={key} className={cls} style={st}>{pic}</span>
   }
 
   const inner = (
     <>
-      {f.kind !== 'rooftop' && (
-        <div className="fl-pillar l">
-          <i className="win" />
-        </div>
-      )}
-      <div className="fl-room">
-        <div className="fl-wall">
-          <Fixture b={b} f={f} />
-          {layout.w.map(([x, y], i) => slot(`w${i + 1}`, { left: `${x}%`, top: `${y}%` }, true))}
-        </div>
-        <div className="fl-planks" />
-        {layout.f.map(([x, w], i) => slot(`f${i + 1}`, { left: `${x}%`, width: `${w}%` }, false))}
+      {f.kind !== 'rooftop' && <div className="fl-pillar l"><i className="win" /></div>}
+      <div className="fl-room" style={{ aspectRatio: String(L.ratio) }}>
+        <RoomPicture art={art} wallColor={f.wall_color} />
+        <Overlays b={b} f={f} art={art} />
+        {L.wall.map(([x, y], i) => slot(`w${i + 1}`, true, x, y))}
+        {L.floor.map((x, i) => slot(`f${i + 1}`, false, x, L.floorY))}
         <span className="fl-tag">{label}</span>
         {banner && <span className="banner">🎉 {banner}</span>}
       </div>
-      {f.kind !== 'rooftop' && (
-        <div className="fl-pillar r">
-          <i className="win" />
-        </div>
-      )}
+      {f.kind !== 'rooftop' && <div className="fl-pillar r"><i className="win" /></div>}
     </>
   )
 
-  const st = { '--wall': f.wall_color ?? DEFAULT_WALL } as CSSProperties
-  if (tappable) {
+  if (onFloor) {
     return (
       <div
         className={`fl fl-${f.kind} fl-tap`}
-        style={st}
         role="button"
         tabIndex={0}
         aria-label={`${label} 들어가기`}
-        onClick={() => onFloor!(f)}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onFloor!(f)}
+        onClick={() => onFloor(f)}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onFloor(f)}
       >
         {inner}
       </div>
     )
   }
+  return <div className={`fl fl-${f.kind}`}>{inner}</div>
+}
+
+// 그림 위에 얹는 것: 기록 쪽지·스크랩북, 강의 도장, 읽은 책, 간판 글자·쇼윈도·취향
+function Overlays({ b, f, art }: { b: Building; f: Floor; art: RoomArt }) {
+  const L = ROOMS[art]
+  const box = ([x, y, w, h]: readonly number[]): CSSProperties => ({ left: pct(x), top: pct(y), width: pct(w), height: pct(h) })
+
+  if (f.kind === 'sns' && L.board && L.plank) {
+    const albums = Math.floor(f.record_count / 10)
+    const loose = f.record_count % 10
+    const [px, py, pw] = L.plank
+    return (
+      <>
+        <div className="ov ov-board" style={box(L.board)} aria-label={`기록 ${f.record_count}개`}>
+          {Array.from({ length: loose }, (_, i) => (
+            <img key={i} src={artUrl('taste/memo.webp')} alt="" style={{ filter: `hue-rotate(${MEMO_HUES[i % MEMO_HUES.length]}deg)` }} />
+          ))}
+        </div>
+        {albums > 0 && (
+          <div className="ov ov-plank" style={{ left: pct(px), width: pct(pw), top: pct(py - 17), height: pct(17) }} aria-label={`스크랩북 ${albums}권`}>
+            {Array.from({ length: Math.min(albums, 4) }, (_, i) => <img key={i} src={artUrl('taste/scrapbook.webp')} alt="" />)}
+            {albums > 4 && <b>×{albums}</b>}
+          </div>
+        )}
+      </>
+    )
+  }
+  if (f.kind === 'classroom' && L.chalk) {
+    const stamps = b.courses.reduce((n, c) => n + c.stamps.length, 0)
+    return (
+      <div className="ov ov-chalk" style={box(L.chalk)} aria-label={`강의 도장 ${stamps}개`}>
+        {Array.from({ length: Math.min(stamps, 14) }, (_, i) => <i key={i} className="stampdot" />)}
+        {stamps > 14 && <b>+{stamps - 14}</b>}
+      </div>
+    )
+  }
+  if (f.kind === 'library' && L.shelves) {
+    const r = seeded(f.id, 40)
+    const perRow = 13
+    return (
+      <>
+        {L.shelves.map(([x, bottom, w], row) => (
+          <div key={row} className="ov ov-shelf" style={{ left: pct(x), width: pct(w), top: pct(bottom - 23), height: pct(23) }}>
+            {b.readings.slice(row * perRow, (row + 1) * perRow).map((rd, i) => (
+              <img key={rd.id} src={artUrl(`books/book${((row * perRow + i) % 10) + 1}.webp`)} alt="" title={rd.title}
+                   style={{ height: pct(74 + r[row * perRow + i] * 26) }} />
+            ))}
+          </div>
+        ))}
+      </>
+    )
+  }
+  if (f.kind === 'lobby') {
+    const taste = b.taste.slice(-8)
+    const [wx, wy, ww] = LOBBY.windowBooks
+    return (
+      <>
+        <div className="ov ov-sign" style={box(LOBBY.sign)}><SignText text={b.profile.brand_name || b.profile.nickname} /></div>
+        <div className="ov ov-window" style={{ left: pct(wx), width: pct(ww), top: pct(wy - 26), height: pct(26) }} aria-label="쇼윈도">
+          {b.my_books.slice(0, 3).map((mb) =>
+            mb.cover_url
+              ? <img key={mb.id} className={`cover st-${mb.stage}`} src={sharedUrl(mb.cover_url)!} alt={mb.title} />
+              : <img key={mb.id} className={`st-${mb.stage}`} src={artUrl('taste/book.webp')} alt={mb.title} />,
+          )}
+        </div>
+        {LOBBY.cubbies.map(([x, bottom, w], c) => (
+          <div key={c} className="ov ov-cubby" style={{ left: pct(x), width: pct(w), top: pct(bottom - 19), height: pct(19) }}>
+            {taste.slice(c * 2, c * 2 + 2).map((t) => {
+              const src = t.kind === 'photo' ? sharedUrl(t.photo_path) : tasteArt(t)
+              return src
+                ? <img key={t.id} className={t.kind === 'photo' ? 'photo' : ''} src={src} alt={t.label} title={t.label} />
+                : <span key={t.id} title={t.label}>{t.emoji ?? '📝'}</span>
+            })}
+          </div>
+        ))}
+      </>
+    )
+  }
+  return null
+}
+
+// 간판 글자: 길면 두 줄로 나누고 글자 수에 맞춰 크기를 줄인다.
+function SignText({ text }: { text: string }) {
+  const len = [...text].length
+  const lines = len > 6 ? 2 : 1
+  const perLine = Math.ceil(len / lines)
+  const size = Math.min(4.4, (lines === 1 ? 17 : 16) / Math.max(perLine, 1) * 1.05)
+  return <span style={{ fontSize: `max(8px, ${size.toFixed(2)}cqw)`, whiteSpace: lines === 2 ? 'normal' : 'nowrap' }}>{text}</span>
+}
+
+// 마을 지도에 서는 건물: 실제 방 그림을 작게 쌓아 보여준다.
+export function MiniBuilding({ t }: { t: Pick<TownBuilding, 'brand_color' | 'floors' | 'banner'> }) {
+  const floors = [...t.floors].reverse()
   return (
-    <div className={`fl fl-${f.kind}`} style={st}>
-      {inner}
+    <div className="bld bld-mini" style={brandVars(t.brand_color)} aria-hidden>
+      <div className="bld-body">
+        {floors.map((f, i) => <MiniFloor key={i} kind={f.kind} channel={f.channel_type} wall={f.wall_color} />)}
+      </div>
+      {t.banner && <span className="mini-banner">🎉</span>}
     </div>
   )
 }
 
-function Fixture({ b, f }: { b: Building; f: Floor }) {
-  switch (f.kind) {
-    case 'sns': {
-      const info = channelInfo(f.channel_type)
-      const books = Math.floor(f.record_count / 10)
-      const loose = f.record_count % 10
-      const r = seeded(f.id, 12)
-      return (
-        <>
-          <div className="fx fx-board" aria-label={`기록 ${f.record_count}개`}>
-            <span className="fx-board-icon" aria-hidden>{info.emoji}</span>
-            {Array.from({ length: Math.min(loose, 9) }, (_, i) => (
-              <i key={i} className="memo" style={{ transform: `rotate(${(r[i] * 10 - 5).toFixed(1)}deg)`, background: ['#fff', '#FFE9A8', '#FFD0C2', '#CFE8D5'][i % 4] }} />
-            ))}
-          </div>
-          {books > 0 && (
-            <div className="fx fx-scrap" aria-label={`스크랩북 ${books}권`}>
-              {Array.from({ length: Math.min(books, 10) }, (_, i) => (
-                <i key={i} style={{ background: SPINE_COLORS[i % SPINE_COLORS.length] }} />
-              ))}
-            </div>
-          )}
-        </>
-      )
-    }
-    case 'classroom': {
-      const stamps = b.courses.reduce((n, c) => n + c.stamps.length, 0)
-      return (
-        <div className="fx fx-chalk" aria-label={`강의 도장 ${stamps}개`}>
-          {Array.from({ length: Math.min(stamps, 10) }, (_, i) => (
-            <i key={i} className="stampdot" />
-          ))}
-          {stamps === 0 && <span className="fx-hint">도장판</span>}
-        </div>
-      )
-    }
-    case 'library': {
-      const r = seeded(f.id, 40)
-      return (
-        <div className="fx fx-shelf" aria-label={`읽은 책 ${b.readings.length}권`}>
-          {b.readings.slice(0, 24).map((rd, i) => (
-            <i key={rd.id} className="spine" title={rd.title}
-               style={{ background: SPINE_COLORS[i % SPINE_COLORS.length], height: `${72 + r[i] * 24}%` }} />
-          ))}
-          {b.readings.length === 0 && <span className="fx-hint">책장</span>}
-        </div>
-      )
-    }
-    case 'lobby': {
-      const taste = b.taste.slice(-10)
-      return (
-        <>
-          <div className="fx fx-awning" />
-          <div className="fx fx-sign">{b.profile.brand_name || b.profile.nickname}</div>
-          <div className="fx fx-window" aria-label="쇼윈도">
-            {b.my_books.slice(0, 3).map((mb) => (
-              <i key={mb.id} className={`wbook st-${mb.stage}`} title={mb.title}
-                 style={mb.cover_url ? { backgroundImage: `url(${sharedUrl(mb.cover_url)})` } : undefined} />
-            ))}
-          </div>
-          <div className="fx fx-door"><i /></div>
-          <div className="fx fx-taste" aria-label={`좋아하는 것 ${b.taste.length}개`}>
-            {taste.map((t) => (
-              <span key={t.id} title={t.label}>
-                {t.kind === 'photo' && t.photo_path
-                  ? <img src={sharedUrl(t.photo_path)!} alt={t.label} />
-                  : t.emoji ?? (t.shape === 'book' ? '📕' : t.shape === 'record' ? '💿' : '📝')}
-              </span>
-            ))}
-          </div>
-        </>
-      )
-    }
-    case 'rooftop':
-      return (
-        <>
-          <div className="fx fx-lights">{Array.from({ length: 9 }, (_, i) => <i key={i} />)}</div>
-          <div className="fx fx-flag"><i /></div>
-          <div className="fx fx-rail" />
-        </>
-      )
-  }
-}
-
-// 마을 지도에 서는 작은 건물
-export function MiniBuilding({ t }: { t: TownBuilding }) {
-  const floors = [...t.floors].reverse().filter((f) => f.kind !== 'rooftop')
-  const style = {
-    '--brand': t.brand_color,
-    '--brand-dark': shade(t.brand_color, -0.14),
-  } as CSSProperties
+function MiniFloor({ kind, channel, wall }: { kind: FloorKind; channel: ChannelType | null; wall: string | null }) {
+  const art = roomArt({ kind, channel_type: channel })
   return (
-    <div className="mini" style={style} aria-hidden>
-      <div className="mini-roof"><i /></div>
-      {floors.map((f, i) => (
-        <div key={i} className={`mini-fl${f.kind === 'lobby' ? ' mini-lobby' : ''}`}
-             style={{ '--wall': f.wall_color ?? DEFAULT_WALL } as CSSProperties}>
-          {f.kind === 'lobby' ? <><i className="mw" /><i className="md" /><i className="mw" /></> : <><i className="mw" /><i className="mw" /><i className="mw" /></>}
-        </div>
-      ))}
-      {t.banner && <span className="mini-banner">🎉</span>}
+    <div className={`fl fl-${kind}`}>
+      {kind !== 'rooftop' && <div className="fl-pillar l"><i className="win" /></div>}
+      <div className="fl-room" style={{ aspectRatio: String(ROOMS[art].ratio) }}>
+        <RoomPicture art={art} wallColor={wall} small />
+      </div>
+      {kind !== 'rooftop' && <div className="fl-pillar r"><i className="win" /></div>}
     </div>
   )
 }

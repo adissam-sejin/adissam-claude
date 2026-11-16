@@ -14,6 +14,7 @@ export const devLogin = import.meta.env.VITE_DEV_LOGIN === '1'
 
 export function sharedUrl(path: string | null | undefined): string | null {
   if (!path) return null
-  if (/^https?:\/\//.test(path)) return path
+  // 사이트에 함께 올린 그림(/art/...)이나 바깥 주소는 그대로 쓴다.
+  if (path.startsWith('/') || /^https?:\/\//.test(path)) return path
   return supabase.storage.from('shared').getPublicUrl(path).data.publicUrl
 }

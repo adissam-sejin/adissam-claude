@@ -108,7 +108,7 @@ export default function TodayPage() {
           </div>
           <div className="stampcard">
             {Array.from({ length: Math.max(8, Math.ceil((today.stamp_weeks.length + 1) / 8) * 8) }, (_, i) => (
-              <span key={i} className={`stamp${i < today.stamp_weeks.length ? ' on' : ''}`}>{i < today.stamp_weeks.length ? '참 잘했어요' : i + 1}</span>
+              <span key={i} className={`stamp${i < today.stamp_weeks.length ? ' on' : ''}`}>{i < today.stamp_weeks.length ? '잘했어요' : i + 1}</span>
             ))}
           </div>
           <p className="muted small">일주일 목표를 채우면 도장 하나와 별 5개를 받아요.</p>

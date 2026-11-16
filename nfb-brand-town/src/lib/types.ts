@@ -7,6 +7,7 @@ export interface ItemLite {
   emoji: string | null
   image_url: string | null
   slot: 'floor' | 'wall'
+  size?: number
 }
 
 export interface Placement {
@@ -184,6 +185,7 @@ export interface Item {
   sale_end: string | null
   active: boolean
   sort: number
+  size: number
 }
 
 export interface InventoryRow {
