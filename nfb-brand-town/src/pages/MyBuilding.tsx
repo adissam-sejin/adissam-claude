@@ -1,18 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp, useRun } from '../ctx'
 import { rpc, removeMemberFiles } from '../lib/api'
-import { supabase } from '../lib/supabase'
+import { supabase, sharedUrl } from '../lib/supabase'
 import { BuildingView } from '../components/Building'
-import { Celebrate, Sheet } from '../components/ui'
+import { Celebrate, Loading, Sheet, Sprite } from '../components/ui'
 import { BRAND_COLORS, CHANNELS } from '../lib/util'
 import { PhotoSheet } from '../components/PhotoSheet'
-import type { ChannelType } from '../lib/types'
+import type { ChannelType, InventoryRow } from '../lib/types'
+import { SLOT_LABEL, slotKind } from '../lib/rooms'
+import { floorNumber, floorTitle } from '../lib/util'
 
 export default function MyBuilding() {
   const { me, signOut } = useApp()
   const nav = useNavigate()
-  const [sheet, setSheet] = useState<null | 'floor' | 'edit' | 'share' | 'photo' | 'leave'>(null)
+  const [sheet, setSheet] = useState<null | 'floor' | 'edit' | 'share' | 'photo' | 'leave' | 'things'>(null)
   if (!me) return null
   const p = me.profile
 
@@ -35,6 +37,8 @@ export default function MyBuilding() {
         </section>
         <section className="card stack">
           <button className="btn primary big" onClick={() => setSheet('photo')}>📸 건물 인증사진 찍기</button>
+          <button className="btn wide" onClick={() => setSheet('things')}>🧺 내 물건 보기 (보관함)</button>
+          <button className="btn wide" onClick={() => nav('/place/mart')}>⭐ 별마트 가기</button>
           <button className="btn wide" onClick={() => setSheet('floor')}>층 올리기</button>
           <button className="btn wide" onClick={() => setSheet('edit')}>이름과 브랜드 색 바꾸기</button>
           <button className="btn wide" onClick={() => setSheet('share')}>내 건물 보여주기</button>
@@ -49,6 +53,7 @@ export default function MyBuilding() {
       {sheet === 'edit' && <EditProfile onClose={() => setSheet(null)} />}
       {sheet === 'share' && <Share onClose={() => setSheet(null)} />}
       {sheet === 'leave' && <Leave onClose={() => setSheet(null)} />}
+      {sheet === 'things' && <MyThings onClose={() => setSheet(null)} />}
       {sheet === 'photo' && <PhotoSheet b={me} onClose={() => setSheet(null)} />}
     </div>
   )
@@ -190,6 +195,76 @@ function Leave({ onClose }: { onClose: () => void }) {
           건물을 없애고 떠나기
         </button>
         <button className="btn wide" onClick={onClose}>그만두기</button>
+      </div>
+    </Sheet>
+  )
+}
+
+// 내가 가진 물건을 모두 본다: 방에 놓은 것, 보관함에 있는 것, 가진 벽 색
+function MyThings({ onClose }: { onClose: () => void }) {
+  const { me, session } = useApp()
+  const nav = useNavigate()
+  const [inv, setInv] = useState<InventoryRow[] | null>(null)
+  useEffect(() => {
+    void supabase.from('inventory').select('id,item_id,source,items(*)').eq('user_id', session!.user.id).order('acquired_at')
+      .then(({ data }) => setInv((data ?? []) as unknown as InventoryRow[]))
+  }, [session])
+  if (!me) return null
+  if (!inv) return <Sheet title="내 물건" onClose={onClose}><Loading /></Sheet>
+
+  const where = new Map<string, { floorId: string; text: string }>()
+  for (const f of me.floors) {
+    const name = f.kind === 'rooftop' ? '옥상' : `${floorNumber(me.floors, f)} ${floorTitle(f)}`
+    for (const p of f.placements) where.set(p.inventory_id, { floorId: f.id, text: `${name} · ${SLOT_LABEL[slotKind(p.slot_key)]}` })
+  }
+  const objects = inv.filter((v) => v.items.kind === 'object')
+  const placed = objects.filter((v) => where.has(v.id))
+  const stored = objects.filter((v) => !where.has(v.id))
+  const paints = inv.filter((v) => v.items.kind === 'wall_paint')
+  const from = (v: InventoryRow) => (v.source === 'shop' ? '' : v.source === 'gift' ? ' · 선물 받음' : ' · 기념품')
+
+  return (
+    <Sheet title={`내 물건 ${objects.length}개`} onClose={onClose}>
+      <div className="stack">
+        <p className="muted">별마트에서 사거나 선물·기념품으로 받은 물건이 모두 여기에 있어요. <b>보관함</b>은 아직 방에 놓지 않은 물건을 넣어 두는 곳이에요.</p>
+
+        <h3>보관함에 있는 물건 {stored.length}개</h3>
+        {stored.length === 0 ? <p className="empty">보관함이 비어 있어요.</p> : (
+          <>
+            <ul className="list">
+              {stored.map((v) => (
+                <li key={v.id}>
+                  <span className="ico"><Sprite emoji={v.items.emoji} image={sharedUrl(v.items.image_url)} label={v.items.name} /></span>
+                  <span className="txt"><b>{v.items.name}</b>{SLOT_LABEL[v.items.slot]}에 놓는 물건{from(v)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="muted small">놓으려면 건물에서 층을 누르고, 방 그림의 ＋ 자리를 눌러 주세요.</p>
+          </>
+        )}
+
+        <h3>방에 놓은 물건 {placed.length}개</h3>
+        {placed.length === 0 ? <p className="empty">아직 방에 놓은 물건이 없어요.</p> : (
+          <ul className="list">
+            {placed.map((v) => (
+              <li key={v.id}>
+                <span className="ico"><Sprite emoji={v.items.emoji} image={sharedUrl(v.items.image_url)} label={v.items.name} /></span>
+                <span className="txt"><b>{v.items.name}</b>{where.get(v.id)!.text}{from(v)}</span>
+                <button className="btn ghost small" onClick={() => nav(`/floor/${where.get(v.id)!.floorId}`)}>그 방 보기</button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {paints.length > 0 && (
+          <>
+            <h3>가진 벽 색 {paints.length}개</h3>
+            <div className="chips">
+              {paints.map((v) => <span key={v.id} className="chip" style={{ cursor: 'default' }}><i className="dotc" style={{ background: v.items.color ?? '#fff', border: '1px solid var(--line)' }} /> {v.items.name}</span>)}
+            </div>
+          </>
+        )}
+        <button className="btn primary wide" onClick={() => nav('/place/mart')}>⭐ 별마트에서 물건 사기</button>
       </div>
     </Sheet>
   )

@@ -5,6 +5,7 @@ import { supabase, sharedUrl } from '../lib/supabase'
 import type { Floor, InventoryRow, Item, Placement } from '../lib/types'
 import { Loading, Sheet, Sprite } from './ui'
 import { josa } from '../lib/util'
+import { fitsSlot, slotKind } from '../lib/rooms'
 
 async function loadGoods(userId: string) {
   const [inv, items] = await Promise.all([
@@ -14,7 +15,7 @@ async function loadGoods(userId: string) {
   return { inv: (inv.data ?? []) as unknown as InventoryRow[], items: (items.data ?? []) as Item[] }
 }
 
-function onSale(it: Item, today: string) {
+export function onSale(it: Item, today: string) {
   return it.source === 'shop' && (!it.sale_start || today >= it.sale_start) && (!it.sale_end || today <= it.sale_end)
 }
 
@@ -25,22 +26,25 @@ export function SlotSheet({ floor, slotKey, current, onClose }: { floor: Floor; 
   const [goods, setGoods] = useState<{ inv: InventoryRow[]; items: Item[] } | null>(null)
   const [tab, setTab] = useState<'inv' | 'shop'>('inv')
   const [pick, setPick] = useState<Item | null>(null)
-  const want = slotKey.startsWith('f') ? 'floor' : 'wall'
+  const want = slotKind(slotKey)
 
   useEffect(() => {
     void loadGoods(session!.user.id).then((g) => {
       setGoods(g)
       const placed = new Set(me!.floors.flatMap((f) => f.placements.map((p) => p.inventory_id)))
-      const free = g.inv.filter((v) => v.items.kind === 'object' && v.items.slot === want && !placed.has(v.id))
+      const free = g.inv.filter((v) => v.items.kind === 'object' && fitsSlot(v.items.slot, slotKey) && !placed.has(v.id))
       if (free.length === 0) setTab('shop')
     })
-  }, [session, me, want])
+  }, [session, me, slotKey])
 
   const placed = useMemo(() => new Set(me!.floors.flatMap((f) => f.placements.map((p) => p.inventory_id))), [me])
   if (!goods) return <Sheet title="물건 놓기" onClose={onClose}><Loading /></Sheet>
 
-  const free = goods.inv.filter((v) => v.items.kind === 'object' && v.items.slot === want && !placed.has(v.id))
-  const shop = goods.items.filter((it) => it.kind === 'object' && it.slot === want && onSale(it, today!.today))
+  const free = goods.inv.filter((v) => v.items.kind === 'object' && fitsSlot(v.items.slot, slotKey) && !placed.has(v.id))
+  // 책상 위 자리에는 작은 소품만, 바닥 자리에는 큰 물건을 먼저 보여 준다.
+  const shop = goods.items
+    .filter((it) => it.kind === 'object' && fitsSlot(it.slot, slotKey) && onSale(it, today!.today))
+    .sort((a, b) => Number(a.slot !== want) - Number(b.slot !== want))
   const balance = today!.balance
 
   const place = (inventoryId: string) =>
@@ -84,7 +88,7 @@ export function SlotSheet({ floor, slotKey, current, onClose }: { floor: Floor; 
   }
 
   return (
-    <Sheet title={want === 'floor' ? '바닥에 놓을 물건' : '벽에 걸 물건'} onClose={onClose}>
+    <Sheet title={want === 'floor' ? '바닥에 놓을 물건' : want === 'wall' ? '벽에 걸 물건' : '책상 위에 놓을 소품'} onClose={onClose}>
       {current && (
         <div className="row between card tight" style={{ boxShadow: 'none', background: 'var(--card-2)' }}>
           <span>지금 놓인 물건: <b>{current.item.name}</b></span>
@@ -93,11 +97,11 @@ export function SlotSheet({ floor, slotKey, current, onClose }: { floor: Floor; 
       )}
       <div className="chips" role="tablist">
         <button className={`chip${tab === 'inv' ? ' on' : ''}`} role="tab" aria-selected={tab === 'inv'} onClick={() => setTab('inv')}>내 보관함 {free.length}</button>
-        <button className={`chip${tab === 'shop' ? ' on' : ''}`} role="tab" aria-selected={tab === 'shop'} onClick={() => setTab('shop')}>가게</button>
+        <button className={`chip${tab === 'shop' ? ' on' : ''}`} role="tab" aria-selected={tab === 'shop'} onClick={() => setTab('shop')}>별마트</button>
         <span className="stars-pill" style={{ marginLeft: 'auto' }}>⭐ {balance}</span>
       </div>
       {tab === 'inv' && (free.length === 0 ? (
-        <p className="empty">보관함이 비어 있어요. 가게에서 골라 보세요.</p>
+        <p className="empty">이 자리에 놓을 물건이 보관함에 없어요. 별마트에서 골라 보세요.</p>
       ) : (
         <div className="shop-grid">
           {free.map((v) => (
@@ -171,7 +175,7 @@ export function PaintSheet({ floor, onClose }: { floor: Floor; onClose: () => vo
         ))}
       </div>
       <div className="row between">
-        <h3>가게에 있는 색</h3>
+        <h3>별마트에 있는 색</h3>
         <span className="stars-pill">⭐ {balance}</span>
       </div>
       <p className="muted small">한 번 사면 모든 층에 몇 번이든 칠할 수 있어요.</p>

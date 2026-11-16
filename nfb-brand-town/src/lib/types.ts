@@ -6,7 +6,7 @@ export interface ItemLite {
   name: string
   emoji: string | null
   image_url: string | null
-  slot: 'floor' | 'wall'
+  slot: 'floor' | 'wall' | 'table'
   size?: number
 }
 
@@ -56,7 +56,8 @@ export interface CourseProgress {
   kind: 'course' | 'free'
   session_count: number
   enrolled: boolean
-  stamps: number[]
+  stamps: number[]      // 확인된 도장
+  pending: boolean      // 신청하고 확인을 기다리는 중
 }
 
 export interface Completion {
@@ -174,7 +175,7 @@ export interface Item {
   id: string
   name: string
   kind: 'object' | 'wall_paint'
-  slot: 'floor' | 'wall'
+  slot: 'floor' | 'wall' | 'table'
   price: number
   image_url: string | null
   emoji: string | null

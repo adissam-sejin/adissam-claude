@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import type { Building, ChannelType, Floor, FloorKind, Placement, TownBuilding } from '../lib/types'
 import { floorNumber, floorTitle, newsInfo, seeded, shade } from '../lib/util'
-import { LOBBY, ROOMS, artUrl, maskUrl, roomArt, roomUrl, tasteArt, type RoomArt } from '../lib/rooms'
+import { LOBBY, ROOMS, SLOT_LABEL, artUrl, itemHeight, maskUrl, roomArt, roomUrl, slotKind, tasteArt, type RoomArt } from '../lib/rooms'
 import { sharedUrl } from '../lib/supabase'
 import { Sprite } from './ui'
 
@@ -95,13 +95,13 @@ function FloorRow({
   const L = ROOMS[art]
   const byKey = new Map(f.placements.map((p) => [p.slot_key, p]))
 
-  const slot = (key: string, wall: boolean, x: number, y: number): ReactNode => {
+  // x: 가운데, y: 벽 자리는 가운데 높이(위에서부터), 바닥·책상 자리는 물건이 서는 높이(아래에서부터)
+  const slot = (key: string, x: number, y: number): ReactNode => {
     const p = byKey.get(key)
-    const size = (p?.item.size ?? 1) * (L.scale ?? 1)
-    const st: CSSProperties = wall
-      ? { left: pct(x), top: pct(y), height: pct(p ? size * 30 : 28) }
-      : { left: pct(x), bottom: pct(y), height: pct(p ? size * 36 : 30 * (L.scale ?? 1)) }
-    const cls = `slot ${wall ? 'slot-w' : 'slot-f'}`
+    const kind = slotKind(key)
+    const h = p ? itemHeight(key, p.item.size ?? 1, L.scale ?? 1) : kind === 'wall' ? 28 : kind === 'table' ? 15 : 30 * (L.scale ?? 1)
+    const st: CSSProperties = kind === 'wall' ? { left: pct(x), top: pct(y), height: pct(h) } : { left: pct(x), bottom: pct(y), height: pct(h) }
+    const cls = `slot slot-${kind[0]}`
     const pic = p && <Sprite emoji={p.item.emoji} image={sharedUrl(p.item.image_url)} label={p.item.name} />
     if (onSlot) {
       return (
@@ -113,7 +113,7 @@ function FloorRow({
             e.stopPropagation()
             onSlot(f, key, p)
           }}
-          aria-label={p ? `${p.item.name} 바꾸기` : '빈 자리에 물건 놓기'}
+          aria-label={p ? `${p.item.name} 바꾸기` : `${SLOT_LABEL[kind]} 빈 자리에 물건 놓기`}
         >
           {pic ?? <span aria-hidden>＋</span>}
         </button>
@@ -129,8 +129,9 @@ function FloorRow({
       <div className="fl-room" style={{ aspectRatio: String(L.ratio) }}>
         <RoomPicture art={art} wallColor={f.wall_color} />
         <Overlays b={b} f={f} art={art} />
-        {L.wall.map(([x, y], i) => slot(`w${i + 1}`, true, x, y))}
-        {L.floor.map((x, i) => slot(`f${i + 1}`, false, x, L.floorY))}
+        {L.wall.map(([x, y], i) => slot(`w${i + 1}`, x, y))}
+        {(L.table ?? []).map(([x, y], i) => slot(`t${i + 1}`, x, 100 - y))}
+        {L.floor.map((x, i) => slot(`f${i + 1}`, x, L.floorY))}
         <span className="fl-tag">{label}</span>
         {banner && <span className="banner">🎉 {banner}</span>}
       </div>

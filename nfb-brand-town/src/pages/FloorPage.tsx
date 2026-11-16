@@ -5,7 +5,7 @@ import { BuildingView } from '../components/Building'
 import { PaintSheet, SlotSheet } from '../components/Decorate'
 import type { Placement } from '../lib/types'
 import { floorNumber, floorTitle } from '../lib/util'
-import { ROOMS, roomArt, slotKeys } from '../lib/rooms'
+import { ROOMS, SLOT_LABEL, roomArt, slotKeys, slotKind } from '../lib/rooms'
 import { PhotoSheet } from '../components/PhotoSheet'
 import { Sprite } from '../components/ui'
 import { sharedUrl } from '../lib/supabase'
@@ -35,15 +35,15 @@ export default function FloorPage() {
           {f.kind !== 'rooftop' && <button className="btn grow" onClick={() => setPaint(true)}>벽 색 바꾸기</button>}
         </div>
         <section className="card tight stack">
-          <h3>꾸미기 자리</h3>
+          <h3>꾸미기 자리 {f.placements.length} / {slotKeys(roomArt(f)).length}</h3>
+          <p className="muted small">그림에서 ＋ 표시를 눌러도 되고, 아래에서 골라도 돼요.</p>
           <ul className="list">
             {slotKeys(roomArt(f)).map((key) => {
               const cur = f.placements.find((x) => x.slot_key === key)
-              const wall = key[0] === 'w'
               return (
                 <li key={key}>
                   <span className="ico">{cur ? <Sprite emoji={cur.item.emoji} image={sharedUrl(cur.item.image_url)} label={cur.item.name} /> : <span aria-hidden>＋</span>}</span>
-                  <span className="txt"><b>{wall ? '벽' : '바닥'} 자리 {key.slice(1)}</b>{cur ? cur.item.name : '비어 있어요'}</span>
+                  <span className="txt"><b>{SLOT_LABEL[slotKind(key)]} 자리 {key.slice(1)}</b>{cur ? cur.item.name : '비어 있어요'}</span>
                   <button className={`btn small${cur ? '' : ' primary'}`} onClick={() => setSlot({ key, cur })}>{cur ? '바꾸기' : '놓기'}</button>
                 </li>
               )

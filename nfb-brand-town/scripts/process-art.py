@@ -37,6 +37,10 @@ SHEETS = {
     'taste7': (3, 3, ['puzzle', 'robot', 'home', 'book', 'record', 'letter', 'scrapbook', 'memo', 'polaroid'], 'taste', 220),
     'books': (2, 5, [f'book{i}' for i in range(1, 11)], 'books', 200),
     'landmarks': (2, 2, ['school', 'library', 'museum', 'clocktower'], 'town', 640),
+    # 책상·선반 위에 놓는 작은 소품
+    'tableA': (3, 3, ['desklamp', 'laptop', 'pencup', 'alarmclock', 'photoframe', 'monitor', 'candle', 'snowglobe', 'radio'], 'items', 300),
+    'tableB': (3, 3, ['dslr', 'deskmic', 'brushjar', 'bonsai', 'fishbowl', 'fan', 'gifts', 'hourglass', 'hangingivy'], 'items', 300),
+    'mart': (1, 1, ['mart'], 'town', 640),
 }
 
 # 하늘에서 내려다본 건물(마을 지도용). 낱개로 자른 뒤 브랜드 색 칠할 자리도 함께 만든다.

@@ -116,7 +116,7 @@ textarea.input { min-height: 96px; resize: vertical; }
 .guide-list .txt { flex: 1; min-width: 0; color: var(--sub); font-size: 0.95rem; line-height: 1.45; }
 .guide-list .txt b { display: block; color: var(--ink); font-size: 1.02rem; }
 .guide-n { flex: none; font-weight: 800; background: #fff3cf; border: 1.5px solid var(--gold); border-radius: 999px; padding: 4px 12px; white-space: nowrap; }
-.card .stars-pill { background: #fff; color: var(--ink); border-color: var(--line); }
+.card .stars-pill, .sheet .stars-pill { background: #fff; color: var(--ink); border-color: var(--line); }
 
 /* ── 아래 탭 ── */
 .tabbar {
@@ -233,6 +233,8 @@ button.stamp { padding: 0; }
 .slot { position: absolute; display: flex; justify-content: center; transform: translateX(-50%); z-index: 4; }
 .slot-f { align-items: flex-end; }
 .slot-w { align-items: center; transform: translate(-50%, -50%); z-index: 3; }
+.slot-t { align-items: flex-end; z-index: 4; }
+.slot-btn.slot-empty.slot-t { width: 8%; font-size: 3.6cqw; border-radius: 1.5cqw; }
 .slot .spr-img { height: 100%; width: auto; max-width: none; display: block; filter: drop-shadow(0 0.6cqw 0.5cqw rgba(60, 30, 10, 0.32)); user-select: none; }
 .slot .spr-emoji { font-size: 9cqw; line-height: 1; }
 .slot-btn { background: none; border: 0; padding: 0; cursor: pointer; }

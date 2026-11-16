@@ -1,7 +1,7 @@
 // 인증사진: 지금 건물(또는 한 층)의 모습을 4:5 그림 한 장으로 만든다.
 // 화면을 찍는 방식은 휴대폰마다 결과가 달라서, 같은 그림 조각을 캔버스에 직접 그린다.
 import type { Building, Floor } from './types'
-import { LOBBY, ROOMS, artUrl, maskUrl, roomArt, roomUrl, tasteArt } from './rooms'
+import { LOBBY, ROOMS, artUrl, itemHeight, maskUrl, roomArt, roomUrl, slotKind, tasteArt } from './rooms'
 import { sharedUrl } from './supabase'
 import { floorNumber, floorTitle, seeded, shade } from './util'
 
@@ -180,25 +180,25 @@ async function drawRoom(c: Ctx, b: Building, f: Floor, x: number, y: number, w: 
 
   // 놓은 물건
   for (const p of f.placements) {
-    const wall = p.slot_key[0] === 'w'
+    const kind = slotKind(p.slot_key)
     const idx = Number(p.slot_key.slice(1)) - 1
-    const size = (p.item.size ?? 1) * (L.scale ?? 1)
+    const ih = ph(itemHeight(p.slot_key, p.item.size ?? 1, L.scale ?? 1))
     const im = await load(sharedUrl(p.item.image_url))
-    if (wall) {
+    if (kind === 'wall') {
       const pos = L.wall[idx]
       if (!pos) continue
-      const ih = ph(size * 30)
       if (im) drawStanding(c, im, px(pos[0]), py(pos[1]) + ih / 2, ih)
     } else {
-      const cx = L.floor[idx]
+      const t = kind === 'table' ? L.table?.[idx] : undefined
+      const cx = kind === 'table' ? t?.[0] : L.floor[idx]
       if (cx === undefined) continue
-      const ih = ph(size * 36)
-      if (im) drawStanding(c, im, px(cx), y + h - ph(L.floorY), ih)
+      const bottom = kind === 'table' ? py(t![1]) : y + h - ph(L.floorY)
+      if (im) drawStanding(c, im, px(cx), bottom, ih)
       else if (p.item.emoji) {
         c.font = `${ih * 0.8}px sans-serif`
         c.textAlign = 'center'
         c.textBaseline = 'bottom'
-        c.fillText(p.item.emoji, px(cx), y + h - ph(L.floorY))
+        c.fillText(p.item.emoji, px(cx), bottom)
       }
     }
   }

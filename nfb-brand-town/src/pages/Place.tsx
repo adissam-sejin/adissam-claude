@@ -5,7 +5,10 @@ import { rpc } from '../lib/api'
 import { fmtDay } from '../lib/util'
 import { supabase, sharedUrl } from '../lib/supabase'
 import { artUrl } from '../lib/rooms'
-import type { Book, Course } from '../lib/types'
+import type { Book, Course, InventoryRow, Item } from '../lib/types'
+import { Sprite } from '../components/ui'
+import { onSale } from '../components/Decorate'
+import { josa } from '../lib/util'
 import { Loading, Sheet } from '../components/ui'
 
 export const SHELF_FLOORS = [
@@ -25,6 +28,7 @@ const PLACES = {
   library: { title: '오브북 도서관', sub: '오브북에서 펴낸 책과 북클럽에서 함께 읽은 책이에요', art: 'library' },
   museum: { title: '마을 미술관', sub: '함께 열었던 전시를 회차별로 볼 수 있어요', art: 'museum' },
   plaza: { title: '우리 마을 광장', sub: '아디쌤 소식을 보고, 방명록에 한마디 남겨 보세요', art: 'clocktower' },
+  mart: { title: '별마트', sub: '모은 별로 방을 꾸밀 물건과 벽 색을 사는 곳이에요', art: 'mart' },
 } as const
 
 export interface TownPost { id: string; body: string; link: string | null; posted_on: string; pinned: boolean; active: boolean }
@@ -34,7 +38,7 @@ export interface PlazaNote { id: string; user_id: string; note: string; created_
 export default function Place() {
   const { kind } = useParams()
   const nav = useNavigate()
-  if (kind !== 'school' && kind !== 'library' && kind !== 'museum' && kind !== 'plaza') return <Navigate to="/town" replace />
+  if (kind !== 'school' && kind !== 'library' && kind !== 'museum' && kind !== 'plaza' && kind !== 'mart') return <Navigate to="/town" replace />
   const p = PLACES[kind]
   return (
     <div className="split">
@@ -51,6 +55,7 @@ export default function Place() {
         {kind === 'library' && <Library />}
         {kind === 'museum' && <Museum />}
         {kind === 'plaza' && <Plaza />}
+        {kind === 'mart' && <Mart />}
       </div>
     </div>
   )
@@ -65,7 +70,7 @@ function School() {
   }, [])
   if (!rows) return <Loading />
   const classroom = me?.floors.find((f) => f.kind === 'classroom')
-  const taking = new Set(me?.courses.filter((c) => c.enrolled).map((c) => c.course_id))
+  const stamped = new Set(me?.courses.filter((c) => c.stamps.length > 0).map((c) => c.course_id))
   const groups = [
     { title: '지금 열린 무료특강', list: rows.filter((c) => c.kind === 'free') },
     { title: '강의', list: rows.filter((c) => c.kind === 'course') },
@@ -80,14 +85,14 @@ function School() {
             {g.list.map((c) => (
               <li key={c.id}>
                 {c.thumbnail_url ? <img className="thumb" src={c.thumbnail_url} alt="" /> : <span className="ico" aria-hidden>{c.kind === 'free' ? '🎟️' : '📘'}</span>}
-                <span className="txt"><b>{c.title}</b>{c.kind === 'free' ? '무료특강' : '강의'}{taking.has(c.id) ? ' · 듣는 중' : ''}</span>
+                <span className="txt"><b>{c.title}</b>{c.kind === 'free' ? '무료특강' : '강의'}{stamped.has(c.id) ? ' · 도장 받음' : ''}</span>
                 {c.product_url && <a className="btn small" href={c.product_url} target="_blank" rel="noreferrer">강의 보러 가기</a>}
               </li>
             ))}
           </ul>
         </section>
       ))}
-      {classroom && <button className="btn primary big" onClick={() => nav(`/floor/${classroom.id}`)}>내 강의실에서 도장 받기</button>}
+      {classroom && <button className="btn primary big" onClick={() => nav(`/floor/${classroom.id}`)}>내 강의실에서 도장 신청하기</button>}
     </>
   )
 }
@@ -237,6 +242,111 @@ function Plaza() {
         ))}
         {posts.length > 3 && <button className="btn wide" onClick={() => setMore((v) => !v)}>{more ? '접기' : `지난 소식 ${posts.length - 3}개 더 보기`}</button>}
       </section>
+    </>
+  )
+}
+
+const MART_GROUPS: { key: string; title: string; hint: string; test: (it: Item) => boolean }[] = [
+  { key: 'table', title: '책상 위 소품', hint: '책상·선반 위에도, 바닥에도 놓을 수 있어요', test: (it) => it.kind === 'object' && it.slot === 'table' },
+  { key: 'floor', title: '바닥에 놓는 물건', hint: '방 바닥과 옥상에 놓아요', test: (it) => it.kind === 'object' && it.slot === 'floor' },
+  { key: 'wall', title: '벽에 거는 물건', hint: '벽 자리에 걸어요', test: (it) => it.kind === 'object' && it.slot === 'wall' },
+  { key: 'paint', title: '벽 색', hint: '한 번 사면 모든 층에 몇 번이든 칠할 수 있어요', test: (it) => it.kind === 'wall_paint' },
+]
+
+// 별마트: 별로 살 수 있는 물건을 모두 보고, 여기서 바로 살 수 있다. 산 물건은 보관함에 들어간다.
+function Mart() {
+  const { me, today, session, reload, toast } = useApp()
+  const nav = useNavigate()
+  const [busy, run] = useRun()
+  const [items, setItems] = useState<Item[] | null>(null)
+  const [inv, setInv] = useState<InventoryRow[]>([])
+  const [group, setGroup] = useState('table')
+  const [pick, setPick] = useState<Item | null>(null)
+
+  const load = async () => {
+    const [a, b] = await Promise.all([
+      supabase.from('items').select('*').eq('active', true).order('sort').order('price'),
+      supabase.from('inventory').select('id,item_id,source,items(*)').eq('user_id', session!.user.id),
+    ])
+    setItems((a.data ?? []) as Item[])
+    setInv((b.data ?? []) as unknown as InventoryRow[])
+  }
+  useEffect(() => { void load() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!items || !today || !me) return <Loading />
+
+  const balance = today.balance
+  const selling = items.filter((it) => onSale(it, today.today))
+  const owned = new Map<string, number>()
+  for (const v of inv) owned.set(v.item_id, (owned.get(v.item_id) ?? 0) + 1)
+  const g = MART_GROUPS.find((x) => x.key === group)!
+  const list = selling.filter(g.test)
+
+  const buy = (it: Item) =>
+    run(async () => {
+      await rpc('buy_item', { p_item_id: it.id })
+      await Promise.all([reload(), load()])
+      setPick(null)
+      toast(it.kind === 'wall_paint' ? `${josa(it.name, '을', '를')} 샀어요. 방에서 [벽 색 바꾸기]로 칠해 보세요.` : `${josa(it.name, '을', '를')} 샀어요. 보관함에 넣어 두었어요.`)
+    })
+
+  return (
+    <>
+      <section className="card stack">
+        <div className="row between">
+          <b>지금 가진 별</b>
+          <span className="stars-pill">⭐ {balance}</span>
+        </div>
+        <div className="chips" role="tablist">
+          {MART_GROUPS.map((x) => (
+            <button key={x.key} className={`chip${group === x.key ? ' on' : ''}`} role="tab" aria-selected={group === x.key} onClick={() => setGroup(x.key)}>
+              {x.title} {selling.filter(x.test).length}
+            </button>
+          ))}
+        </div>
+        <p className="muted small">{g.hint}</p>
+        {list.length === 0 && <p className="empty">지금은 파는 물건이 없어요.</p>}
+        <div className="shop-grid">
+          {list.map((it) => {
+            const n = owned.get(it.id) ?? 0
+            return (
+              <button key={it.id} className="shop-item" onClick={() => setPick(it)}>
+                <span className="pic">{it.kind === 'wall_paint' ? <i style={{ background: it.color ?? '#fff' }} /> : <Sprite emoji={it.emoji} image={sharedUrl(it.image_url)} label={it.name} />}</span>
+                <b>{it.name}</b>
+                <span className="price">⭐ {it.price}</span>
+                {it.season && <span className="tag">{it.season}</span>}
+                {n > 0 && <span className="muted small">{it.kind === 'wall_paint' ? '가지고 있어요' : `${n}개 가지고 있어요`}</span>}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+      <section className="card tight stack">
+        <p className="muted">산 물건은 <b>보관함</b>에 들어가요. 내 건물의 방에서 ＋ 자리를 누르면 꺼내 놓을 수 있어요.</p>
+        <button className="btn wide" onClick={() => nav('/building')}>내 건물로 가서 꾸미기</button>
+      </section>
+      {pick && (() => {
+        const has = (owned.get(pick.id) ?? 0) > 0
+        const paintOwned = pick.kind === 'wall_paint' && has
+        const enough = balance >= pick.price
+        return (
+          <Sheet title={pick.name} onClose={() => setPick(null)}>
+            <div className="center" style={{ fontSize: '5rem', lineHeight: 1.1 }}>
+              {pick.kind === 'wall_paint'
+                ? <i style={{ display: 'inline-block', width: 120, height: 120, borderRadius: 24, background: pick.color ?? '#fff', border: '3px solid var(--line)' }} />
+                : <Sprite emoji={pick.emoji} image={sharedUrl(pick.image_url)} label={pick.name} />}
+            </div>
+            <p className="center">별 <b>{pick.price}개</b>가 들어요. 지금 가진 별은 {balance}개예요.</p>
+            {paintOwned ? (
+              <p className="empty">이미 가지고 있는 색이에요. 방에서 [벽 색 바꾸기]로 칠할 수 있어요.</p>
+            ) : enough ? (
+              <button className="btn primary big" disabled={busy} onClick={() => buy(pick)}>별 {pick.price}개로 사기</button>
+            ) : (
+              <p className="empty">별이 {pick.price - balance}개 모자라요. 기록을 남기면 별이 모여요.</p>
+            )}
+            <button className="btn ghost wide" onClick={() => setPick(null)}>다른 물건 보기</button>
+          </Sheet>
+        )
+      })()}
     </>
   )
 }

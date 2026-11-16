@@ -4,7 +4,7 @@ import { rpc } from '../../lib/api'
 import { supabase } from '../../lib/supabase'
 import type { Completion, Course } from '../../lib/types'
 import { fmtFullDay } from '../../lib/util'
-import { Celebrate, Sheet, Sprite } from '../../components/ui'
+import { Sheet, Sprite } from '../../components/ui'
 import { sharedUrl } from '../../lib/supabase'
 
 export default function ClassroomPanel() {
@@ -14,7 +14,7 @@ export default function ClassroomPanel() {
   const [sheet, setSheet] = useState<null | 'pick' | 'done'>(null)
   const [stampFor, setStampFor] = useState<Course | null>(null)
   const [note, setNote] = useState('')
-  const [got, setGot] = useState<number | null>(null)
+  const [q, setQ] = useState('')
   const [cert, setCert] = useState<Completion | null>(null)
   const [doneCourse, setDoneCourse] = useState('')
   const [doneDate, setDoneDate] = useState('')
@@ -26,64 +26,50 @@ export default function ClassroomPanel() {
   if (!me) return null
 
   const progress = new Map(me.courses.map((c) => [c.course_id, c]))
-  const taking = courses.filter((c) => c.kind === 'course' && progress.get(c.id)?.enrolled)
-  const free = courses.filter((c) => c.kind === 'free')
-  const freeOpen = free.filter((c) => c.stamp_open && !(progress.get(c.id)?.stamps.length))
-  const freeDone = free.filter((c) => progress.get(c.id)?.stamps.length)
+  const waiting = me.courses.filter((c) => c.pending)
+  const stamped = me.courses.filter((c) => c.stamps.length > 0)
+  // 신청할 수 있는 강의: 도장이 열려 있고, 아직 신청하지도 받지도 않은 것
+  const canAsk = courses.filter((c) => c.stamp_open && !progress.get(c.id)?.pending && !progress.get(c.id)?.stamps.length)
+  const word = q.trim().toLowerCase()
+  const shown = word ? canAsk.filter((c) => c.title.toLowerCase().includes(word)) : canAsk
   const paid = courses.filter((c) => c.kind === 'course')
   const requested = new Set(me.completions.filter((c) => c.status !== 'rejected').map((c) => c.course_id))
 
-  const stamp = () =>
+  const ask = () =>
     run(async () => {
-      const r = await rpc<{ stars: number }>('stamp_lecture', {
-        p_course_id: stampFor!.id, p_note: note,
-      })
+      await rpc('stamp_lecture', { p_course_id: stampFor!.id, p_note: note })
       await reload()
       setStampFor(null)
       setNote('')
-      setGot(r.stars)
+      setSheet(null)
+      toast('도장을 신청했어요. 아디쌤이 확인하면 찍혀요.')
     })
 
   return (
     <>
       <section className="card stack">
-        <h2>지금 듣는 강의</h2>
-        {taking.length === 0 && <p className="empty">듣고 있는 강의를 고르면 강의마다 도장을 하나씩 받을 수 있어요.</p>}
-        {taking.length > 0 && (
-          <ul className="list">
-            {taking.map((c) => {
-              const done = Boolean(progress.get(c.id)?.stamps.length)
-              return (
-                <li key={c.id}>
-                  <span className="ico" aria-hidden>{done ? '💮' : '🎓'}</span>
-                  <span className="txt"><b>{c.title}</b>{done ? '도장을 받았어요' : '강의를 들었다면 도장을 받으세요'}</span>
-                  {!done && c.stamp_open && <button className="btn primary small" onClick={() => setStampFor(c)}>도장 받기</button>}
-                </li>
-              )
-            })}
-          </ul>
-        )}
-        <button className="btn wide" onClick={() => setSheet('pick')}>듣는 강의 고르기</button>
-      </section>
-
-      <section className="card stack">
-        <h2>무료특강</h2>
-        {freeOpen.length === 0 && freeDone.length === 0 && <p className="empty">지금 열린 무료특강이 없어요.</p>}
+        <h2>강의 도장</h2>
+        <p className="muted small">강의를 들었다면 도장을 신청해 주세요. 아디쌤이 확인하면 도장이 찍히고 별도 받아요. 강의 하나에 도장 하나예요.</p>
+        {waiting.length === 0 && stamped.length === 0 && <p className="empty">아직 받은 도장이 없어요.</p>}
         <ul className="list">
-          {freeOpen.map((c) => (
-            <li key={c.id}>
-              <span className="ico" aria-hidden>🎟️</span>
-              <span className="txt"><b>{c.title}</b>참여하셨다면 도장을 받으세요</span>
-              <button className="btn primary small" onClick={() => setStampFor(c)}>도장 받기</button>
+          {waiting.map((c) => (
+            <li key={c.course_id}>
+              <span className="ico" aria-hidden>⏳</span>
+              <span className="txt"><b>{c.title}</b>아디쌤이 확인하고 있어요</span>
+              <button className="btn ghost small" disabled={busy}
+                onClick={() => run(async () => { await rpc('cancel_lecture_stamp', { p_course_id: c.course_id }); await reload(); toast('신청을 거두었어요.') })}>
+                신청 거두기
+              </button>
             </li>
           ))}
-          {freeDone.map((c) => (
-            <li key={c.id}>
+          {stamped.map((c) => (
+            <li key={c.course_id}>
               <span className="ico" aria-hidden>💮</span>
               <span className="txt"><b>{c.title}</b>도장을 받았어요</span>
             </li>
           ))}
         </ul>
+        <button className="btn primary wide" onClick={() => { setQ(''); setSheet('pick') }}>도장 신청하기</button>
       </section>
 
       <section className="card stack">
@@ -105,23 +91,20 @@ export default function ClassroomPanel() {
         <button className="btn wide" onClick={() => setSheet('done')}>수료했어요 알리기</button>
       </section>
 
-      {sheet === 'pick' && (
-        <Sheet title="듣는 강의 고르기" onClose={() => setSheet(null)}>
-          <p className="muted">지금 듣고 있는 강의를 눌러 주세요. 다시 누르면 빠져요.</p>
-          {paid.length === 0 && <p className="empty">아직 등록된 강의가 없어요.</p>}
+      {sheet === 'pick' && !stampFor && (
+        <Sheet title="어떤 강의를 들으셨나요?" onClose={() => setSheet(null)}>
+          <p className="muted">들은 강의를 눌러 주세요. 아디쌤이 확인한 뒤에 도장이 찍혀요.</p>
+          {canAsk.length > 8 && <input className="input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="강의 이름으로 찾기" />}
+          {canAsk.length === 0 && <p className="empty">지금 신청할 수 있는 강의가 없어요.</p>}
+          {canAsk.length > 0 && shown.length === 0 && <p className="empty">찾는 강의가 없어요.</p>}
           <ul className="list">
-            {paid.map((c) => {
-              const on = Boolean(progress.get(c.id)?.enrolled)
-              return (
-                <li key={c.id}>
-                  <span className="txt"><b>{c.title}</b></span>
-                  <button className={`btn small${on ? ' on' : ''}`} disabled={busy} aria-pressed={on}
-                    onClick={() => run(async () => { await rpc('set_enrollment', { p_course_id: c.id, p_on: !on }); await reload() })}>
-                    {on ? '듣는 중' : '고르기'}
-                  </button>
-                </li>
-              )
-            })}
+            {shown.map((c) => (
+              <li key={c.id}>
+                <span className="ico" aria-hidden>{c.kind === 'free' ? '🎟️' : '📘'}</span>
+                <span className="txt"><b>{c.title}</b>{c.kind === 'free' ? '무료특강' : '강의'}</span>
+                <button className="btn primary small" onClick={() => setStampFor(c)}>이 강의예요</button>
+              </li>
+            ))}
           </ul>
         </Sheet>
       )}
@@ -156,10 +139,10 @@ export default function ClassroomPanel() {
           <label className="field">배운 점 한 줄 (선택)
             <input className="input" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="예: 내 이야기를 먼저 쓰라는 말이 남았어요" />
           </label>
-          <button className="btn primary big" disabled={busy} onClick={stamp}>도장 받기</button>
+          <button className="btn primary big" disabled={busy} onClick={ask}>도장 신청하기</button>
+          <p className="muted small center">아디쌤이 확인하면 도장이 찍히고 별을 받아요.</p>
         </Sheet>
       )}
-      {got !== null && <Celebrate icon="💮" title="도장 쾅!" lines={[got > 0 ? `별 ${got}개를 받았어요.` : '도장이 찍혔어요.']} onDone={() => setGot(null)} />}
 
       {cert && (
         <Sheet title="수료증" onClose={() => setCert(null)}>

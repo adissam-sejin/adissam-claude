@@ -8,7 +8,7 @@ import { fmtDay, fmtFullDay, newsInfo } from '../lib/util'
 import { Loading, Sprite } from '../components/ui'
 import { SHELF_FLOORS, type Exhibition, type PlazaNote, type ShelfBook, type TownPost, type Work } from './Place'
 
-const TABS = ['요약', '회원', '광장', '수료', '소식', '강의', '책', '오브북', '전시', '물건', '초대', '기록', '설정'] as const
+const TABS = ['요약', '회원', '광장', '도장·수료', '소식', '강의', '책', '오브북', '전시', '물건', '취향', '초대', '기록', '설정'] as const
 type Tab = (typeof TABS)[number]
 
 export default function Admin() {
@@ -24,13 +24,14 @@ export default function Admin() {
       {tab === '요약' && <Summary />}
       {tab === '회원' && <Members />}
       {tab === '광장' && <PlazaAdmin />}
-      {tab === '수료' && <Completions />}
+      {tab === '도장·수료' && <><StampAdmin /><Completions /></>}
       {tab === '소식' && <NewsAdmin />}
       {tab === '강의' && <Courses />}
       {tab === '책' && <Books />}
       {tab === '오브북' && <ShelfAdmin />}
       {tab === '전시' && <ExhibitAdmin />}
       {tab === '물건' && <Items />}
+      {tab === '취향' && <TasteAdmin />}
       {tab === '초대' && <Invites />}
       {tab === '기록' && <Records />}
       {tab === '설정' && <Settings />}
@@ -64,7 +65,7 @@ function CopyBox({ title, text }: { title: string; text: string }) {
 
 interface SummaryData {
   last_week_start: string; members: number; achieved: number; active_last_week: number; records_last_week: number
-  first_stopped: string[]; long_stopped: string[]; pending_completions: number; news_waiting: number; this_week_records: number
+  first_stopped: string[]; long_stopped: string[]; pending_completions: number; pending_stamps: number; news_waiting: number; this_week_records: number
 }
 
 function Summary() {
@@ -83,6 +84,7 @@ function Summary() {
             <tr><th>기록을 남긴 분</th><td>{s.active_last_week}명 · 기록 {s.records_last_week}개</td></tr>
             <tr><th>처음 멈춘 분</th><td>{s.first_stopped.length}명{s.first_stopped.length ? ` — ${s.first_stopped.join(', ')}` : ''}</td></tr>
             <tr><th>2주 이상 멈춘 분</th><td>{s.long_stopped.length}명{s.long_stopped.length ? ` — ${s.long_stopped.join(', ')}` : ''}</td></tr>
+            <tr><th>강의 도장 확인 대기</th><td>{s.pending_stamps}건</td></tr>
             <tr><th>수료 확인 대기</th><td>{s.pending_completions}건</td></tr>
             <tr><th>소개를 기다리는 소식</th><td>{s.news_waiting}건</td></tr>
           </tbody>
@@ -378,7 +380,7 @@ function Items() {
   const [busy, run] = useRun()
   const [rows, reload] = useLoad(async () => (await supabase.from('items').select('*').order('sort')).data as Item[])
   const [name, setName] = useState('')
-  const [kind, setKind] = useState<'floor' | 'wall' | 'paint'>('floor')
+  const [kind, setKind] = useState<'table' | 'floor' | 'wall' | 'paint'>('table')
   const [price, setPrice] = useState(5)
   const [emoji, setEmoji] = useState('')
   const [color, setColor] = useState('#F3C9A5')
@@ -401,7 +403,7 @@ function Items() {
         image_url = path
       }
       const { error } = await supabase.from('items').insert({
-        name: name.trim(), kind: kind === 'paint' ? 'wall_paint' : 'object', slot: kind === 'floor' ? 'floor' : 'wall',
+        name: name.trim(), kind: kind === 'paint' ? 'wall_paint' : 'object', slot: kind === 'paint' ? 'wall' : kind,
         price: reward ? 0 : price, emoji: emoji.trim() || null, image_url, color: kind === 'paint' ? color : null,
         source: reward ? 'reward' : 'shop', season: season.trim(), sale_start: from || null, sale_end: to || null,
         sort: (rows.at(-1)?.sort ?? 0) + 1,
@@ -419,6 +421,7 @@ function Items() {
         <h2>물건 추가</h2>
         <label className="field">이름<input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={30} /></label>
         <div className="seg">
+          <button className={`chip${kind === 'table' ? ' on' : ''}`} onClick={() => setKind('table')}>책상 위 소품</button>
           <button className={`chip${kind === 'floor' ? ' on' : ''}`} onClick={() => setKind('floor')}>바닥에 놓는 것</button>
           <button className={`chip${kind === 'wall' ? ' on' : ''}`} onClick={() => setKind('wall')}>벽에 거는 것</button>
           <button className={`chip${kind === 'paint' ? ' on' : ''}`} onClick={() => setKind('paint')}>벽 색</button>
@@ -862,5 +865,158 @@ function Members() {
         ))}
       </ul>
     </section>
+  )
+}
+
+interface StampRow { id: string; user_id: string; course_id: string; note: string; created_at: string; profiles: { nickname: string }; courses: { title: string } }
+
+// 강의 도장: 회원이 신청한 것을 확인해 주거나, 강의를 골라 여러 명에게 바로 준다.
+function StampAdmin() {
+  const { toast } = useApp()
+  const [busy, run] = useRun()
+  const [rows, reload] = useLoad(async () => (await supabase.from('lecture_stamps').select('id,user_id,course_id,note,created_at, profiles(nickname), courses(title)').eq('status', 'requested').order('created_at')).data as unknown as StampRow[])
+  const [members] = useLoad(async () => (await supabase.from('profiles').select('id,nickname,brand_name').order('nickname')).data as Member[])
+  const [courses] = useLoad(async () => (await supabase.from('courses').select('*').eq('active', true).order('sort').order('title')).data as Course[])
+  const [course, setCourse] = useState('')
+  const [have, setHave] = useState<Set<string>>(new Set())
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+
+  const loadHave = useCallback(async (id: string) => {
+    if (!id) return setHave(new Set())
+    const { data } = await supabase.from('lecture_stamps').select('user_id').eq('course_id', id).eq('status', 'approved')
+    setHave(new Set((data ?? []).map((r) => r.user_id as string)))
+  }, [])
+  useEffect(() => { void loadHave(course) }, [course, loadHave])
+  if (!rows || !members || !courses) return <Loading />
+
+  const decide = (r: StampRow, ok: boolean) =>
+    run(async () => {
+      await rpc('admin_decide_stamp', { p_id: r.id, p_approve: ok })
+      reload(); void loadHave(course)
+      toast(ok ? `${r.profiles.nickname}님 도장을 찍었어요.` : '돌려보냈어요. 다시 신청할 수 있어요.')
+    })
+
+  return (
+    <>
+      <section className="card stack">
+        <div className="row between">
+          <h2>확인을 기다리는 강의 도장 {rows.length}건</h2>
+          {rows.length > 1 && (
+            <button className="btn primary small" disabled={busy}
+              onClick={() => run(async () => { const n = await rpc<number>('admin_approve_all_stamps'); reload(); void loadHave(course); toast(`${n}건을 모두 확인했어요.`) })}>
+              모두 확인
+            </button>
+          )}
+        </div>
+        <p className="muted small">회원이 강의실에서 신청한 도장이에요. 확인하면 도장이 찍히고 별을 받아요.</p>
+        {rows.length === 0 && <p className="empty">기다리는 신청이 없어요.</p>}
+        <ul className="list">
+          {rows.map((r) => (
+            <li key={r.id}>
+              <span className="txt"><b>{r.profiles.nickname} · {r.courses.title}</b>신청한 날 {fmtDay(r.created_at)}{r.note ? ` · “${r.note}”` : ''}</span>
+              <button className="btn primary small" disabled={busy} onClick={() => decide(r, true)}>확인</button>
+              <button className="btn ghost small" disabled={busy} onClick={() => decide(r, false)}>돌려보내기</button>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="card stack">
+        <h2>여러 명에게 도장 주기</h2>
+        <p className="muted small">특강에 참여한 분들께 신청을 기다리지 않고 바로 도장을 드릴 때 써요.</p>
+        <label className="field">강의
+          <select className="input" value={course} onChange={(e) => { setCourse(e.target.value); setPicked(new Set()) }}>
+            <option value="">강의를 골라 주세요</option>
+            {courses.map((c) => <option key={c.id} value={c.id}>{c.kind === 'free' ? '[무료특강] ' : ''}{c.title}</option>)}
+          </select>
+        </label>
+        {courses.length === 0 && <p className="empty">먼저 강의 탭에서 보여줄 강의를 체크해 주세요.</p>}
+        {course && (
+          <div className="chips">
+            {members.map((m) => {
+              const has = have.has(m.id)
+              const on = picked.has(m.id)
+              return (
+                <button key={m.id} className={`chip${on ? ' on' : ''}`} disabled={has} aria-pressed={on}
+                  onClick={() => { const n = new Set(picked); if (on) n.delete(m.id); else n.add(m.id); setPicked(n) }}>
+                  {m.nickname}{has ? ' (받음)' : ''}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        <button className="btn primary big" disabled={busy || !course || picked.size === 0}
+          onClick={() => run(async () => {
+            const n = await rpc<number>('admin_grant_stamps', { p_course_id: course, p_user_ids: [...picked] })
+            setPicked(new Set()); reload(); void loadHave(course)
+            toast(`${n}명에게 도장을 드렸어요.`)
+          })}>
+          {picked.size}명에게 도장 주기
+        </button>
+      </section>
+    </>
+  )
+}
+
+interface CatRow { id: string; label: string; emoji: string; tag: string; sort: number }
+
+// 취향의 방에서 회원이 고르는 "좋아하는 것들" 목록
+function TasteAdmin() {
+  const { toast, fail } = useApp()
+  const [busy, run] = useRun()
+  const [rows, reload] = useLoad(async () => (await supabase.from('taste_catalog').select('*').order('sort')).data as CatRow[])
+  const [label, setLabel] = useState('')
+  const [emoji, setEmoji] = useState('')
+  const [tag, setTag] = useState('')
+  const [newTag, setNewTag] = useState('')
+  if (!rows) return <Loading />
+  const tags = [...new Set(rows.map((r) => r.tag))]
+  const useTag = tag === '+' ? newTag.trim() : (tag || tags[0] || '')
+  const dup = rows.some((r) => r.label === label.trim())
+
+  return (
+    <>
+      <section className="card stack">
+        <h2>좋아하는 것 추가</h2>
+        <p className="muted small">회원이 1층 로비 「좋아하는 것들의 방」에서 고르는 목록이에요. 여기에 넣으면 바로 고를 수 있어요.</p>
+        <label className="field">이름 (짧게)<input className="input" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={12} placeholder="예: 막걸리" /></label>
+        <label className="field">그림 글자 (이모지 하나)<input className="input" value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={4} placeholder="예: 🍶" /></label>
+        <label className="field">묶음
+          <select className="input" value={tag || tags[0] || ''} onChange={(e) => setTag(e.target.value)}>
+            {tags.map((t) => <option key={t} value={t}>{t}</option>)}
+            <option value="+">새 묶음 만들기</option>
+          </select>
+        </label>
+        {tag === '+' && <label className="field">새 묶음 이름<input className="input" value={newTag} onChange={(e) => setNewTag(e.target.value)} maxLength={10} placeholder="예: 술과 안주" /></label>}
+        {dup && <p className="empty">이미 있는 이름이에요.</p>}
+        <button className="btn primary big" disabled={busy || !label.trim() || !emoji.trim() || !useTag || dup}
+          onClick={() => run(async () => {
+            const { error } = await supabase.from('taste_catalog').insert({ label: label.trim(), emoji: emoji.trim(), tag: useTag, sort: (rows.at(-1)?.sort ?? 0) + 1 })
+            if (error) return fail(error)
+            setLabel(''); setEmoji('')
+            reload()
+            toast('목록에 넣었어요.')
+          })}>
+          목록에 넣기
+        </button>
+        <p className="muted small">새로 넣은 것은 이모지로 보여요. 다른 것들처럼 입체 그림으로 바꾸고 싶으면 따로 그려서 넣어야 해요.</p>
+      </section>
+      {tags.map((t) => (
+        <section key={t} className="card stack">
+          <h2>{t} {rows.filter((r) => r.tag === t).length}개</h2>
+          <ul className="list">
+            {rows.filter((r) => r.tag === t).map((r) => (
+              <li key={r.id}>
+                <span className="ico" aria-hidden>{r.emoji}</span>
+                <span className="txt"><b>{r.label}</b></span>
+                <button className="btn ghost small" disabled={busy}
+                  onClick={() => run(async () => { const { error } = await supabase.from('taste_catalog').delete().eq('id', r.id); if (error) return fail(error); reload(); toast('목록에서 뺐어요. 이미 고른 회원의 방에는 그대로 남아요.') })}>
+                  빼기
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </>
   )
 }

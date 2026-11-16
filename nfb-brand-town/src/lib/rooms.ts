@@ -14,6 +14,7 @@ export interface RoomLayout {
   floor: number[]               // 바닥 자리: 가운데 x
   floorY: number                // 물건이 서는 높이: 아래에서부터
   wall: [number, number][]      // 벽 자리: 가운데 x, 가운데 y
+  table?: [number, number][]    // 책상·선반 위 자리: 가운데 x, 윗면 y (작은 소품을 올려놓는다)
   board?: [number, number, number, number]   // 기록 판(x, y, 폭, 높이)
   plank?: [number, number, number]           // 스크랩북 선반(x, 윗면 y, 폭)
   chalk?: [number, number, number, number]   // 칠판
@@ -26,13 +27,14 @@ const SNS_FLOOR = [8, 21, 34, 47]
 
 export const ROOMS: Record<RoomArt, RoomLayout> = {
   lobby: { ratio: 2.5, floor: [36.5, 63.5], floorY: 4, wall: [], tinted: true },
-  classroom: { ratio: 2.5, floor: [10, 30, 50, 70, 90], floorY: 7, wall: [[14, 40], [83, 46]], chalk: [30.5, 18, 39, 39] },
-  library: { ratio: 2.5, floor: [10, 30, 50, 70, 90], floorY: 7, wall: [[66, 42], [82, 46]], shelves: [[7, 37.5, 44.5], [7, 67.5, 44.5]] },
-  blog: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[48.5, 56]], board: [8, 15, 28.5, 36.5], plank: [41.5, 28.5, 14.5] },
-  instagram: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[46, 56]], board: [8, 14, 26.5, 38.5], plank: [40, 28, 12] },
-  youtube: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[43.5, 57]], board: [5, 14.5, 27.5, 41.5], plank: [37.5, 30, 12] },
-  threads: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[49.5, 60]], board: [6, 15, 32, 40.5], plank: [43.5, 34, 13] },
-  etc: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[49.5, 56]], board: [5.5, 14, 31, 41.5], plank: [42.5, 28.5, 14] },
+  classroom: { ratio: 2.5, floor: [10, 30, 50, 70, 90], floorY: 7, wall: [[9, 32], [80, 32], [22, 32], [92, 42]], chalk: [30.5, 18, 39, 39] },
+  library: { ratio: 2.5, floor: [10, 30, 50, 70, 90], floorY: 7, wall: [[66, 36], [79, 36], [92, 46]], shelves: [[7, 37.5, 44.5], [7, 67.5, 44.5]] },
+  // 채널 방: 왼쪽은 기록 판과 선반, 오른쪽은 빈 책상. 책상 위(t)와 그 위 벽(w2, w3)을 꾸민다.
+  blog: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[46.4, 58], [69, 19], [84, 19]], table: [[62, 45.5], [76.5, 45.5], [91, 45.5]], board: [5.3, 10.5, 29.8, 39], plank: [39, 27.5, 14.5] },
+  instagram: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[47.6, 61], [64.5, 24], [77, 24]], table: [[58.5, 55.5], [70.5, 55.5], [82.5, 55.5], [92.7, 64]], board: [7.3, 15, 29.5, 40.5], plank: [40.3, 33, 14.7] },
+  youtube: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[45, 61], [68, 21], [83, 21]], table: [[61, 49.5], [75.5, 49.5], [90, 49.5]], board: [6.8, 15.5, 26.5, 38.5], plank: [37.8, 32.5, 14.2] },
+  threads: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[43.7, 61], [67, 21], [82, 21]], table: [[59.5, 49.5], [74.5, 49.5], [90, 49.5]], board: [5, 14, 27.2, 39], plank: [36.6, 31.8, 14.2] },
+  etc: { ratio: 2.5, floor: SNS_FLOOR, floorY: 6, wall: [[47, 60], [69, 19], [84, 19]], table: [[62, 47], [76.5, 47], [91, 47]], board: [5, 13, 31, 42], plank: [40.3, 31.5, 13.5] },
   rooftop: { ratio: 1440 / 411, floor: [12, 28, 44, 60, 76], floorY: 11, wall: [], tinted: true, scale: 1.4 },
 }
 
@@ -44,9 +46,24 @@ export const LOBBY = {
 }
 
 export const slotKeys = (art: RoomArt) => [
-  ...ROOMS[art].floor.map((_, i) => `f${i + 1}`),
+  ...(ROOMS[art].table ?? []).map((_, i) => `t${i + 1}`),
   ...ROOMS[art].wall.map((_, i) => `w${i + 1}`),
+  ...ROOMS[art].floor.map((_, i) => `f${i + 1}`),
 ]
+
+// 자리의 종류와, 그 자리에 놓을 수 있는 물건인지
+export type SlotKind = 'floor' | 'wall' | 'table'
+export const slotKind = (key: string): SlotKind => (key[0] === 'w' ? 'wall' : key[0] === 't' ? 'table' : 'floor')
+export const SLOT_LABEL: Record<SlotKind, string> = { floor: '바닥', wall: '벽', table: '책상 위' }
+// 작은 소품(table)은 책상 위에도 바닥에도 놓을 수 있다.
+export const fitsSlot = (itemSlot: SlotKind, key: string) => {
+  const k = slotKind(key)
+  return itemSlot === k || (itemSlot === 'table' && k === 'floor')
+}
+// 책상 위에 올린 물건은 바닥에 놓을 때보다 작게 그린다.
+export const TABLE_SCALE = 0.8
+export const itemHeight = (key: string, size: number, roomScale = 1) =>
+  size * roomScale * (slotKind(key) === 'wall' ? 30 : slotKind(key) === 'table' ? 36 * TABLE_SCALE : 36)
 
 export const artUrl = (path: string) => `/art/${path}`
 export const roomUrl = (art: RoomArt, small = false) => artUrl(`rooms/${small ? 'sm/' : ''}${art}.webp`)

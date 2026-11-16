@@ -16,6 +16,7 @@ const SHARED = [
   { kind: 'school', name: '학교' },
   { kind: 'library', name: '오브북 도서관' },
   { kind: 'museum', name: '미술관' },
+  { kind: 'mart', name: '별마트' },
 ] as const
 
 // 하늘에서 내려다본 집 한 채. 지붕과 문이 브랜드 색이고, 층수만큼 높다.
@@ -80,9 +81,11 @@ export default function TownPage() {
         })}
       </div>,
     )
+    if (b === 0) blocks.push(shared(3))
     if (b === 1) blocks.push(shared(2))
     if (b % 3 === 2) blocks.push(<div key={`r${b}`} className="block rest" aria-hidden>{rests[Math.floor(b / 3) % rests.length]}</div>)
   })
+  if (groups.length < 1) blocks.push(shared(3))
   if (groups.length < 2) blocks.push(shared(2))
   // 마지막 줄이 비지 않게 공원·장터로 채운다 (광장이 두 칸을 차지한다).
   for (let k = 0; (blocks.length + 2) % 4 !== 0; k++) {
@@ -128,7 +131,7 @@ export default function TownPage() {
 
       <section className="card tight">
         <p><b>이번 주 우리 마을 기록 {town.week_total}개 · 건물 {town.buildings.length}채</b></p>
-        <p className="muted">건물을 누르면 크게 볼 수 있어요. 광장·학교·오브북 도서관·미술관은 모두가 함께 쓰는 곳이에요.</p>
+        <p className="muted">건물을 누르면 크게 볼 수 있어요. 광장·학교·오브북 도서관·미술관·별마트는 모두가 함께 쓰는 곳이에요.</p>
       </section>
 
       <section className="card stack">

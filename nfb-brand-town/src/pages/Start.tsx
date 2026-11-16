@@ -6,7 +6,7 @@ import { BuildingView } from '../components/Building'
 import type { Building } from '../lib/types'
 
 // 시작 화면에 보여주는 예시 건물 (실제 회원 자료가 아니다)
-const item = (id: string, name: string, slot: 'floor' | 'wall', size: number) =>
+const item = (id: string, name: string, slot: 'floor' | 'wall' | 'table', size: number) =>
   ({ id, name, emoji: null, image_url: `/art/items/${id}.webp`, slot, size })
 const SAMPLE: Building = {
   profile: { id: 'sample', nickname: '', brand_name: '나의 브랜드', tagline: '', brand_color: '#B5403A', plot_no: 0, is_public: false, public_key: null, weekly_goal: 3, created_at: '' },
@@ -17,7 +17,10 @@ const SAMPLE: Building = {
         { slot_key: 'f1', inventory_id: 'a', item: item('sofa', '소파', 'floor', 0.85) },
         { slot_key: 'f2', inventory_id: 'b', item: item('cat', '고양이', 'floor', 0.5) },
         { slot_key: 'f4', inventory_id: 'e', item: item('tree', '나무', 'floor', 1.3) },
-        { slot_key: 'w1', inventory_id: 'c', item: item('frame', '액자', 'wall', 0.9) },
+        { slot_key: 'w2', inventory_id: 'c', item: item('frame', '액자', 'wall', 0.9) },
+        { slot_key: 't1', inventory_id: 'g', item: item('desklamp', '책상 조명', 'table', 0.85) },
+        { slot_key: 't2', inventory_id: 'h', item: item('laptop', '노트북', 'table', 0.6) },
+        { slot_key: 't3', inventory_id: 'i', item: item('plant', '작은 화분', 'table', 0.6) },
       ] },
     { id: 's9', kind: 'rooftop', channel_type: null, channel_name: '', channel_url: '', position: 1000, wall_color: null, record_count: 0, recent_records: [],
       placements: [
