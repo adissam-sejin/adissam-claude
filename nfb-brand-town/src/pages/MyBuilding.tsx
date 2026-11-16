@@ -39,7 +39,10 @@ export default function MyBuilding() {
           <button className="btn wide" onClick={() => setSheet('edit')}>이름과 브랜드 색 바꾸기</button>
           <button className="btn wide" onClick={() => setSheet('share')}>내 건물 보여주기</button>
         </section>
-        <button className="btn ghost small" style={{ color: 'var(--on-night)', justifySelf: 'start' }} onClick={() => void signOut()}>나가기</button>
+        <section className="card tight row between">
+          <span className="muted">{p.nickname}님으로 들어와 있어요</span>
+          <button className="btn small" onClick={() => void signOut()}>로그아웃</button>
+        </section>
       </div>
       {sheet === 'floor' && <AddFloor onClose={() => setSheet(null)} />}
       {sheet === 'edit' && <EditProfile onClose={() => setSheet(null)} />}

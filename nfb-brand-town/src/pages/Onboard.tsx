@@ -59,7 +59,7 @@ export default function Onboard() {
           <p className="muted">아디쌤에게 받은 초대 코드예요.</p>
           <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="초대 코드" autoCapitalize="characters" autoFocus />
           <button className="btn primary big" disabled={code.trim().length < 3} onClick={next}>다음</button>
-          <button className="btn ghost small" onClick={() => void signOut()}>처음 화면으로</button>
+          <button className="btn ghost small" onClick={() => void signOut()}>로그아웃하고 처음 화면으로</button>
         </div>
       )}
       {step === 1 && (
