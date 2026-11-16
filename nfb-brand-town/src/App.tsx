@@ -11,6 +11,7 @@ import TownPage from './pages/Town'
 import Visit from './pages/Visit'
 import PublicPage from './pages/Public'
 import Admin from './pages/Admin'
+import Place from './pages/Place'
 
 export default function App() {
   const { status, today, isAdmin, reload } = useApp()
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/floor/:id" element={<FloorPage />} />
         <Route path="/town" element={<TownPage />} />
         <Route path="/visit/:id" element={<Visit />} />
+        <Route path="/place/:kind" element={<Place />} />
         <Route path="/admin" element={isAdmin ? <Admin /> : <Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

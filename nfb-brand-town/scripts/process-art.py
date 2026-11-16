@@ -36,12 +36,17 @@ SHEETS = {
     'taste6': (3, 3, ['writing', 'handwriting', 'painting', 'knitting', 'sewing', 'pottery', 'piano', 'guitar', 'candle'], 'taste', 220),
     'taste7': (3, 3, ['puzzle', 'robot', 'home', 'book', 'record', 'letter', 'scrapbook', 'memo', 'polaroid'], 'taste', 220),
     'books': (2, 5, [f'book{i}' for i in range(1, 11)], 'books', 200),
+    'landmarks': (2, 2, ['school', 'library', 'museum', 'clocktower'], 'town', 640),
 }
 
 # 하늘에서 내려다본 건물(마을 지도용). 낱개로 자른 뒤 브랜드 색 칠할 자리도 함께 만든다.
 TINT_SHEETS = {
-    'ext': (2, 2, ['ext1', 'ext2', 'ext3', 'ext4'], 'town', 520),
+    'houseA': (2, 2, ['ha1', 'ha2', 'ha3', 'ha4'], 'town', 460),
+    'houseB': (2, 2, ['hb1', 'hb2', 'hb3', 'hb4'], 'town', 460),
 }
+
+# 바닥 무늬(이어 붙여 쓰는 그림): 이름 → (크기, 채도, 밝기)
+TEXTURES = {'grass': (512, 0.82, 0.9), 'cobble': (512, 0.5, 1.02)}
 
 
 def blue_mask(rgb: np.ndarray) -> np.ndarray:
@@ -115,31 +120,45 @@ def bands(profile: np.ndarray, want: int):
     return segs
 
 
+def save_cell(im, box, name, folder, size, tint):
+    cell = im.crop(box)
+    # 투명한 테두리를 잘라낸다 (투명한 곳에도 색 값이 남아 있을 수 있어 투명도만 보고 자른다)
+    cell = cell.crop(cell.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox())
+    scale = min(1, size / max(cell.size))
+    cell = cell.resize((max(1, round(cell.size[0] * scale)), max(1, round(cell.size[1] * scale))), Image.LANCZOS)
+    if tint:
+        tintable(cell, name, folder)
+    else:
+        cell.save(folder / f'{name}.webp', quality=90, method=4)
+
+
 def split_sheet(path: Path, rows: int, cols: int, names, folder: Path, size: int, tint=False):
     im = Image.open(path).convert('RGBA')
-    a = np.array(im)[..., 3] > 24
-    row_segs = bands(a.sum(axis=1), rows)
-    if len(row_segs) != rows:
-        print(f'  !! {path.name}: 행 {len(row_segs)}개 (기대 {rows})')
-        return
-    k = 0
-    for y0, y1 in row_segs:
-        col_segs = bands(a[y0:y1].sum(axis=0), cols)
-        if len(col_segs) != cols:
-            print(f'  !! {path.name}: 열 {len(col_segs)}개 (기대 {cols})')
-            return
-        for x0, x1 in col_segs:
-            cell = im.crop((x0, y0, x1, y1))
-            # 투명한 테두리를 잘라낸다 (투명한 곳에도 색 값이 남아 있을 수 있어 투명도만 보고 자른다)
-            cell = cell.crop(cell.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox())
-            scale = min(1, size / max(cell.size))
-            cell = cell.resize((max(1, round(cell.size[0] * scale)), max(1, round(cell.size[1] * scale))), Image.LANCZOS)
-            if tint:
-                tintable(cell, names[k], folder)
-            else:
-                cell.save(folder / f'{names[k]}.webp', quality=90, method=4)
-            k += 1
-    print(f'  {path.name}: {k}개')
+    alpha = np.array(im)[..., 3]
+    # 옅은 그림자가 줄 사이를 잇는 경우가 있어, 점점 또렷한 부분만 보며 다시 나눠 본다.
+    for cut in (24, 90, 170, 230):
+        a = alpha > cut
+        # 1) 가로 줄을 먼저 나누고 그 안에서 칸을 나눈다
+        row_segs = bands(a.sum(axis=1), rows)
+        if len(row_segs) == rows:
+            cells = [bands(a[y0:y1].sum(axis=0), cols) for y0, y1 in row_segs]
+            if all(len(c) == cols for c in cells):
+                for r, (y0, y1) in enumerate(row_segs):
+                    for c, (x0, x1) in enumerate(cells[r]):
+                        save_cell(im, (x0, y0, x1, y1), names[r * cols + c], folder, size, tint)
+                print(f'  {path.name}: {rows * cols}개')
+                return
+        # 2) 위아래 물건이 겹쳐 보이면, 세로 줄을 먼저 나눈다
+        col_segs = bands(a.sum(axis=0), cols)
+        if len(col_segs) == cols:
+            cells = [bands(a[:, x0:x1].sum(axis=1), rows) for x0, x1 in col_segs]
+            if all(len(c) == rows for c in cells):
+                for c, (x0, x1) in enumerate(col_segs):
+                    for r, (y0, y1) in enumerate(cells[c]):
+                        save_cell(im, (x0, y0, x1, y1), names[r * cols + c], folder, size, tint)
+                print(f'  {path.name}: {rows * cols}개 (세로 줄 기준)')
+                return
+    print(f'  !! {path.name}: 낱개로 나누지 못했어요')
 
 
 def main():
@@ -180,6 +199,15 @@ def main():
             continue
         (OUT / folder).mkdir(parents=True, exist_ok=True)
         split_sheet(p, rows, cols, names, OUT / folder, size, tint=True)
+    from PIL import ImageEnhance
+    for name, (size, sat, bright) in TEXTURES.items():
+        p = RAW / f'{name}.png'
+        if not p.exists() or (ONLY and name not in ONLY):
+            continue
+        im = Image.open(p).convert('RGB').resize((size, size), Image.LANCZOS)
+        im = ImageEnhance.Brightness(ImageEnhance.Color(im).enhance(sat)).enhance(bright)
+        im.save(OUT / 'town' / f'{name}.webp', quality=82, method=4)
+        print(f'  바닥 무늬 {name}')
 
 
 main()

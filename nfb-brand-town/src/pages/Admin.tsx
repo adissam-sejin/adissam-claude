@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useApp, useRun } from '../ctx'
-import { rpc } from '../lib/api'
+import { rpc, shrinkImage } from '../lib/api'
 import { supabase, sharedUrl } from '../lib/supabase'
 import type { Book, Course, Item } from '../lib/types'
 import { fmtDay, fmtFullDay, newsInfo } from '../lib/util'
 import { Loading, Sprite } from '../components/ui'
+import { SHELF_FLOORS, type Exhibition, type ShelfBook, type Work } from './Place'
 
-const TABS = ['요약', '수료', '소식', '강의', '책', '물건', '초대', '기록', '설정'] as const
+const TABS = ['요약', '수료', '소식', '강의', '책', '오브북', '전시', '물건', '초대', '기록', '설정'] as const
 type Tab = (typeof TABS)[number]
 
 export default function Admin() {
@@ -24,6 +25,8 @@ export default function Admin() {
       {tab === '소식' && <NewsAdmin />}
       {tab === '강의' && <Courses />}
       {tab === '책' && <Books />}
+      {tab === '오브북' && <ShelfAdmin />}
+      {tab === '전시' && <ExhibitAdmin />}
       {tab === '물건' && <Items />}
       {tab === '초대' && <Invites />}
       {tab === '기록' && <Records />}
@@ -572,5 +575,156 @@ function Settings() {
         저장하기
       </button>
     </section>
+  )
+}
+
+// 표지·작품 그림을 줄여서 올리고, 저장된 경로를 돌려준다.
+async function uploadAdminImage(folder: 'covers' | 'works', file: File): Promise<string> {
+  const blob = await shrinkImage(file, 1400)
+  const path = `${folder}/${crypto.randomUUID()}.jpg`
+  const { error } = await supabase.storage.from('shared').upload(path, blob, { contentType: 'image/jpeg' })
+  if (error) throw error
+  return path
+}
+
+function ShelfAdmin() {
+  const { toast, fail } = useApp()
+  const [busy, run] = useRun()
+  const [rows, reload] = useLoad(async () => (await supabase.from('shelf_books').select('*').order('category').order('sort').order('created_at')).data as ShelfBook[])
+  const [category, setCategory] = useState<string>('essay')
+  const [title, setTitle] = useState('')
+  const [author, setAuthor] = useState('')
+  const [buy, setBuy] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  if (!rows) return <Loading />
+  const floors = SHELF_FLOORS.filter((f) => f.key !== 'club')
+  return (
+    <>
+      <section className="card stack">
+        <h2>오브북 도서관에 책 넣기</h2>
+        <p className="muted small">북클럽에서 읽은 책은 "책" 탭에서 넣으면 도서관 5층에 함께 보여요.</p>
+        <div className="chips" role="radiogroup" aria-label="분류">
+          {floors.map((f) => <button key={f.key} className={`chip${category === f.key ? ' on' : ''}`} role="radio" aria-checked={category === f.key} onClick={() => setCategory(f.key)}>{f.label}</button>)}
+        </div>
+        <label className="field">책 제목<input className="input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} /></label>
+        <label className="field">지은이<input className="input" value={author} onChange={(e) => setAuthor(e.target.value)} /></label>
+        <label className="field">표지 그림<input className="input" type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
+        <label className="field">책 사는 곳 주소 (선택)<input className="input" inputMode="url" value={buy} onChange={(e) => setBuy(e.target.value)} placeholder="https://" /></label>
+        <button className="btn primary big" disabled={busy || !title.trim()}
+          onClick={() => run(async () => {
+            const cover = file ? await uploadAdminImage('covers', file) : null
+            const { error } = await supabase.from('shelf_books').insert({ category, title: title.trim(), author: author.trim(), cover_url: cover, buy_url: buy.trim() || null, sort: rows.length + 1 })
+            if (error) return fail(error)
+            setTitle(''); setAuthor(''); setBuy(''); setFile(null)
+            reload()
+            toast('도서관에 꽂았어요.')
+          })}>
+          도서관에 꽂기
+        </button>
+      </section>
+      {floors.map((f) => {
+        const list = rows.filter((b) => b.category === f.key)
+        return (
+          <section key={f.key} className="card stack">
+            <h2>{f.label} {list.length}권</h2>
+            {list.length === 0 && <p className="empty">아직 없어요.</p>}
+            <ul className="list">
+              {list.map((b) => (
+                <li key={b.id}>
+                  {b.cover_url ? <img className="thumb" style={{ width: 40, height: 54 }} src={sharedUrl(b.cover_url)!} alt="" /> : <span className="ico" aria-hidden>📕</span>}
+                  <span className="txt"><b>{b.title}</b>{b.author}{b.active ? '' : ' · 숨김'}</span>
+                  <button className="btn ghost small" disabled={busy} onClick={() => run(async () => { await supabase.from('shelf_books').update({ active: !b.active }).eq('id', b.id); reload() })}>{b.active ? '숨기기' : '다시 보이기'}</button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })}
+    </>
+  )
+}
+
+function ExhibitAdmin() {
+  const { toast, fail } = useApp()
+  const [busy, run] = useRun()
+  const [shows, reload] = useLoad(async () => (await supabase.from('exhibitions').select('*').order('round', { ascending: false })).data as Exhibition[])
+  const [works, reloadWorks] = useLoad(async () => (await supabase.from('exhibition_works').select('*').order('sort').order('created_at')).data as Work[])
+  const [title, setTitle] = useState('')
+  const [when, setWhen] = useState('')
+  const [note, setNote] = useState('')
+  const [target, setTarget] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [artist, setArtist] = useState('')
+  if (!shows || !works) return <Loading />
+  const nextRound = (shows[0]?.round ?? 0) + 1
+  return (
+    <>
+      <section className="card stack">
+        <h2>{nextRound}회 전시 만들기</h2>
+        <label className="field">전시 이름<input className="input" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} /></label>
+        <label className="field">열린 때<input className="input" value={when} onChange={(e) => setWhen(e.target.value)} placeholder="예: 2025년 11월" /></label>
+        <label className="field">소개 (선택)<textarea className="input" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} /></label>
+        <button className="btn primary big" disabled={busy || !title.trim()}
+          onClick={() => run(async () => {
+            const { error } = await supabase.from('exhibitions').insert({ round: nextRound, title: title.trim(), held_on: when.trim(), note: note.trim() })
+            if (error) return fail(error)
+            setTitle(''); setWhen(''); setNote('')
+            reload()
+            toast('전시를 만들었어요. 아래에서 작품을 올려 주세요.')
+          })}>
+          전시 만들기
+        </button>
+      </section>
+      {shows.length > 0 && (
+        <section className="card stack">
+          <h2>작품 올리기</h2>
+          <label className="field">어느 전시인가요?
+            <select className="input" value={target} onChange={(e) => setTarget(e.target.value)}>
+              <option value="">전시를 골라 주세요</option>
+              {shows.map((s) => <option key={s.id} value={s.id}>{s.round}회 · {s.title}</option>)}
+            </select>
+          </label>
+          <label className="field">작품 그림 (여러 장을 한 번에 고를 수 있어요)
+            <input className="input" type="file" accept="image/*" multiple onChange={(e) => setFiles([...(e.target.files ?? [])])} />
+          </label>
+          <label className="field">작가 이름 (선택, 고른 그림 모두에 붙어요)<input className="input" value={artist} onChange={(e) => setArtist(e.target.value)} maxLength={40} /></label>
+          <button className="btn primary big" disabled={busy || !target || files.length === 0}
+            onClick={() => run(async () => {
+              let n = works.filter((w) => w.exhibition_id === target).length
+              for (const f of files) {
+                const path = await uploadAdminImage('works', f)
+                const { error } = await supabase.from('exhibition_works').insert({ exhibition_id: target, image_url: path, artist: artist.trim(), title: f.name.replace(/\.[^.]+$/, '').slice(0, 80), sort: ++n })
+                if (error) return fail(error)
+              }
+              setFiles([])
+              reloadWorks()
+              toast(`${files.length}점을 걸었어요.`)
+            })}>
+            {files.length > 0 ? `${files.length}점 걸기` : '작품 걸기'}
+          </button>
+        </section>
+      )}
+      {shows.map((s) => {
+        const list = works.filter((w) => w.exhibition_id === s.id)
+        return (
+          <section key={s.id} className="card stack">
+            <div className="row between">
+              <h2>{s.round}회 · {s.title}</h2>
+              <button className="btn ghost small" disabled={busy} onClick={() => run(async () => { await supabase.from('exhibitions').update({ active: !s.active }).eq('id', s.id); reload() })}>{s.active ? '숨기기' : '다시 보이기'}</button>
+            </div>
+            <p className="muted small">{s.held_on} · 작품 {list.length}점{s.active ? '' : ' · 숨김'}</p>
+            <div className="work-grid">
+              {list.map((w) => (
+                <div key={w.id} className="work" style={{ cursor: 'default' }}>
+                  <img src={sharedUrl(w.image_url)!} alt="" loading="lazy" />
+                  <span>{w.title}{w.artist ? ` · ${w.artist}` : ''}</span>
+                  <button className="btn ghost small" disabled={busy} onClick={() => run(async () => { await supabase.from('exhibition_works').delete().eq('id', w.id); reloadWorks() })}>내리기</button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      })}
+    </>
   )
 }

@@ -2,29 +2,37 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../ctx'
 import { api } from '../lib/api'
-import type { Town, TownBuilding } from '../lib/types'
-import { Loading } from '../components/ui'
+import type { Building, Town, TownBuilding } from '../lib/types'
+import { BuildingView } from '../components/Building'
+import { Loading, Sheet } from '../components/ui'
 import { artUrl } from '../lib/rooms'
 import { fmtDay, newsInfo, seeded, shade } from '../lib/util'
 
 const prop = (name: string) => artUrl(`town/${name}.webp`)
 // 마당 소품과 그 크기(건물 한 칸 폭에 대한 %)
-const YARD: [string, number][] = [['tree_round', 30], ['bush', 20], ['tree_cherry', 30], ['flowerbed', 22], ['tree_pine', 26], ['lamp', 13], ['mailbox', 13], ['rock', 17], ['bush', 20], ['lamp', 13]]
+const YARD: [string, number][] = [['tree_round', 34], ['bush', 22], ['tree_cherry', 34], ['flowerbed', 24], ['tree_pine', 28], ['lamp', 14], ['mailbox', 14], ['rock', 18], ['bush', 22], ['lamp', 14]]
+const FOREST = ['tree_pine', 'tree_round', 'tree_pine', 'bush', 'tree_cherry', 'tree_pine', 'tree_round', 'rock']
+const SHARED = [
+  { kind: 'school', name: '학교' },
+  { kind: 'library', name: '오브북 도서관' },
+  { kind: 'museum', name: '미술관' },
+] as const
 
-// 하늘에서 내려다본 건물 한 채. 층수에 따라 높이가 다르고, 지붕·차양·문·깃발은 브랜드 색이다.
-function Ext({ t }: { t: TownBuilding }) {
+// 하늘에서 내려다본 집 한 채. 지붕과 문이 브랜드 색이고, 층수만큼 높다.
+function House({ t }: { t: TownBuilding }) {
   const storeys = t.floors.filter((f) => f.kind !== 'rooftop').length
   const n = Math.max(1, Math.min(4, storeys - 3))
-  const mask = `url(${prop(`ext${n}_mask`)})`
+  const name = `h${t.plot_no % 2 ? 'a' : 'b'}${n}`
+  const mask = `url(${prop(`${name}_mask`)})`
   return (
     <span className="ext" style={{ '--brand': t.brand_color, '--brand-dark': shade(t.brand_color, -0.14) } as CSSProperties}>
-      <img src={prop(`ext${n}`)} alt="" draggable={false} />
+      <img src={prop(name)} alt="" draggable={false} />
       <i style={{ maskImage: mask, WebkitMaskImage: mask }} />
     </span>
   )
 }
 
-// 우리 마을 지도: 돌길로 나뉜 구획마다 건물이 모여 있다. 순위도, 뒤로 밀리는 건물도 없다.
+// 우리 마을 지도: 돌길로 나뉜 풀밭 구획에 집들이 모여 있다. 순위도, 뒤로 밀리는 건물도 없다.
 export default function TownPage() {
   const { fail } = useApp()
   const nav = useNavigate()
@@ -41,38 +49,67 @@ export default function TownPage() {
   const go = (id: string) => nav(id === town.me ? '/building' : `/visit/${id}`)
   const nameOf = (t: TownBuilding) => (t.id === town.me ? '내 건물' : t.brand_name || t.nickname)
 
-  // 건물 네 채가 한 구획. 구획 세 개마다 공원·장터 같은 쉼터 구획이 하나 들어간다.
-  const blocks: ReactNode[] = []
+  const shared = (i: number) => (
+    <button key={SHARED[i].kind} className={`block shared s-${SHARED[i].kind}`} onClick={() => nav(`/place/${SHARED[i].kind}`)} aria-label={`${SHARED[i].name} 들어가기`}>
+      <img src={prop(SHARED[i].kind)} alt="" />
+      <span className="shared-name">{SHARED[i].name}</span>
+    </button>
+  )
   const rests = [<Park key="park" />, <Market key="market" />, <Garden key="garden" />]
-  for (let i = 0, b = 0; i < town.buildings.length; i += 4, b++) {
-    const group = town.buildings.slice(i, i + 4)
+
+  // 집 네 채가 한 구획. 사이사이에 미술관과 공원·장터 같은 쉼터 구획이 들어간다.
+  const blocks: ReactNode[] = [shared(0), shared(1)]
+  const groups: TownBuilding[][] = []
+  for (let i = 0; i < town.buildings.length; i += 4) groups.push(town.buildings.slice(i, i + 4))
+  groups.forEach((group, b) => {
     blocks.push(
-      <div key={`b${i}`} className="block houses">
+      <div key={`b${b}`} className="block houses">
         {group.map((t) => {
           const r = seeded(`yard-${t.plot_no}`, 4)
           const yard = YARD[Math.floor(r[0] * YARD.length)]
           const mine = t.id === town.me
           return (
-            <button key={t.id} className={`lot${mine ? ' me' : ''}${sel?.id === t.id ? ' on' : ''}`} onClick={() => setSel(t)}
-              aria-label={`${t.brand_name || t.nickname} 건물${mine ? ' (내 건물)' : ''}`} aria-pressed={sel?.id === t.id}>
-              <Ext t={t} />
+            <button key={t.id} className={`lot${mine ? ' me' : ''}`} onClick={() => setSel(t)}
+              aria-label={`${t.brand_name || t.nickname} 건물${mine ? ' (내 건물)' : ''} 크게 보기`}>
+              <House t={t} />
               <img className="lot-yard" src={prop(yard[0])} alt="" style={{ [r[1] > 0.5 ? 'left' : 'right']: '0%', width: `${yard[1] * (0.9 + r[2] * 0.25)}%` } as CSSProperties} />
               {t.banner && <span className="lot-flag" aria-hidden>🎉</span>}
-              {mine && <span className="lot-me">내 건물</span>}
+              <span className={`lot-name${mine ? ' always' : ''}`}>{nameOf(t)}</span>
             </button>
           )
         })}
       </div>,
     )
-    if (b % 3 === 1) blocks.push(<div key={`r${i}`} className="block rest" aria-hidden>{rests[Math.floor(b / 3) % rests.length]}</div>)
+    if (b === 1) blocks.push(shared(2))
+    if (b % 3 === 2) blocks.push(<div key={`r${b}`} className="block rest" aria-hidden>{rests[Math.floor(b / 3) % rests.length]}</div>)
+  })
+  if (groups.length < 2) blocks.push(shared(2))
+  // 마지막 줄이 비지 않게 공원·장터로 채운다 (광장이 두 칸을 차지한다).
+  for (let k = 0; (blocks.length + 2) % 4 !== 0; k++) {
+    blocks.push(<div key={`fill${k}`} className="block rest" aria-hidden>{rests[(Math.floor(groups.length / 3) + k) % rests.length]}</div>)
   }
 
+  const forest = seeded('forest', 90)
   return (
     <div className="stack">
-      <div className="vill">
+      <div className="gmap">
+        <div className="gmap-forest" aria-hidden>
+          {Array.from({ length: 30 }, (_, i) => {
+            const side = i % 4 // 위·아래·왼쪽·오른쪽 가장자리에 숲을 두른다
+            const along = forest[i * 3] * 96 + 1
+            const depth = forest[i * 3 + 1]
+            const st: CSSProperties =
+              side === 0 ? { left: `${along}%`, top: `${-1 + depth * 2}%` }
+              : side === 1 ? { left: `${along}%`, bottom: `${-0.6 + depth * 2}%` }
+              : side === 2 ? { left: `${-2 + depth * 3}%`, top: `${along}%` }
+              : { right: `${-2 + depth * 3}%`, top: `${along}%` }
+            return <img key={i} className={side > 1 ? 'side' : ''} src={prop(FOREST[Math.floor(forest[i * 3 + 2] * FOREST.length)])} alt="" style={st} />
+          })}
+        </div>
         <div className="fireflies" aria-hidden>{Array.from({ length: 14 }, (_, i) => <i key={i} style={{ left: `${(i * 37) % 97}%`, top: `${(i * 53) % 93}%`, animationDelay: `${(i * 0.7) % 5}s` }} />)}</div>
-        <div className="vill-grid">
+        <div className="gmap-town">
           <div className="block plaza2">
+            <img className="pz-tower" src={prop('clocktower')} alt="" />
             <img className="pz-tree l" src={prop('tree_cherry')} alt="" />
             <img className="pz-tree r" src={prop('tree_round')} alt="" />
             <img className="pz-lamp l" src={prop('lamp')} alt="" />
@@ -83,29 +120,17 @@ export default function TownPage() {
               <img src={prop('noticeboard')} alt="" />
               {town.news.length > 0 && <b>{town.news.length}</b>}
             </button>
-            <div className="plaza-sign">
-              <h2>우리 마을 광장</h2>
-              <p>이번 주 기록 <b>{town.week_total}개</b> · 건물 {town.buildings.length}채</p>
-            </div>
+            <span className="shared-name plaza-name">광장</span>
           </div>
           {blocks}
         </div>
+        <div className="gmap-road" aria-hidden />
       </div>
 
-      {sel ? (
-        <section className="card stack vill-pick" aria-live="polite">
-          <div className="row between">
-            <h2>{nameOf(sel)}</h2>
-            <button className="btn ghost small" onClick={() => setSel(null)}>닫기</button>
-          </div>
-          <p>{sel.id === town.me ? '' : `${sel.nickname}님 · `}{sel.week_count > 0 ? `이번 주 ${sel.week_count}개째 만드는 중이에요.` : '이번 주를 준비하고 있어요.'}{sel.banner ? ` 🎉 ${newsInfo(sel.banner.kind).banner}` : ''}</p>
-          <button className="btn primary big" onClick={() => go(sel.id)}>{sel.id === town.me ? '내 건물로 가기' : '놀러 가기'}</button>
-        </section>
-      ) : (
-        <section className="card tight">
-          <p className="muted">건물을 누르면 누구의 건물인지 보여요.</p>
-        </section>
-      )}
+      <section className="card tight">
+        <p><b>이번 주 우리 마을 기록 {town.week_total}개 · 건물 {town.buildings.length}채</b></p>
+        <p className="muted">건물을 누르면 크게 볼 수 있어요. 학교·오브북 도서관·미술관은 모두가 함께 쓰는 곳이에요.</p>
+      </section>
 
       <section className="card stack">
         <div className="row between">
@@ -115,7 +140,7 @@ export default function TownPage() {
         {finder && (
           <div className="chips">
             {town.buildings.map((t) => (
-              <button key={t.id} className="chip" onClick={() => go(t.id)}>
+              <button key={t.id} className="chip" onClick={() => setSel(t)}>
                 <i className="dotc" style={{ background: t.brand_color }} />{nameOf(t)}
               </button>
             ))}
@@ -137,7 +162,33 @@ export default function TownPage() {
           </ul>
         )}
       </section>
+
+      {sel && <Peek t={sel} mine={sel.id === town.me} title={nameOf(sel)} onGo={() => go(sel.id)} onClose={() => setSel(null)} />}
     </div>
+  )
+}
+
+// 지도에서 건물을 누르면: 그 건물의 속 모습을 크게 보여준다.
+function Peek({ t, mine, title, onGo, onClose }: { t: TownBuilding; mine: boolean; title: string; onGo: () => void; onClose: () => void }) {
+  const [b, setB] = useState<Building | null>(null)
+  useEffect(() => {
+    let live = true
+    api.building(t.id).then((x) => live && setB(x)).catch(() => undefined)
+    return () => { live = false }
+  }, [t.id])
+  return (
+    <Sheet title={title} onClose={onClose}>
+      <p>{mine ? '' : `${t.nickname}님 · `}{t.week_count > 0 ? `이번 주 ${t.week_count}개째 만드는 중이에요.` : '이번 주를 준비하고 있어요.'}{t.banner ? ` 🎉 ${newsInfo(t.banner.kind).banner}` : ''}</p>
+      <div className="peek-night">{b ? <BuildingView b={b} /> : <Loading />}</div>
+      {b && (
+        <div className="kv">
+          <span>도장 {b.stamps}개</span>
+          <span>기록 {b.records}개</span>
+          <span>모은 별 {b.stars_earned}개</span>
+        </div>
+      )}
+      <button className="btn primary big" onClick={onGo}>{mine ? '내 건물로 가기' : '놀러 가서 응원하기'}</button>
+    </Sheet>
   )
 }
 
