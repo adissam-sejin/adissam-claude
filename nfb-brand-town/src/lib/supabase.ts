@@ -10,7 +10,8 @@ export const supabase = createClient(url ?? 'http://localhost', key ?? 'missing'
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
-export const devLogin = import.meta.env.VITE_DEV_LOGIN === '1'
+// 이메일 로그인은 내 컴퓨터에서 돌려 볼 때(npm run dev)만 켜진다. 올라간 사이트에서는 항상 꺼져 있다.
+export const devLogin = import.meta.env.DEV && import.meta.env.VITE_DEV_LOGIN === '1'
 
 export function sharedUrl(path: string | null | undefined): string | null {
   if (!path) return null

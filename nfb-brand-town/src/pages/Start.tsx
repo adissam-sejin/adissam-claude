@@ -37,8 +37,6 @@ export default function Start() {
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
   const [count, setCount] = useState<number | null>(null)
-  // 임시 이메일 로그인은 첫 화면에 보이지 않는다. 주소 끝에 ?email 을 붙였을 때만 나온다.
-  const showEmail = devLogin && new URLSearchParams(window.location.search).has('email')
 
   useEffect(() => {
     rpc<number>('get_town_count').then(setCount).catch(() => setCount(null))
@@ -78,9 +76,9 @@ export default function Start() {
         <b>건물주가 되려면 초대 코드가 필요해요</b>
         <p>초대 코드는 아디쌤에게 받을 수 있어요. 코드를 받으셨다면 위의 [카카오로 시작하기]를 누르고, 다음 화면에서 코드를 넣어 주세요.</p>
       </div>
-      {showEmail && (
+      {devLogin && (
         <div className="card stack">
-          <p className="muted small">이메일로 들어가기 (임시)</p>
+          <p className="muted small">이메일로 들어가기 (내 컴퓨터에서 시험할 때만 보여요)</p>
           <input className="input" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
           <input className="input" placeholder="비밀번호" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" />
           <div className="row">
