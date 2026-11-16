@@ -9,6 +9,23 @@ import { supabase, signedUrls, PHOTO_BUCKET } from "@/lib/supabase";
 import { koDate, today } from "@/lib/date";
 
 type Note = { id: string; content: string; photo_path: string | null; is_public: boolean };
+type Draft = { content: string; isPublic: boolean; photo: string | null; removePhoto: boolean; savedAt: number };
+
+// 작성 중인 내용을 휴대폰(브라우저)에 임시 저장 — 다른 앱에 다녀와도 사라지지 않게
+const draftKey = (uid: string, date: string) => `gamsa-draft:${uid}:${date}`;
+function readDraft(key: string): Draft | null {
+  try { const v = localStorage.getItem(key); return v ? (JSON.parse(v) as Draft) : null; } catch { return null; }
+}
+function writeDraft(key: string, d: Draft) {
+  try { localStorage.setItem(key, JSON.stringify(d)); }
+  catch {
+    // 용량이 부족하면 사진은 빼고 글만이라도 저장
+    try { localStorage.setItem(key, JSON.stringify({ ...d, photo: null })); } catch { /* 저장 불가 */ }
+  }
+}
+function clearDraft(key: string) {
+  try { localStorage.removeItem(key); } catch { /* 무시 */ }
+}
 
 function WriteInner() {
   const router = useRouter();
@@ -26,29 +43,96 @@ function WriteInner() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [newPhotoData, setNewPhotoData] = useState<string | null>(null); // 임시 저장용 사진(data URL)
+  const [restored, setRestored] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const ready = useRef(false); // 불러오기가 끝난 뒤에만 임시 저장
+  const server = useRef<{ content: string; isPublic: boolean }>({ content: "", isPublic: false });
+  const key = user ? draftKey(user.id, date) : "";
 
   useEffect(() => {
     if (!user) return;
     let alive = true;
     (async () => {
-      setLoading(true);
-      setNewPhoto(null); setRemovePhoto(false); setMsg(null);
+      ready.current = false;
+      setLoading(true); setRestored(false);
+      setNewPhoto(null); setNewPhotoData(null); setRemovePhoto(false); setMsg(null);
       const { data } = await supabase().from("notes")
         .select("id,content,photo_path,is_public").eq("user_id", user.id).eq("note_date", date).maybeSingle();
       if (!alive) return;
       setNote(data);
       setContent(data?.content ?? "");
       setIsPublic(data?.is_public ?? false);
+      server.current = { content: data?.content ?? "", isPublic: data?.is_public ?? false };
       if (data?.photo_path) {
         const m = await signedUrls([data.photo_path]);
         if (alive) setPhotoUrl(m[data.photo_path] ?? null);
       } else setPhotoUrl(null);
+
+      // 임시 저장된 내용이 있으면 되살리기
+      const d = readDraft(draftKey(user.id, date));
+      if (alive && d) {
+        const changed = d.content !== server.current.content || d.isPublic !== server.current.isPublic || !!d.photo || d.removePhoto;
+        if (changed) {
+          setContent(d.content);
+          setIsPublic(d.isPublic);
+          if (d.photo) {
+            setPhotoUrl(d.photo); setNewPhotoData(d.photo); setRemovePhoto(false);
+            setNewPhoto(await (await fetch(d.photo)).blob());
+          } else if (d.removePhoto) {
+            setPhotoUrl(null); setRemovePhoto(true);
+          }
+          setRestored(true);
+        } else clearDraft(draftKey(user.id, date));
+      }
+      if (!alive) return;
+      ready.current = true;
       setLoading(false);
     })();
     return () => { alive = false; };
   }, [user, date]);
 
+
+  // 내용이 바뀔 때마다 임시 저장
+  const latest = useRef<Draft | null>(null);
+  useEffect(() => {
+    if (!ready.current || !key) return;
+    const d: Draft = { content, isPublic, photo: newPhotoData, removePhoto, savedAt: Date.now() };
+    latest.current = d;
+    const same = content === server.current.content && isPublic === server.current.isPublic && !newPhotoData && !removePhoto;
+    const t = setTimeout(() => (same ? clearDraft(key) : writeDraft(key, d)), 300);
+    return () => clearTimeout(t);
+  }, [content, isPublic, newPhotoData, removePhoto, key]);
+
+  // 다른 앱으로 나갈 때 즉시 저장
+  useEffect(() => {
+    if (!key) return;
+    const flush = () => {
+      const d = latest.current;
+      if (!ready.current || !d) return;
+      const same = d.content === server.current.content && d.isPublic === server.current.isPublic && !d.photo && !d.removePhoto;
+      if (same) clearDraft(key); else writeDraft(key, d);
+    };
+    const onVis = () => { if (document.visibilityState === "hidden") flush(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", flush);
+    return () => { document.removeEventListener("visibilitychange", onVis); window.removeEventListener("pagehide", flush); };
+  }, [key]);
+
+  const discardDraft = async () => {
+    if (!user) return;
+    clearDraft(key);
+    latest.current = null;
+    ready.current = false;
+    setContent(server.current.content);
+    setIsPublic(server.current.isPublic);
+    setNewPhoto(null); setNewPhotoData(null); setRemovePhoto(false); setRestored(false);
+    if (note?.photo_path) {
+      const m = await signedUrls([note.photo_path]);
+      setPhotoUrl(m[note.photo_path] ?? null);
+    } else setPhotoUrl(null);
+    ready.current = true;
+  };
 
   const save = async () => {
     if (!user) return;
@@ -71,6 +155,8 @@ function WriteInner() {
       const { error } = await sb.from("notes").upsert(row, { onConflict: "user_id,note_date" });
       if (error) throw error;
       if (oldPath && oldPath !== photo_path) await sb.storage.from(PHOTO_BUCKET).remove([oldPath]);
+      ready.current = false;
+      clearDraft(key);
       router.push(`/calendar?saved=${date}`);
     } catch (e) {
       setMsg("저장하지 못했어요. 잠시 후 다시 시도해주세요. " + (e instanceof Error ? e.message : ""));
@@ -82,6 +168,8 @@ function WriteInner() {
     if (!note || !confirm("이 날의 감사노트를 삭제할까요?")) return;
     const sb = supabase();
     await sb.from("notes").delete().eq("id", note.id);
+    ready.current = false;
+    clearDraft(key);
     if (note.photo_path) await sb.storage.from(PHOTO_BUCKET).remove([note.photo_path]);
     router.push("/calendar");
   };
@@ -105,6 +193,12 @@ function WriteInner() {
         <div className="py-20 flex justify-center"><Persimmon className="w-10 h-10 animate-bounce" /></div>
       ) : (
         <>
+          {restored && (
+            <div className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-gam-light px-3 py-2.5 text-[13px]">
+              <span className="font-semibold text-gam-dark">작성 중이던 내용을 불러왔어요</span>
+              <button onClick={discardDraft} className="shrink-0 text-[12px] text-sub underline">처음으로 되돌리기</button>
+            </div>
+          )}
           <Wongoji value={content} onChange={setContent} placeholder="원고지를 눌러 오늘 감사한 일을 적어보세요." />
 
           <section className="mt-5">
@@ -117,7 +211,7 @@ function WriteInner() {
                 <img src={photoUrl} alt="오늘의 사진" className="w-full aspect-square object-cover rounded-2xl shadow-md" />
                 <div className="flex gap-2 mt-2">
                   <button onClick={() => fileRef.current?.click()} className="btn3d px-3 py-1.5 text-sm btn-white">바꾸기</button>
-                  <button onClick={() => { setPhotoUrl(null); setNewPhoto(null); setRemovePhoto(true); }} className="btn3d px-3 py-1.5 text-sm btn-white">지우기</button>
+                  <button onClick={() => { setPhotoUrl(null); setNewPhoto(null); setNewPhotoData(null); setRemovePhoto(note?.photo_path ? true : false); }} className="btn3d px-3 py-1.5 text-sm btn-white">지우기</button>
                 </div>
               </div>
             ) : (
@@ -153,7 +247,7 @@ function WriteInner() {
 
       {cropFile && (
         <SquareCropper file={cropFile} onCancel={() => setCropFile(null)}
-          onDone={(blob, url) => { setNewPhoto(blob); setPhotoUrl(url); setRemovePhoto(false); setCropFile(null); }} />
+          onDone={(blob, url) => { setNewPhoto(blob); setPhotoUrl(url); setNewPhotoData(url); setRemovePhoto(false); setCropFile(null); }} />
       )}
     </div>
   );
