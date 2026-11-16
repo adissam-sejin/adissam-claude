@@ -239,7 +239,8 @@ function SignText({ text }: { text: string }) {
   const len = [...text].length
   const lines = len > 6 ? 2 : 1
   const perLine = Math.ceil(len / lines)
-  const size = Math.min(4.4, (lines === 1 ? 17 : 16) / Math.max(perLine, 1) * 1.05)
+  // 간판 안쪽은 폭 약 16.7, 높이 약 4.9 (건물 폭을 100 으로 볼 때)
+  const size = Math.min(lines === 1 ? 4.2 : 2.25, 15.8 / Math.max(perLine, 1))
   return <span style={{ fontSize: `max(8px, ${size.toFixed(2)}cqw)`, whiteSpace: lines === 2 ? 'normal' : 'nowrap' }}>{text}</span>
 }
 

@@ -34,7 +34,7 @@ export default function Start() {
     setBusy(true)
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: { redirectTo: window.location.origin, scopes: 'profile_nickname' },
+      options: { redirectTo: window.location.origin },
     })
     if (error) {
       setBusy(false)

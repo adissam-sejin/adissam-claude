@@ -82,11 +82,12 @@ node scripts/check-rules.mjs
    ```
 3. **Netlify**: 저장소를 연결하고 기준 폴더(Base directory)를 `nfb-brand-town` 으로 지정합니다.
    환경 변수 `VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY`(공개용 publishable 키)를 넣습니다. `VITE_DEV_LOGIN` 은 넣지 않습니다.
-4. **카카오 로그인**
-   - 카카오 개발자 사이트에서 앱을 만들고 카카오 로그인을 켭니다. 동의 항목은 **닉네임만** 받습니다.
-   - Redirect URI: `https://(Supabase 프로젝트 주소)/auth/v1/callback`
-   - Supabase 대시보드 → Authentication → Providers → Kakao 에 REST API 키와 Client Secret 을 넣고, "이메일 없는 사용자 허용"을 켭니다.
-   - Authentication → URL Configuration 의 Site URL 에 Netlify 주소를 넣습니다.
+4. **카카오 로그인** ([Supabase 공식 안내](https://supabase.com/docs/guides/auth/social-sign-in/auth-kakao))
+   - 카카오 개발자 사이트에서 앱을 만들고, 앱 설정 → 앱 → 플랫폼 키에서 **REST API 키**를 확인합니다.
+   - 그 REST API 키의 **카카오 로그인 리다이렉트 URI**에 `https://(Supabase 프로젝트 주소)/auth/v1/callback` 을 넣고, **Client Secret**을 켜서 값을 복사합니다.
+   - 제품 설정 → 카카오 로그인 → 일반에서 상태를 ON 으로, 동의 항목에서 **닉네임**과 **프로필 사진**을 켭니다. 이메일은 받지 않습니다.
+   - Supabase 대시보드 → Authentication → Sign In / Providers → Kakao 를 켜고 REST API 키와 Client Secret 을 넣은 뒤 **Allow users without an email** 을 켭니다.
+   - Authentication → URL Configuration 의 Site URL 에 사이트 주소를 넣습니다.
 
 비밀 키(service role, secret)는 화면 코드와 환경 변수 어디에도 넣지 않습니다. 브라우저에는 공개용 키만 들어갑니다.
 
