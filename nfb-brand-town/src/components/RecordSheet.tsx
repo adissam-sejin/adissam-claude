@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useApp, useRun } from '../ctx'
 import { rpc, uploadPhoto, type RecordResult } from '../lib/api'
 import type { Floor } from '../lib/types'
@@ -19,12 +19,13 @@ export function RecordSheet({ floors, floorId, onClose }: { floors: Floor[]; flo
   const [result, setResult] = useState<RecordResult | null>(null)
 
   // 주소를 붙여넣으면 어느 채널인지 알아채서 그 층을 골라 준다.
-  useEffect(() => {
-    if (floorId || !url) return
-    const t = guessChannel(url)
+  const onUrl = (v: string) => {
+    setUrl(v)
+    if (floorId) return
+    const t = guessChannel(v)
     const hit = t && floors.find((f) => f.channel_type === t)
     if (hit) setFid(hit.id)
-  }, [url, floors, floorId])
+  }
 
   const save = () =>
     run(async () => {
@@ -75,7 +76,7 @@ export function RecordSheet({ floors, floorId, onClose }: { floors: Floor[]; flo
       </div>
       {mode === 'url' && (
         <label className="field">올린 글의 주소
-          <input className="input" inputMode="url" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} />
+          <input className="input" inputMode="url" placeholder="https://" value={url} onChange={(e) => onUrl(e.target.value)} />
         </label>
       )}
       {mode === 'photo' && (

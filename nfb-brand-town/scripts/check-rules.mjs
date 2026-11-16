@@ -65,7 +65,7 @@ ok('남의 프로필은 못 바꾼다', ((await b.c.from('profiles').update({ ni
 // 가게 · 배치
 const items = (await a.c.from('items').select('*')).data
 const pot = items.find(i => i.name === '작은 화분'), piano = items.find(i => i.name === '피아노')
-const frame = items.find(i => i.name === '액자'), medal = items.find(i => i.name === '수료 메달')
+const medal = items.find(i => i.name === '수료 메달')
 const buy = await a.c.rpc('buy_item', { p_item_id: pot.id })
 ok('별 3개로 화분 사기', buy.data?.balance === 3)
 ok('별이 모자라면 못 산다', (await errOf(a.c.rpc('buy_item', { p_item_id: piano.id }))) === 'NOT_ENOUGH_STARS')

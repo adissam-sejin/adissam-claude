@@ -1,32 +1,123 @@
-# React + TypeScript + Vite
+# NFb 브랜드 타운
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+배우고, 만들고, 세상에 내놓을수록 **내 브랜드 건물이 자라는 곳**입니다.
+브랜딩을 위해 한 일(SNS 기록·강의·독서·출간·좋은 소식)이 한 채의 건물로 쌓여 보이고, 이웃과 서로 응원합니다.
 
-Currently, two official plugins are available:
+## 지금 되는 것
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| 영역 | 내용 |
+|---|---|
+| 시작 | 카카오로 시작하기 → 초대 코드 → 이름·간판·브랜드 색·첫 채널을 한 화면에 하나씩 |
+| 오늘 | 이번 주 상태 한 줄, [기록 남기기] 큰 버튼, 이번 주 기록(되돌리기), 도장판 |
+| 기록 | 주소 붙여넣기 / 사진 / 그냥 했어요 — 모두 똑같이 1건. 주소를 넣으면 채널을 알아챔 |
+| 별 | 기록 1건 = 별 1개(층마다 하루 1개까지), 주간 목표 달성 = 도장 + 별 5개. 모은 별은 건물 위 밤하늘에 뜸 |
+| 내 건물 | 1층 로비 · 2층 강의실 · 3층 서재 · 4층부터 채널 층(증축) · 옥상. 브랜드 색이 지붕·문·깃발에 칠해짐 |
+| 꾸미기 | 빈 자리를 누르고 물건 고르기(끌어다 놓기 없음). 가게, 보관함, 벽 색 바꾸기 |
+| 강의실 | 지금 듣는 강의의 회차 도장, 무료특강 도장, 수료 신청 → 관리자 확인 → 수료 기념품 + 수료증 |
+| 서재 | 북클럽 책을 기록하면 책장에 책등이 꽂힘 |
+| 로비 | 간판·현판, 층별 안내판, 좋아하는 것들의 방(고르기·글·사진), 좋은 소식 현수막, 쇼윈도(내 책 단계) |
+| 우리 마을 | 모든 건물이 서 있는 마을 지도, 광장 소식판, 이웃 방문, 응원(같은 사람에게 하루 한 번) |
+| 공개 건물 | 본인이 공개로 바꾸면 `/b/공개키` 주소로 로그인 없이 볼 수 있음 |
+| 관리 | 월요일 요약 + 단톡방 문구, 수료 확인(한꺼번에 처리 포함), 소식 소개, 강의·책·물건·초대 코드·설정값, 기록 표본 확인 |
 
-## React Compiler
+그림은 아직 **임시 그림**(글자 그림과 도형)입니다. 물건마다 `image_url` 자리가 있어, 관리 화면에서 그림을 올리면 바로 바뀝니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 폴더
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+supabase/migrations/   데이터 구조 · 권한 · 서버 함수 · 기본 물건/취향 목록
+supabase/seed.sql      로컬 개발용 예시 데이터 (실제 서비스에는 넣지 않음)
+scripts/check-rules.mjs 핵심 규칙 검사 55개
+src/                   화면 (React + TypeScript)
+netlify/edge-functions 공개 건물 주소의 미리보기 제목 바꾸기
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## 내 컴퓨터에서 돌려 보기
+
+```bash
+npm install
+```
+
+```bash
+npx supabase start
+```
+
+```bash
+npx supabase db reset
+```
+
+`.env.local` 을 만들고 `supabase start` 가 알려주는 값을 넣습니다.
+
+```
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_KEY=(PUBLISHABLE_KEY 값)
+VITE_DEV_LOGIN=1
+```
+
+```bash
+npm run dev
+```
+
+로컬 초대 코드는 `NFB2026`(회원), `ADMIN-LOCAL`(관리자)입니다.
+
+```bash
+node scripts/check-rules.mjs
+```
+
+## 실제 서비스로 올리는 순서
+
+1. **Supabase**: 새 프로젝트를 만들고 `supabase/migrations/` 의 두 파일을 차례로 적용합니다. `seed.sql` 은 넣지 않습니다.
+2. **초대 코드**: 관리자용 코드 하나를 직접 넣습니다. 이 코드로 처음 가입한 사람이 관리자가 됩니다.
+   ```sql
+   insert into public.invite_codes (code, label, role, max_uses) values ('(정한 코드)', '관리자', 'admin', 1);
+   ```
+3. **Netlify**: 저장소를 연결하고 기준 폴더(Base directory)를 `nfb-brand-town` 으로 지정합니다.
+   환경 변수 `VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY`(공개용 publishable 키)를 넣습니다. `VITE_DEV_LOGIN` 은 넣지 않습니다.
+4. **카카오 로그인**
+   - 카카오 개발자 사이트에서 앱을 만들고 카카오 로그인을 켭니다. 동의 항목은 **닉네임만** 받습니다.
+   - Redirect URI: `https://(Supabase 프로젝트 주소)/auth/v1/callback`
+   - Supabase 대시보드 → Authentication → Providers → Kakao 에 REST API 키와 Client Secret 을 넣고, "이메일 없는 사용자 허용"을 켭니다.
+   - Authentication → URL Configuration 의 Site URL 에 Netlify 주소를 넣습니다.
+
+비밀 키(service role, secret)는 화면 코드와 환경 변수 어디에도 넣지 않습니다. 브라우저에는 공개용 키만 들어갑니다.
+
+## 규칙 요약
+
+- 별과 도장은 누적 숫자가 아니라 **원장**(`star_ledger`, `weekly_stamps`)에서 집계합니다. 규칙을 바꿔도 다시 계산할 수 있습니다.
+- 별이 오가는 동작은 전부 서버 함수로만 합니다. 화면에서 표를 직접 고칠 수 없습니다.
+- 보상 수치는 관리 → 설정에서 바꿉니다(코드에 박혀 있지 않습니다).
+- 기록은 스스로 남긴 대로 인정합니다. 관리자는 표본만 보고 문제 있는 건만 무효로 바꿉니다.
+- 쉬는 사람의 건물도 마을에서 똑같이 보입니다. 순위는 없습니다.
+- 한 주는 한국 시간 월요일에 시작합니다.
+
+## 라이브클래스(눈보라피팅룸) 연동 범위
+
+2026-11-16 에 연결된 커넥터를 직접 확인한 결과입니다.
+
+| 되는 것 | 안 되는 것 |
+|---|---|
+| 강의 상품 목록·상세 조회 (이름, 썸네일, 공개 상태, 신청 인원 수) | 수강생 명단·이메일 |
+| 상품 소개 페이지 읽기/쓰기, 그림 올리기 | 수강 진도·출석·수료 이력, 결제 내역 |
+
+그래서 강의 도장은 회원이 스스로 누르고, 수료는 관리자가 확인합니다. 강의 목록은 관리 화면에서 직접 넣거나, 커넥터로 조회한 목록에서 골라 넣을 수 있습니다.
+프로그램용 토큰(PAT)의 범위는 아직 확인하지 않았습니다.
+
+## 검사 결과 (로컬, 2026-11-16)
+
+| 검사 | 결과 |
+|---|---|
+| 핵심 규칙 55개 (`scripts/check-rules.mjs`) — 가입, 기록·별·도장, 하루 상한, 되돌리기, 가게·배치, 응원, 강의 도장, 수료 승인·소급, 서재, 취향, 소식 동의, 마을, 공개 건물, 권한 | 55 / 55 통과 |
+| 브라우저로 따라가기 — 가입 → 기록 3건 → 도장 → 물건 사서 놓기 → 새로 고침 뒤 유지 | 통과 |
+| 브라우저로 따라가기 — 로비·강의실·서재·관리자 수료 확인·소식 소개·마을·응원·공개 건물 | 통과 |
+| 폭 360px 에서 가로로 밀리지 않는지 (모든 화면, 큰 글자 포함) | 통과 |
+| 누르는 곳이 48px 보다 작은 것 | 없음 |
+| 카카오 로그인 | 아직 못 해 봄 (카카오 앱과 실제 Supabase 프로젝트가 필요) |
+| Netlify 배포, 공개 건물 미리보기 제목 | 아직 못 해 봄 (배포 전) |
+
+## 다음 할 일
+
+- 실제 Supabase 프로젝트 연결과 Netlify 배포, 카카오 로그인 설정
+- 3D 그림 제작: 건물 틀·방·물건을 "따뜻한 저녁" 스타일로 만들어 임시 그림 교체 (브랜드 색이 칠해지는 부분은 따로 떼어 만들어야 함)
+- 공개 건물마다 다른 미리보기 그림
+- 눈보라피팅룸 강의 목록 가져오기 (어떤 강의를 넣을지 정한 뒤)
+- 마을 공동 목표, 이달의 취향 질문, 계절 한정 물건, 8주 기수 행사

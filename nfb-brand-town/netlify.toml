@@ -1,0 +1,13 @@
+# Netlify 설정 — 기준 폴더(Base directory)는 nfb-brand-town 으로 지정한다.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# 한 장짜리 화면이라 모든 주소를 index.html 로 보낸다.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -75,14 +75,24 @@ export const BRAND_COLORS: { name: string; hex: string }[] = [
   { name: '먹색', hex: '#3F3F46' },
 ]
 
+// 날짜만 있는 값('2026-11-17')은 그대로, 시각이 붙은 값은 한국 시간으로 바꿔 읽는다.
+function ymd(d: string): [number, number, number] {
+  if (d.length > 10) {
+    const k = new Date(new Date(d).getTime() + 9 * 3600 * 1000)
+    return [k.getUTCFullYear(), k.getUTCMonth() + 1, k.getUTCDate()]
+  }
+  const [y, m, day] = d.split('-').map(Number)
+  return [y, m, day]
+}
+
 export function fmtDay(d: string): string {
-  const [, m, day] = d.slice(0, 10).split('-').map(Number)
+  const [, m, day] = ymd(d)
   return `${m}월 ${day}일`
 }
 
 export function fmtFullDay(d: string | null): string {
   if (!d) return ''
-  const [y, m, day] = d.slice(0, 10).split('-').map(Number)
+  const [y, m, day] = ymd(d)
   return `${y}년 ${m}월 ${day}일`
 }
 
