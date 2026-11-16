@@ -248,7 +248,7 @@ function Courses() {
           <h2>눈보라피팅룸 강의 {rows.length}개</h2>
           <span className="muted">수강생에게 보이는 강의 {shown}개</span>
         </div>
-        <p className="muted small">체크한 강의만 수강생의 강의실에 보여요. 유료 강의는 회차마다 도장을, 무료특강은 도장 하나를 받아요.</p>
+        <p className="muted small">체크한 강의만 수강생의 강의실에 보여요. 강의 하나에 도장 하나를 받아요. 유료 강의는 수료 확인과 기념품도 있어요.</p>
         <input className="input" placeholder="강의 이름으로 찾기" value={q} onChange={(e) => setQ(e.target.value)} />
         <label className="check"><input type="checkbox" checked={onlyShown} onChange={(e) => setOnlyShown(e.target.checked)} /><span>보이는 강의만 보기</span></label>
         <ul className="list">
@@ -257,23 +257,17 @@ function Courses() {
               <label className="check" style={{ flex: '1 1 220px', padding: 0 }}>
                 <input type="checkbox" checked={c.active} disabled={busy} onChange={(e) => patch(c.id, { active: e.target.checked })} aria-label={`${c.title} 수강생에게 보이기`} />
                 <span><b style={{ display: 'block' }}>{c.title}</b>
-                  <span className="muted small">{c.kind === 'free' ? '무료특강 · 도장 1개' : `유료 강의 · ${c.session_count}강`}{c.stamp_open ? '' : ' · 도장 닫힘'}</span></span>
+                  <span className="muted small">{c.kind === 'free' ? '무료특강' : '유료 강의'}{c.stamp_open ? '' : ' · 도장 닫힘'}</span></span>
               </label>
               <button className="btn ghost small" onClick={() => setOpen(open === c.id ? null : c.id)}>{open === c.id ? '접기' : '자세히'}</button>
               {open === c.id && (
                 <div className="stack" style={{ flex: '1 1 100%', gap: 10 }}>
                   <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>
                     <button className={`chip${c.kind === 'course' ? ' on' : ''}`} disabled={busy} onClick={() => patch(c.id, { kind: 'course' })}>유료 강의</button>
-                    <button className={`chip${c.kind === 'free' ? ' on' : ''}`} disabled={busy} onClick={() => patch(c.id, { kind: 'free', session_count: 1 })}>무료특강</button>
+                    <button className={`chip${c.kind === 'free' ? ' on' : ''}`} disabled={busy} onClick={() => patch(c.id, { kind: 'free' })}>무료특강</button>
                   </div>
                   {c.kind === 'course' && (
                     <>
-                      <div className="row">
-                        <span className="grow"><b>모두 몇 강인가요?</b></span>
-                        <button className="btn small" disabled={busy || c.session_count <= 1} onClick={() => patch(c.id, { session_count: c.session_count - 1 })} aria-label="한 강 줄이기">−</button>
-                        <b style={{ minWidth: 48, textAlign: 'center' }}>{c.session_count}강</b>
-                        <button className="btn small" disabled={busy || c.session_count >= 60} onClick={() => patch(c.id, { session_count: c.session_count + 1 })} aria-label="한 강 늘리기">＋</button>
-                      </div>
                       <label className="field">수료 기념품
                         <select className="input" value={c.reward_item_id ?? ''} disabled={busy} onChange={(e) => patch(c.id, { reward_item_id: e.target.value || null })}>
                           <option value="">없음</option>

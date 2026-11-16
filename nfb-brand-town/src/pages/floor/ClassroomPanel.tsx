@@ -12,7 +12,7 @@ export default function ClassroomPanel() {
   const [busy, run] = useRun()
   const [courses, setCourses] = useState<Course[]>([])
   const [sheet, setSheet] = useState<null | 'pick' | 'done'>(null)
-  const [stampFor, setStampFor] = useState<{ course: Course; session: number } | null>(null)
+  const [stampFor, setStampFor] = useState<Course | null>(null)
   const [note, setNote] = useState('')
   const [got, setGot] = useState<number | null>(null)
   const [cert, setCert] = useState<Completion | null>(null)
@@ -36,7 +36,7 @@ export default function ClassroomPanel() {
   const stamp = () =>
     run(async () => {
       const r = await rpc<{ stars: number }>('stamp_lecture', {
-        p_course_id: stampFor!.course.id, p_session_no: stampFor!.session, p_note: note,
+        p_course_id: stampFor!.id, p_note: note,
       })
       await reload()
       setStampFor(null)
@@ -48,31 +48,21 @@ export default function ClassroomPanel() {
     <>
       <section className="card stack">
         <h2>지금 듣는 강의</h2>
-        {taking.length === 0 && <p className="empty">듣고 있는 강의를 고르면 회차마다 도장을 모을 수 있어요.</p>}
-        {taking.map((c) => {
-          const stamps = new Set(progress.get(c.id)?.stamps ?? [])
-          const next = Array.from({ length: c.session_count }, (_, i) => i + 1).find((n) => !stamps.has(n))
-          return (
-            <div key={c.id} className="stack" style={{ gap: 10 }}>
-              <div className="row between">
-                <b>{c.title}</b>
-                <span className="muted">{stamps.size} / {c.session_count}</span>
-              </div>
-              <div className="stampcard">
-                {Array.from({ length: c.session_count }, (_, i) => i + 1).map((n) =>
-                  stamps.has(n) ? (
-                    <span key={n} className="stamp on">{n}강</span>
-                  ) : n === next ? (
-                    <button key={n} className="stamp next" onClick={() => setStampFor({ course: c, session: n })} aria-label={`${n}강 도장 받기`}>{n}강</button>
-                  ) : (
-                    <span key={n} className="stamp">{n}강</span>
-                  ),
-                )}
-              </div>
-              {next && <button className="btn primary wide" onClick={() => setStampFor({ course: c, session: next })}>{next}강 들었어요</button>}
-            </div>
-          )
-        })}
+        {taking.length === 0 && <p className="empty">듣고 있는 강의를 고르면 강의마다 도장을 하나씩 받을 수 있어요.</p>}
+        {taking.length > 0 && (
+          <ul className="list">
+            {taking.map((c) => {
+              const done = Boolean(progress.get(c.id)?.stamps.length)
+              return (
+                <li key={c.id}>
+                  <span className="ico" aria-hidden>{done ? '💮' : '🎓'}</span>
+                  <span className="txt"><b>{c.title}</b>{done ? '도장을 받았어요' : '강의를 들었다면 도장을 받으세요'}</span>
+                  {!done && c.stamp_open && <button className="btn primary small" onClick={() => setStampFor(c)}>도장 받기</button>}
+                </li>
+              )
+            })}
+          </ul>
+        )}
         <button className="btn wide" onClick={() => setSheet('pick')}>듣는 강의 고르기</button>
       </section>
 
@@ -84,7 +74,7 @@ export default function ClassroomPanel() {
             <li key={c.id}>
               <span className="ico" aria-hidden>🎟️</span>
               <span className="txt"><b>{c.title}</b>참여하셨다면 도장을 받으세요</span>
-              <button className="btn primary small" onClick={() => setStampFor({ course: c, session: 1 })}>도장 받기</button>
+              <button className="btn primary small" onClick={() => setStampFor(c)}>도장 받기</button>
             </li>
           ))}
           {freeDone.map((c) => (
@@ -98,7 +88,7 @@ export default function ClassroomPanel() {
 
       <section className="card stack">
         <h2>수료 장식장</h2>
-        <p className="muted small">강의를 끝까지 마치면 도장 대신 수료 기념품을 받아요. 아디쌤이 확인한 뒤에 놓여요.</p>
+        <p className="muted small">강의를 끝까지 마치면 수료 기념품과 수료증을 받아요. 아디쌤이 확인한 뒤에 놓여요.</p>
         {me.completions.length === 0 && <p className="empty">아직 비어 있어요. 예전에 마친 강의도 알릴 수 있어요.</p>}
         <ul className="list">
           {me.completions.map((c) => (
@@ -124,7 +114,7 @@ export default function ClassroomPanel() {
               const on = Boolean(progress.get(c.id)?.enrolled)
               return (
                 <li key={c.id}>
-                  <span className="txt"><b>{c.title}</b>모두 {c.session_count}강</span>
+                  <span className="txt"><b>{c.title}</b></span>
                   <button className={`btn small${on ? ' on' : ''}`} disabled={busy} aria-pressed={on}
                     onClick={() => run(async () => { await rpc('set_enrollment', { p_course_id: c.id, p_on: !on }); await reload() })}>
                     {on ? '듣는 중' : '고르기'}
@@ -162,7 +152,7 @@ export default function ClassroomPanel() {
       )}
 
       {stampFor && (
-        <Sheet title={stampFor.course.kind === 'free' ? stampFor.course.title : `${stampFor.course.title} ${stampFor.session}강`} onClose={() => setStampFor(null)}>
+        <Sheet title={stampFor.title} onClose={() => setStampFor(null)}>
           <label className="field">배운 점 한 줄 (선택)
             <input className="input" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="예: 내 이야기를 먼저 쓰라는 말이 남았어요" />
           </label>

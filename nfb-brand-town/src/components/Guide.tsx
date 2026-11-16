@@ -22,10 +22,10 @@ export function Guide({ goal, onClose }: { goal: number; onClose: () => void }) 
   const stars: [string, string, string, number][] = [
     ['✍️', 'SNS에 올린 글을 기록하기', `「오늘」의 [기록 남기기] · 한 층에서 하루 ${v.record_star_daily_cap}개까지`, v.star_per_record],
     ['🎯', '일주일 목표 채우기', `일주일에 기록 ${goal}개 · 도장도 함께 받아요`, v.star_weekly_bonus],
-    ['🎓', '강의 듣고 강의 도장 찍기', '2층 강의실', v.star_lecture_stamp],
+    ['🎓', '강의 듣고 강의 도장 찍기', '2층 강의실 · 강의 하나에 한 번', v.star_lecture_stamp],
     ['📚', '북클럽 책 읽고 기록하기', '3층 서재', v.star_reading],
     ['💐', '이웃 건물에 응원 보내기', '「우리 마을」 · 하루에 첫 응원만', v.star_cheer],
-    ['🎉', '좋은 소식 알리기', '1층 로비 · 하루에 한 번만', v.star_news],
+    ['🎉', '좋은 소식 알리기', '1층 로비 · 일주일에 한 번만', v.star_news],
     ['📣', '아디쌤이 내 소식을 소개했을 때', '소개에 동의한 소식만', v.star_featured],
     ['🏅', '강의 수료가 확인됐을 때', '수료 기념품과 수료증도 받아요', v.star_completion],
     ['🏠', '처음 건물을 지었을 때', '가입할 때 한 번', v.star_welcome],
@@ -58,7 +58,7 @@ export function Guide({ goal, onClose }: { goal: number; onClose: () => void }) 
             </li>
             <li>
               <span className="ico" aria-hidden>🎓</span>
-              <span className="txt"><b>강의 도장 — 2층 강의실 칠판</b>지금 듣는 강의를 한 회 들을 때마다 직접 하나씩 찍어요. 무료특강도 찍을 수 있어요.</span>
+              <span className="txt"><b>강의 도장 — 2층 강의실 칠판</b>강의 하나에 도장 하나예요. 듣는 강의나 참여한 무료특강에 직접 찍어요. 찍을 때 별도 함께 받아요.</span>
             </li>
           </ul>
         </section>

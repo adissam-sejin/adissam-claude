@@ -80,7 +80,7 @@ function School() {
             {g.list.map((c) => (
               <li key={c.id}>
                 {c.thumbnail_url ? <img className="thumb" src={c.thumbnail_url} alt="" /> : <span className="ico" aria-hidden>{c.kind === 'free' ? '🎟️' : '📘'}</span>}
-                <span className="txt"><b>{c.title}</b>{c.kind === 'free' ? '무료특강' : `모두 ${c.session_count}강`}{taking.has(c.id) ? ' · 듣는 중' : ''}</span>
+                <span className="txt"><b>{c.title}</b>{c.kind === 'free' ? '무료특강' : '강의'}{taking.has(c.id) ? ' · 듣는 중' : ''}</span>
                 {c.product_url && <a className="btn small" href={c.product_url} target="_blank" rel="noreferrer">강의 보러 가기</a>}
               </li>
             ))}

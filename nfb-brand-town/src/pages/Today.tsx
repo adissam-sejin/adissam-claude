@@ -20,6 +20,9 @@ export default function TodayPage() {
   const sns = me.floors.filter((f) => f.kind === 'sns')
   const { count, goal, stamped } = me.week
   const left = goal - count
+  // 동그라미는 크게 보이도록 한 줄에 4개까지만 놓는다.
+  const dotN = Math.max(goal, count)
+  const dotCols = dotN <= 4 ? dotN : dotN <= 6 ? 3 : 4
   const line = stamped
     ? '이번 주 도장을 받았어요. 정말 잘하셨어요!'
     : count === 0
@@ -51,7 +54,7 @@ export default function TodayPage() {
         <section className="card stack">
           <h1>{me.profile.nickname}님, 반가워요</h1>
           <p style={{ fontSize: '1.15rem', fontWeight: 700 }}>{line}</p>
-          <div className="dots" aria-label={`이번 주 ${count}개, 목표 ${goal}개`}>
+          <div className="dots" style={{ gridTemplateColumns: `repeat(${dotCols}, minmax(0, 92px))` }} aria-label={`이번 주 ${count}개, 목표 ${goal}개`}>
             {Array.from({ length: Math.max(goal, count) }, (_, i) => (
               <span key={i} className={`dot${i < count ? ' on' : ''}`} aria-hidden>{i < count ? '✍️' : ''}</span>
             ))}
@@ -66,10 +69,14 @@ export default function TodayPage() {
             <button className="btn ghost small" onClick={() => setGoalOpen((v) => !v)}>목표 바꾸기</button>
           </div>
           {goalOpen && (
-            <div className="chips">
-              {[2, 3, 5].map((n) => (
-                <button key={n} className={`chip${goal === n ? ' on' : ''}`} disabled={busy} onClick={() => setGoal(n)}>일주일에 {n}개</button>
-              ))}
+            <div className="stack" style={{ gap: 8 }}>
+              <b>일주일에 몇 개를 남길까요?</b>
+              <div className="goal-grid" role="group" aria-label="일주일 목표 개수">
+                {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                  <button key={n} className={`chip${goal === n ? ' on' : ''}`} disabled={busy} aria-pressed={goal === n} aria-label={`일주일에 ${n}개`} onClick={() => setGoal(n)}>{n}</button>
+                ))}
+              </div>
+              <p className="muted small">채널이 여러 개라면 넉넉하게, 처음이라면 가볍게 잡아 보세요. 언제든 바꿀 수 있어요.</p>
             </div>
           )}
           <button className="btn wide" onClick={() => setGuide(true)}>⭐ 별과 도장은 어떻게 받나요?</button>
@@ -112,7 +119,7 @@ export default function TodayPage() {
           </div>
           <div className="stampcard">
             {Array.from({ length: Math.max(8, Math.ceil((today.stamp_weeks.length + 1) / 8) * 8) }, (_, i) => (
-              <span key={i} className={`stamp${i < today.stamp_weeks.length ? ' on' : ''}`}>{i < today.stamp_weeks.length ? '잘했어요' : i + 1}</span>
+              <span key={i} className={`stamp${i < today.stamp_weeks.length ? ' on' : ''}`}>{i < today.stamp_weeks.length ? <>잘했<br />어요</> : i + 1}</span>
             ))}
           </div>
           <p className="muted small">일주일 목표를 채우면 그 주에 도장 하나와 별 5개를 받아요. 한 판은 8주(두 달)치이고, 8칸을 다 채우면 새 판이 이어져요.</p>
