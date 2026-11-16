@@ -167,6 +167,20 @@ button.stamp { padding: 0; }
 .sheet-body { padding: 4px 18px calc(22px + env(safe-area-inset-bottom)); overflow-y: auto; display: grid; gap: 16px; }
 @keyframes rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 
+/* ── 홈 화면에 앱으로 저장하기 안내 ── */
+.ip { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 45; width: min(calc(100vw - 20px), 460px);
+  background: var(--card); border: 2px solid var(--gold); border-radius: 22px; padding: 14px 16px 16px; display: grid; gap: 12px;
+  box-shadow: 0 14px 34px rgba(8, 10, 30, 0.55); animation: ip-rise 0.25s ease-out; }
+@keyframes ip-rise { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.ip-head { display: flex; align-items: center; gap: 12px; }
+.ip-head img { width: 56px; height: 56px; border-radius: 14px; flex: none; }
+.ip-head div { flex: 1; min-width: 0; display: grid; }
+.ip-head b { font-family: var(--display); font-weight: 400; font-size: 1.2rem; line-height: 1.25; }
+.ip-head span { color: var(--sub); font-size: 0.95rem; }
+.ip-x { flex: none; width: 48px; height: 48px; border: 0; background: none; font-size: 1.2rem; color: var(--sub); cursor: pointer; border-radius: 12px; }
+.ip p { line-height: 1.55; }
+.ip-steps { margin: 0; padding-left: 1.5em; display: grid; gap: 8px; line-height: 1.5; }
+.ip-share { width: 1.5em; height: 1.5em; vertical-align: -0.35em; color: #2a7be4; }
 .toast {
   position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 80;
   max-width: min(92vw, 520px); background: var(--ink); color: #fff; padding: 14px 20px; border-radius: 16px;

@@ -30,6 +30,7 @@ export default async (request: Request, context: Context) => {
   const html = (await response.text())
     .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
     .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${title}$2`)
+    .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${esc(request.url)}$2`)
     .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${desc}$2`)
     .replace(/(<meta name="description" content=")[^"]*(")/, `$1${desc}$2`);
 

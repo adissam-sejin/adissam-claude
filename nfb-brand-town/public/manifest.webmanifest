@@ -1,0 +1,17 @@
+{
+  "name": "NFb 브랜드 타운",
+  "short_name": "브랜드 타운",
+  "description": "배우고, 만들고, 세상에 내놓을수록 내 브랜드 건물이 자랍니다.",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b2247",
+  "theme_color": "#232B55",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

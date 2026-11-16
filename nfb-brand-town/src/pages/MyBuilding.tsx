@@ -7,6 +7,7 @@ import { BuildingView } from '../components/Building'
 import { Celebrate, Loading, Sheet, Sprite } from '../components/ui'
 import { BRAND_COLORS, CHANNELS } from '../lib/util'
 import { PhotoSheet } from '../components/PhotoSheet'
+import { isStandalone, showInstallGuide } from '../lib/install'
 import type { ChannelType, InventoryRow } from '../lib/types'
 import { SLOT_LABEL, slotKind } from '../lib/rooms'
 import { floorNumber, floorTitle } from '../lib/util'
@@ -42,6 +43,7 @@ export default function MyBuilding() {
           <button className="btn wide" onClick={() => setSheet('floor')}>층 올리기</button>
           <button className="btn wide" onClick={() => setSheet('edit')}>이름과 브랜드 색 바꾸기</button>
           <button className="btn wide" onClick={() => setSheet('share')}>내 건물 보여주기</button>
+          {!isStandalone() && <button className="btn wide" onClick={showInstallGuide}>📱 홈 화면에 앱으로 저장하기</button>}
         </section>
         <section className="card tight row between">
           <span className="muted">{p.nickname}님으로 들어와 있어요</span>
