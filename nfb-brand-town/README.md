@@ -93,7 +93,10 @@ node scripts/check-rules.mjs
 4. **카카오 로그인** ([Supabase 공식 안내](https://supabase.com/docs/guides/auth/social-sign-in/auth-kakao))
    - 카카오 개발자 사이트에서 앱을 만들고, 앱 설정 → 앱 → 플랫폼 키에서 **REST API 키**를 확인합니다.
    - 그 REST API 키의 **카카오 로그인 리다이렉트 URI**에 `https://(Supabase 프로젝트 주소)/auth/v1/callback` 을 넣고, **Client Secret**을 켜서 값을 복사합니다.
-   - 제품 설정 → 카카오 로그인 → 일반에서 상태를 ON 으로, 동의 항목에서 **닉네임**과 **프로필 사진**을 켭니다. 이메일은 받지 않습니다.
+   - 제품 설정 → 카카오 로그인 → 일반에서 상태를 ON 으로, 동의 항목에서 **닉네임**, **프로필 사진**, **카카오계정(이메일)** 을 켭니다.
+     Supabase 는 로그인할 때 이메일 항목을 늘 함께 요청하므로(코드로 확인), 이메일 항목이 꺼져 있으면 카카오에서 오류가 납니다.
+     이메일 항목을 켜려면 앱을 비즈 앱으로 바꿔야 하고, 그때 앱 아이콘이 필요합니다(`brand/kakao-app-icon.png`).
+     이메일은 "선택 동의"로 두면 회원이 동의하지 않아도 가입할 수 있습니다.
    - Supabase 대시보드 → Authentication → Sign In / Providers → Kakao 를 켜고 REST API 키와 Client Secret 을 넣은 뒤 **Allow users without an email** 을 켭니다.
    - Authentication → URL Configuration 의 Site URL 에 사이트 주소를 넣습니다.
 
