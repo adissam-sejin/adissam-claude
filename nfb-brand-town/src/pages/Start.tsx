@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase, devLogin } from '../lib/supabase'
 import { useApp } from '../ctx'
+import { rpc } from '../lib/api'
 import { BuildingView } from '../components/Building'
 import type { Building } from '../lib/types'
 
@@ -35,6 +36,13 @@ export default function Start() {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState(false)
+  const [count, setCount] = useState<number | null>(null)
+  // 임시 이메일 로그인은 첫 화면에 보이지 않는다. 주소 끝에 ?email 을 붙였을 때만 나온다.
+  const showEmail = devLogin && new URLSearchParams(window.location.search).has('email')
+
+  useEffect(() => {
+    rpc<number>('get_town_count').then(setCount).catch(() => setCount(null))
+  }, [])
 
   const kakao = async () => {
     setBusy(true)
@@ -62,10 +70,17 @@ export default function Start() {
       <h1>NFb 브랜드 타운</h1>
       <p className="lead">배우고, 만들고, 세상에 내놓을수록<br />내 브랜드 건물이 자랍니다.</p>
       <BuildingView b={SAMPLE} />
+      {count !== null && count > 0 && (
+        <p className="start-count">지금 이 마을에 건물 <b>{count}채</b>가 서 있어요</p>
+      )}
       <button className="btn kakao big" onClick={kakao} disabled={busy}>카카오로 시작하기</button>
-      {devLogin && (
+      <div className="start-note">
+        <b>건물주가 되려면 초대 코드가 필요해요</b>
+        <p>초대 코드는 아디쌤에게 받을 수 있어요. 코드를 받으셨다면 위의 [카카오로 시작하기]를 누르고, 다음 화면에서 코드를 넣어 주세요.</p>
+      </div>
+      {showEmail && (
         <div className="card stack">
-          <p className="muted small">이메일로 들어가기 (카카오 연결 전까지 쓰는 임시 방법이에요)</p>
+          <p className="muted small">이메일로 들어가기 (임시)</p>
           <input className="input" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
           <input className="input" placeholder="비밀번호" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" />
           <div className="row">
