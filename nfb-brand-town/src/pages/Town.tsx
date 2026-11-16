@@ -116,11 +116,10 @@ export default function TownPage() {
             <img className="pz-lamp r" src={prop('lamp')} alt="" />
             <img className="pz-bench" src={prop('bench')} alt="" />
             <img className="pz-fountain" src={prop('fountain')} alt="" />
-            <button className="pz-board" onClick={() => newsRef.current?.scrollIntoView({ behavior: 'smooth' })} aria-label="광장 소식판 보기">
+            <button className="pz-board" onClick={() => nav('/place/plaza')} aria-label="광장 방명록과 아디쌤 소식 보기">
               <img src={prop('noticeboard')} alt="" />
-              {town.news.length > 0 && <b>{town.news.length}</b>}
             </button>
-            <span className="shared-name plaza-name">광장</span>
+            <button className="shared-name plaza-name" onClick={() => nav('/place/plaza')}>광장 들어가기</button>
           </div>
           {blocks}
         </div>
@@ -129,7 +128,7 @@ export default function TownPage() {
 
       <section className="card tight">
         <p><b>이번 주 우리 마을 기록 {town.week_total}개 · 건물 {town.buildings.length}채</b></p>
-        <p className="muted">건물을 누르면 크게 볼 수 있어요. 학교·오브북 도서관·미술관은 모두가 함께 쓰는 곳이에요.</p>
+        <p className="muted">건물을 누르면 크게 볼 수 있어요. 광장·학교·오브북 도서관·미술관은 모두가 함께 쓰는 곳이에요.</p>
       </section>
 
       <section className="card stack">

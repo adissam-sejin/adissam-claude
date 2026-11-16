@@ -5,9 +5,9 @@ import { supabase, sharedUrl } from '../lib/supabase'
 import type { Book, Course, Item } from '../lib/types'
 import { fmtDay, fmtFullDay, newsInfo } from '../lib/util'
 import { Loading, Sprite } from '../components/ui'
-import { SHELF_FLOORS, type Exhibition, type ShelfBook, type Work } from './Place'
+import { SHELF_FLOORS, type Exhibition, type PlazaNote, type ShelfBook, type TownPost, type Work } from './Place'
 
-const TABS = ['요약', '수료', '소식', '강의', '책', '오브북', '전시', '물건', '초대', '기록', '설정'] as const
+const TABS = ['요약', '광장', '수료', '소식', '강의', '책', '오브북', '전시', '물건', '초대', '기록', '설정'] as const
 type Tab = (typeof TABS)[number]
 
 export default function Admin() {
@@ -21,6 +21,7 @@ export default function Admin() {
         ))}
       </div>
       {tab === '요약' && <Summary />}
+      {tab === '광장' && <PlazaAdmin />}
       {tab === '수료' && <Completions />}
       {tab === '소식' && <NewsAdmin />}
       {tab === '강의' && <Courses />}
@@ -725,6 +726,69 @@ function ExhibitAdmin() {
           </section>
         )
       })}
+    </>
+  )
+}
+
+// 광장 관리: 단톡방에 올린 글을 모아 두고, 방명록을 살핀다.
+function PlazaAdmin() {
+  const { toast, fail } = useApp()
+  const [busy, run] = useRun()
+  const [posts, reload] = useLoad(async () => (await supabase.from('town_posts').select('*').order('posted_on', { ascending: false }).order('created_at', { ascending: false }).limit(200)).data as TownPost[])
+  const [notes, reloadNotes] = useLoad(async () => (await supabase.from('plaza_notes').select('id,user_id,note,created_at,hidden_at, profiles(nickname)').order('created_at', { ascending: false }).limit(100)).data as unknown as PlazaNote[])
+  const [body, setBody] = useState('')
+  const [link, setLink] = useState('')
+  const [day, setDay] = useState('')
+  const [pinned, setPinned] = useState(false)
+  if (!posts || !notes) return <Loading />
+  return (
+    <>
+      <section className="card stack">
+        <h2>아디쌤 소식 올리기</h2>
+        <p className="muted small">단톡방에 올린 글을 그대로 붙여넣으면 광장에 차곡차곡 쌓여요.</p>
+        <label className="field">내용<textarea className="input" style={{ minHeight: 160 }} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} /></label>
+        <label className="field">올린 날 (비우면 오늘)<input className="input" type="date" value={day} onChange={(e) => setDay(e.target.value)} /></label>
+        <label className="field">함께 보여줄 주소 (선택)<input className="input" inputMode="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://" /></label>
+        <label className="check"><input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} /><span>맨 위에 고정하기</span></label>
+        <button className="btn primary big" disabled={busy || !body.trim()}
+          onClick={() => run(async () => {
+            const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10)
+            const { error } = await supabase.from('town_posts').insert({ body: body.trim(), link: link.trim() || null, posted_on: day || today, pinned })
+            if (error) return fail(error)
+            setBody(''); setLink(''); setDay(''); setPinned(false)
+            reload()
+            toast('광장에 올렸어요.')
+          })}>
+          광장에 올리기
+        </button>
+      </section>
+      <section className="card stack">
+        <h2>올린 소식 {posts.length}개</h2>
+        {posts.length === 0 && <p className="empty">아직 없어요.</p>}
+        {posts.map((p) => (
+          <article key={p.id} className="post" style={{ opacity: p.active ? 1 : 0.5 }}>
+            <b>{p.pinned ? '📌 ' : ''}{fmtDay(p.posted_on)}{p.active ? '' : ' · 숨김'}</b>
+            <p>{p.body.length > 140 ? `${p.body.slice(0, 140)}…` : p.body}</p>
+            <div className="row">
+              <button className="btn ghost small" disabled={busy} onClick={() => run(async () => { await supabase.from('town_posts').update({ pinned: !p.pinned }).eq('id', p.id); reload() })}>{p.pinned ? '고정 풀기' : '고정하기'}</button>
+              <button className="btn ghost small" disabled={busy} onClick={() => run(async () => { await supabase.from('town_posts').update({ active: !p.active }).eq('id', p.id); reload() })}>{p.active ? '숨기기' : '다시 보이기'}</button>
+            </div>
+          </article>
+        ))}
+      </section>
+      <section className="card stack">
+        <h2>방명록 살피기</h2>
+        <p className="muted small">문제가 있는 글만 가려 주세요. 가린 글은 다른 회원에게 보이지 않아요.</p>
+        {notes.length === 0 && <p className="empty">아직 글이 없어요.</p>}
+        <ul className="list">
+          {notes.map((n) => (
+            <li key={n.id} style={{ opacity: n.hidden_at ? 0.5 : 1 }}>
+              <span className="txt"><b>{n.profiles.nickname}님 · {fmtDay(n.created_at)}{n.hidden_at ? ' · 가림' : ''}</b>{n.note}</span>
+              {!n.hidden_at && <button className="btn ghost small" disabled={busy} onClick={() => run(async () => { await rpc('remove_plaza_note', { p_id: n.id }); reloadNotes() })}>가리기</button>}
+            </li>
+          ))}
+        </ul>
+      </section>
     </>
   )
 }

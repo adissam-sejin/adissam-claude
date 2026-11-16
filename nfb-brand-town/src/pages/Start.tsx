@@ -5,22 +5,28 @@ import { BuildingView } from '../components/Building'
 import type { Building } from '../lib/types'
 
 // 시작 화면에 보여주는 예시 건물 (실제 회원 자료가 아니다)
+const item = (id: string, name: string, slot: 'floor' | 'wall', size: number) =>
+  ({ id, name, emoji: null, image_url: `/art/items/${id}.webp`, slot, size })
 const SAMPLE: Building = {
   profile: { id: 'sample', nickname: '', brand_name: '나의 브랜드', tagline: '', brand_color: '#B5403A', plot_no: 0, is_public: false, public_key: null, weekly_goal: 3, created_at: '' },
   floors: [
     { id: 's0', kind: 'lobby', channel_type: null, channel_name: '', channel_url: '', position: 0, wall_color: null, record_count: 0, recent_records: [], placements: [] },
     { id: 's3', kind: 'sns', channel_type: 'blog', channel_name: '블로그', channel_url: '', position: 10, wall_color: '#F3C9A5', record_count: 16, recent_records: [],
       placements: [
-        { slot_key: 'f2', inventory_id: 'a', item: { id: 'a', name: '화분', emoji: '🪴', image_url: null, slot: 'floor' } },
-        { slot_key: 'f4', inventory_id: 'b', item: { id: 'b', name: '고양이', emoji: '🐈', image_url: null, slot: 'floor' } },
-        { slot_key: 'w1', inventory_id: 'c', item: { id: 'c', name: '액자', emoji: '🖼️', image_url: null, slot: 'wall' } },
+        { slot_key: 'f1', inventory_id: 'a', item: item('sofa', '소파', 'floor', 0.85) },
+        { slot_key: 'f2', inventory_id: 'b', item: item('cat', '고양이', 'floor', 0.5) },
+        { slot_key: 'f4', inventory_id: 'e', item: item('tree', '나무', 'floor', 1.3) },
+        { slot_key: 'w1', inventory_id: 'c', item: item('frame', '액자', 'wall', 0.9) },
       ] },
     { id: 's9', kind: 'rooftop', channel_type: null, channel_name: '', channel_url: '', position: 1000, wall_color: null, record_count: 0, recent_records: [],
-      placements: [{ slot_key: 'f2', inventory_id: 'd', item: { id: 'd', name: '나무', emoji: '🌳', image_url: null, slot: 'floor' } }] },
+      placements: [
+        { slot_key: 'f2', inventory_id: 'd', item: item('parasol', '파라솔', 'floor', 1.35) },
+        { slot_key: 'f4', inventory_id: 'f', item: item('bouquet', '꽃다발', 'floor', 0.65) },
+      ] },
   ],
   stars_earned: 24, stamps: 0, records: 0, week: { start: '', count: 0, goal: 3, stamped: false },
   courses: [], completions: [], readings: [],
-  taste: ['☕', '🐈', '🌷', '📚', '🎵'].map((e, i) => ({ id: `t${i}`, kind: 'pick' as const, shape: 'object' as const, label: '', emoji: e, photo_path: null })),
+  taste: ['커피', '고양이', '꽃', '책 읽기', '음악'].map((label, i) => ({ id: `t${i}`, kind: 'pick' as const, shape: 'object' as const, label, emoji: null, photo_path: null })),
   news: [], my_books: [], cheers: 0,
 }
 
@@ -59,7 +65,7 @@ export default function Start() {
       <button className="btn kakao big" onClick={kakao} disabled={busy}>카카오로 시작하기</button>
       {devLogin && (
         <div className="card stack">
-          <p className="muted small">개발용 로그인 (실제 서비스에서는 보이지 않아요)</p>
+          <p className="muted small">이메일로 들어가기 (카카오 연결 전까지 쓰는 임시 방법이에요)</p>
           <input className="input" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
           <input className="input" placeholder="비밀번호" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" />
           <div className="row">

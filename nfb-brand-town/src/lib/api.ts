@@ -29,6 +29,7 @@ const MESSAGES: Record<string, string> = {
   NO_USER: '찾을 수 없는 건물이에요.',
   NO_CONSENT: '회원이 소개에 동의하지 않은 소식이에요.',
   TOO_MANY: '더 넣을 수 없어요.',
+  PLAZA_MAX: '오늘은 방명록을 충분히 남기셨어요. 내일 또 남겨 주세요.',
 }
 
 export class AppError extends Error {

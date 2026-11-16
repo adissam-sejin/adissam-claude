@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useApp } from '../ctx'
+import { useApp, useRun } from '../ctx'
+import { rpc } from '../lib/api'
+import { fmtDay } from '../lib/util'
 import { supabase, sharedUrl } from '../lib/supabase'
 import { artUrl } from '../lib/rooms'
 import type { Book, Course } from '../lib/types'
@@ -22,13 +24,17 @@ const PLACES = {
   school: { title: '마을 학교', sub: '눈보라피팅룸의 강의가 모여 있어요', art: 'school' },
   library: { title: '오브북 도서관', sub: '오브북에서 펴낸 책과 북클럽에서 함께 읽은 책이에요', art: 'library' },
   museum: { title: '마을 미술관', sub: '함께 열었던 전시를 회차별로 볼 수 있어요', art: 'museum' },
+  plaza: { title: '우리 마을 광장', sub: '아디쌤 소식을 보고, 방명록에 한마디 남겨 보세요', art: 'clocktower' },
 } as const
+
+export interface TownPost { id: string; body: string; link: string | null; posted_on: string; pinned: boolean; active: boolean }
+export interface PlazaNote { id: string; user_id: string; note: string; created_at: string; hidden_at: string | null; profiles: { nickname: string } }
 
 // 마을에서 함께 쓰는 건물: 학교 · 오브북 도서관 · 미술관
 export default function Place() {
   const { kind } = useParams()
   const nav = useNavigate()
-  if (kind !== 'school' && kind !== 'library' && kind !== 'museum') return <Navigate to="/town" replace />
+  if (kind !== 'school' && kind !== 'library' && kind !== 'museum' && kind !== 'plaza') return <Navigate to="/town" replace />
   const p = PLACES[kind]
   return (
     <div className="split">
@@ -44,6 +50,7 @@ export default function Place() {
         {kind === 'school' && <School />}
         {kind === 'library' && <Library />}
         {kind === 'museum' && <Museum />}
+        {kind === 'plaza' && <Plaza />}
       </div>
     </div>
   )
@@ -161,6 +168,75 @@ function Museum() {
           {open.artist && <p className="center"><b>{open.artist}</b></p>}
         </Sheet>
       )}
+    </>
+  )
+}
+
+// 광장: 아디쌤 소식(단톡방에 올린 글 모음)과 방명록
+function Plaza() {
+  const { session, isAdmin, toast } = useApp()
+  const [busy, run] = useRun()
+  const [posts, setPosts] = useState<TownPost[] | null>(null)
+  const [notes, setNotes] = useState<PlazaNote[]>([])
+  const [text, setText] = useState('')
+  const [more, setMore] = useState(false)
+
+  const loadNotes = () =>
+    supabase.from('plaza_notes').select('id,user_id,note,created_at,hidden_at, profiles(nickname)').is('hidden_at', null)
+      .order('created_at', { ascending: false }).limit(100)
+      .then(({ data }) => setNotes((data ?? []) as unknown as PlazaNote[]))
+  useEffect(() => {
+    void supabase.from('town_posts').select('*').eq('active', true).order('pinned', { ascending: false }).order('posted_on', { ascending: false }).order('created_at', { ascending: false }).limit(100)
+      .then(({ data }) => setPosts((data ?? []) as TownPost[]))
+    void loadNotes()
+  }, [])
+  if (!posts) return <Loading />
+  const shown = more ? posts : posts.slice(0, 3)
+
+  return (
+    <>
+      <section className="card stack">
+        <h2>방명록</h2>
+        <label className="field">한마디 남기기
+          <input className="input" value={text} onChange={(e) => setText(e.target.value)} maxLength={120} placeholder="예: 오늘도 다들 화이팅이에요!" />
+        </label>
+        <button className="btn primary big" disabled={busy || !text.trim()}
+          onClick={() => run(async () => {
+            await rpc('add_plaza_note', { p_note: text })
+            setText('')
+            await loadNotes()
+            toast('방명록에 남겼어요.')
+          })}>
+          남기기
+        </button>
+        {notes.length === 0 ? <p className="empty">아직 비어 있어요. 첫 글을 남겨 보세요.</p> : (
+          <ul className="list">
+            {notes.map((n) => (
+              <li key={n.id}>
+                <span className="txt"><b>{n.profiles.nickname}님 · {fmtDay(n.created_at)}</b>{n.note}</span>
+                {(n.user_id === session?.user.id || isAdmin) && (
+                  <button className="btn ghost small" disabled={busy}
+                    onClick={() => run(async () => { await rpc('remove_plaza_note', { p_id: n.id }); await loadNotes() })}>
+                    {n.user_id === session?.user.id ? '지우기' : '가리기'}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section className="card stack">
+        <h2>아디쌤 소식</h2>
+        {posts.length === 0 && <p className="empty">아직 올라온 소식이 없어요.</p>}
+        {shown.map((p) => (
+          <article key={p.id} className="post">
+            <b>{p.pinned ? '📌 ' : ''}{fmtDay(p.posted_on)}</b>
+            <p>{p.body}</p>
+            {p.link && <a className="btn small" href={p.link} target="_blank" rel="noreferrer">자세히 보기</a>}
+          </article>
+        ))}
+        {posts.length > 3 && <button className="btn wide" onClick={() => setMore((v) => !v)}>{more ? '접기' : `지난 소식 ${posts.length - 3}개 더 보기`}</button>}
+      </section>
     </>
   )
 }
