@@ -149,10 +149,30 @@ async function load() {
   try {
     const [list, themes] = await Promise.all([call('admin_list'), call('admin_themes')]);
     for (const ex of list) ex.theme = themes[ex.id] || 'white';
+    await cleanupBlankCodes(list);
     render(list);
   } catch (err) {
     toast(err.message);
   }
+}
+
+// 예전 방식으로 미리 발급돼 있던 '이름 없는 빈 코드'를 정리한다.
+// 수강생이 직접 등록한 코드(이름 있음)와 작품이 올라온 코드는 건드리지 않는다.
+// 빈 코드가 등록 인원을 차지해 수강생이 등록하지 못하는 문제를 막는다.
+async function cleanupBlankCodes(list) {
+  let removed = 0;
+  for (const ex of list) {
+    const blanks = ex.codes.filter((c) => !c.student_name && !c.used);
+    if (!blanks.length) continue;
+    for (let i = 0; i < blanks.length; i += 10) {
+      const batch = blanks.slice(i, i + 10);
+      const done = await Promise.all(batch.map((c) => call('admin_delete_code', { p_code_id: c.id }).then(() => c.id, () => null)));
+      const ok = new Set(done.filter(Boolean));
+      removed += ok.size;
+      ex.codes = ex.codes.filter((c) => !ok.has(c.id));
+    }
+  }
+  if (removed) toast(`미리 발급돼 있던 이름 없는 코드 ${removed}개를 정리했습니다.`);
 }
 
 async function act(promise, okMsg) {
@@ -176,10 +196,8 @@ function section(ex, key, title, count, ...body) {
 
 function renderCodes(ex) {
   const rows = ex.codes.map((c) => {
-    const input = el('input', { value: c.student_name, maxlength: 30, placeholder: '이름 없음', 'aria-label': '수강생 이름' });
-    input.addEventListener('change', () => act(call('admin_update_code', { p_code_id: c.id, p_name: input.value }), '이름을 저장했습니다.'));
     return el('tr', {},
-      el('td', {}, input),
+      el('td', {}, c.student_name || '(이름 없음)'),
       el('td', {}, el('span', { class: 'code' }, c.code)),
       el('td', { class: 'num' }, `${c.used} / ${ex.max_per_student}`),
       el('td', {},
@@ -194,7 +212,7 @@ function renderCodes(ex) {
     );
   });
   return section(ex, 'codes', '등록한 수강생', `${ex.codes.length} / ${ex.max_students}명`,
-    el('p', { class: 'ex-meta' }, '수강생이 수강생 코드와 이름을 입력하면 여기에 자동 등록되고 개인 코드가 발급됩니다.'),
+    el('p', { class: 'ex-meta' }, '수강생이 위의 수강생 코드와 본인 이름을 입력하면 개인 코드가 자동으로 발급되어 여기에 표시됩니다. 관리자가 직접 넣을 필요가 없습니다.'),
     ex.codes.length ? el('div', { class: 'table-wrap' },
       el('table', {},
         el('thead', {}, el('tr', {}, el('th', {}, '수강생 이름'), el('th', {}, '개인 코드'), el('th', {}, '올린 작품'), el('th', {}, ''))),
