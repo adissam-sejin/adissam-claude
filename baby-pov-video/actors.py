@@ -337,11 +337,12 @@ def build_mom():
             d = smin(d, sd_capsule(p, (0, -0.03, 0), (0, 0.01, 0), 0.027, 0.03), 0.015)
             return d
         return fn
+    handm = M.skin('momhand', base='#EBCDBD', flush='#DDB3A6', tip_axis=1, tip0=0.05, tip1=0.2, sss=0.0012)
     for f in 'LR':
         ua = segment('muarm_' + f, 0.056, 0.05, MOM['uarm'], card, steps=40)
         fa = segment('mfarm_' + f, 0.05, 0.043, MOM['farm'], card, steps=40,
                      extra=[(0.044, MOM['farm'] - 0.05), (0.047, MOM['farm'] - 0.046), (0.047, MOM['farm'] - 0.004)])
-        hd = sdf_mesh('mhand_' + f, mhand(f == 'L'), (-0.09, -0.06, -0.06), (0.06, 0.18, 0.035), 0.0022, skinm, smooth_iter=2)
+        hd = sdf_mesh('mhand_' + f, mhand(f == 'L'), (-0.09, -0.06, -0.06), (0.06, 0.18, 0.035), 0.0022, handm, smooth_iter=2)
         hd.rotation_mode = 'QUATERNION'
         sph = sphere('mshoulder_' + f, 0.054, (0, 0, 0), card, seg=32, rings=16)
         rig[f].update(uarm=ua, farm=fa, hand=hd, shoulder=sph)
@@ -404,9 +405,10 @@ def mom_pose(rig, t, cam):
         bf, bl = TL.body_frame(t)
         grab = e2 + Vector((bf[0], bf[1], 0)) * (-0.02) + Vector((bl[0], bl[1], 0)) * (-s * 0.135) + Vector((0, 0, -0.105))
         # (mum faces the baby, so her left hand goes to the baby's right side)
+        wide = To + Tw @ Vector((0.17, s * 0.24, 0.10))                     # arms open before scooping the baby up
+        base = rest.lerp(wide, TL.ease(t, 33.4, 34.3))
         kk = TL.ease(t, 34.3 + (0.15 if f == 'L' else 0), 35.9)
-        tgt = rest.lerp(grab, kk)
-        tgt.z += 0.10 * math.sin(math.pi * kk) * (1 - kk)
+        tgt = base.lerp(grab, kk)
         pole_a = left * s * 1.0 - UP * 0.8 - fwd * 0.3
         el = ik2(sh, tgt, MOM['uarm'], MOM['farm'], pole_a)
         d1 = el - sh

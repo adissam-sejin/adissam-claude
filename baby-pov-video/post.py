@@ -146,7 +146,7 @@ def grade(img, t, exposure, rng, out_size):
     # fade in from sleep-dark, fade out to white as mum lifts the baby
     fin = TL.ease(t, 0.0, 0.7)
     x = x * fin
-    fo = TL.ease(t, 36.9, 37.85)
+    fo = TL.ease(t, 36.45, 37.55)
     if fo > 0:
         x = x + (np.array([1.0, 0.985, 0.95], dtype=np.float32) - x) * fo
     return np.clip(x, 0, 1)
@@ -194,7 +194,7 @@ if __name__ == '__main__':
             img = read_exr(os.path.join(a.exr, fn))
             e = Exposure()
             ev = e.step(img, 1 / TL.FPS)
-            x = grade(img, max(fr / TL.FPS, 1.0) if fr / TL.FPS < 36.8 else fr / TL.FPS, ev, rng, (W, H))
+            x = grade(img, max(fr / TL.FPS, 1.0) if fr / TL.FPS < 36.4 else fr / TL.FPS, ev, rng, (W, H))
             cv2.imwrite(os.path.join(a.stills, fn[:-4] + '.jpg'), (x[..., ::-1] * 255 + 0.5).astype(np.uint8), [cv2.IMWRITE_JPEG_QUALITY, 92])
             print(fr, 'meter %.3f' % e.state, ev)
         sys.exit()

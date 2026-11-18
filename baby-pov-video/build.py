@@ -66,7 +66,7 @@ def build(out_blend, static_only=False):
         fs += (tgt - fs) * (1 - math.exp(-(1 / TL.FPS) / 0.20))
         cd.dof.focus_distance = fs
         cd.dof.keyframe_insert('focus_distance', frame=fr)
-        cd.dof.aperture_fstop = 2.2 - 0.45 * (1 - TL.ease(t, 4.0, 5.6)) - 1.25 * TL.ease(t, 33.3, 34.5)
+        cd.dof.aperture_fstop = 2.2 - 0.45 * (1 - TL.ease(t, 4.0, 5.6)) - 1.45 * TL.ease(t, 33.3, 34.5)
         cd.dof.keyframe_insert('aperture_fstop', frame=fr)
         bk.apply(actors.baby_pose(baby, t, c), fr)
         p, q = actors.ball_pose(t)

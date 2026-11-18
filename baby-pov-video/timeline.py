@@ -228,7 +228,7 @@ def eye_xy(t):
     p = add(p, mul(D4, _crawl(STR4, t)))
     p = add(p, mul(D4, 0.03 * ease(t, 31.4, 31.95)))                                    # lean to pat the foot
     p = add(p, mul(D4, -0.085 * ease(t, 33.3, 34.6)))                                   # sit back to look up
-    p = add(p, mul(D4, 0.16 * ease(t, T_LIFT, 37.8)))                                   # scooped up
+    p = add(p, mul(D4, 0.05 * ease(t, T_LIFT, 37.8)))                                   # scooped up
     return p
 
 
@@ -244,7 +244,7 @@ def psi(t):
 _EZ_A = [(0, .18), (4.0, .18), (4.55, .262), (4.95, .29), (9.8, .29), (10.35, .272), (11.9, .268), (12.6, .285),
          (14.3, .29), (15.5, .285), (17.0, .262), (18.49, .258)]
 _EZ_B = [(18.5, .25), (22.7, .25), (24.0, .325), (25.9, .325), (27.7, .30), (29.6, .255), (31.3, .26),
-         (33.3, .262), (34.6, .335), (T_LIFT, .335), (37.9, .86)]
+         (33.3, .262), (34.6, .335), (T_LIFT, .335), (37.9, .70)]
 
 
 def eye_z(t):
@@ -391,7 +391,7 @@ LOOK = [(0.0, 0.0, _const((BLOCKS[0], BLOCKS[1], 0.10))),
         (25.05, 0.4, _const((WASHER_DOOR[0], WASHER_DOOR[1], 0.46))),
         (26.35, 0.75, _mom_feet),
         (30.2, 0.45, _const((-1.53, 3.59, 0.05))),
-        (33.3, 1.5, _mom_face)]
+        (33.72, 0.62, _mom_face)]
 
 
 def look(t):
@@ -521,11 +521,12 @@ def _build_hands():
     for tp in T_PAT_FOOT:
         SOUNDS.append((tp, 'sock', ft, 1.0))
     step('R', 34.0, 0.13, dur=0.5, lift=0.05, amp=0.3)
-    # "pick me up" arms
+    # "pick me up" arms: out to the sides first, then up towards mum
     for h in 'LR':
-        move(h, 34.7 + (0.12 if h == 'R' else 0), 35.5 + (0.1 if h == 'R' else 0), (0.175, 0.125 * side(h), 0.115), 0.0,
-             pitch=rad(62), roll=rad(55) * side(h), rel=True)
-        move(h, 35.9, 36.6, (0.165, 0.135 * side(h), 0.15), 0.0, pitch=rad(70), roll=rad(60) * side(h), rel=True)
+        d = 0.10 if h == 'R' else 0.0
+        move(h, 34.45 + d, 34.85 + d, (0.10, 0.19 * side(h), -0.06), 0.0, pitch=rad(25), roll=rad(40) * side(h), rel=True)
+        move(h, 34.85 + d, 35.45 + d, (0.175, 0.135 * side(h), 0.115), 0.0, pitch=rad(62), roll=rad(55) * side(h), rel=True)
+        move(h, 35.9, 36.6, (0.165, 0.14 * side(h), 0.15), 0.0, pitch=rad(70), roll=rad(60) * side(h), rel=True)
     for h in 'LR':
         HANDS[h].sort(key=lambda e: e['t0'])
     PLANTS.sort()
@@ -610,7 +611,7 @@ def cam_state(t):
     return dict(pos=(ex, ey, ez), yaw=yaw, pitch=pitch, roll=roll, focus=focus, psi=ps)
 
 
-BLINKS = [(9.62, 'blink'), (CUT, 'cut'), (29.25, 'blink')]
+BLINKS = [(9.62, 'blink'), (CUT, 'cut'), (29.25, 'blink'), (34.0, 'blink')]
 
 if __name__ == '__main__':
     print('E1', eye_xy(10.4), 'BALL1', BALL1, 'T_BUMP', T_BUMP, 'T_EDGE', _T_EDGE, 'P3', P3)

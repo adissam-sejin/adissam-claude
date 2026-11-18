@@ -466,7 +466,7 @@ def build():
     # the brief hush of a blink-cut, fade in, and the white-out at the end
     out *= (1 - 0.35 * np.exp(-((T - cut) / 0.12) ** 2))[:, None]
     out *= np.clip(T / 0.6, 0, 1)[:, None]
-    out *= (1 - 0.92 * np.clip((T - 37.1) / 0.85, 0, 1) ** 1.5)[:, None]
+    out *= (1 - 0.92 * np.clip((T - 36.9) / 1.05, 0, 1) ** 1.5)[:, None]
     # master: tame peaks, normalise
     out = signal.lfilter(*signal.butter(2, 28 / (SR / 2), 'high'), out, axis=0)
     peak = np.percentile(np.abs(out), 99.97)
