@@ -15,3 +15,5 @@
 - sites/portfolio/photo.jpg 를 넣으면 히어로에 흑백 사진이 들어감
 
 ## 2026-11-12 배포 | Netlify 공개 배포 — https://adidesigner.netlify.app
+
+## 2026-11-18 사이트 | 파비콘·오픈그래프 이미지 추가 후 Netlify 재배포

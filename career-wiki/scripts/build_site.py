@@ -627,6 +627,11 @@ shutil.rmtree(DEP, ignore_errors=True)
 os.makedirs(DEP)
 open(os.path.join(DEP, "netlify.toml"), "w").write('[build]\n  publish = "."\n  command = ""\n')
 shutil.copytree(os.path.join(OUT, "fonts"), os.path.join(DEP, "fonts"), dirs_exist_ok=True)
+BRAND = os.path.join(OUT, "brand")
+if os.path.isdir(BRAND):
+    shutil.copytree(BRAND, os.path.join(DEP, "brand"), dirs_exist_ok=True)
+    shutil.copy(os.path.join(BRAND, "favicon.ico"), DEP)
+SITE = "https://adidesigner.netlify.app"
 for p in ("photo.jpg", "photo.png"):
     if os.path.exists(os.path.join(OUT, p)):
         shutil.copy(os.path.join(OUT, p), DEP)
@@ -636,5 +641,15 @@ open(os.path.join(DEP, "index.html"), "w", encoding="utf-8").write(
     '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
     f'<meta name="description" content="{desc}">\n<meta property="og:title" content="아는디자이너 김세진">\n'
     f'<meta property="og:description" content="{desc}">\n<meta property="og:type" content="website">\n'
+    f'<link rel="canonical" href="{SITE}/">\n<meta property="og:url" content="{SITE}/">\n'
+    '<meta property="og:site_name" content="아는디자이너">\n<meta property="og:locale" content="ko_KR">\n'
+    f'<meta property="og:image" content="{SITE}/brand/og.png">\n<meta property="og:image:width" content="1200">\n'
+    '<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="아는디자이너 김세진 — AI Branding Educator &amp; Designer">\n'
+    '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="아는디자이너 김세진">\n'
+    f'<meta name="twitter:description" content="{desc}">\n<meta name="twitter:image" content="{SITE}/brand/og.png">\n'
+    '<link rel="icon" href="/favicon.ico" sizes="any">\n<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">\n'
+    '<link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png">\n'
+    '<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">\n<link rel="manifest" href="/brand/site.webmanifest">\n'
+    '<meta name="theme-color" content="#161515">\n'
     '<style>body{margin:0}img{max-width:100%}</style>\n</head>\n<body>\n' + page + '\n</body>\n</html>\n')
 print(f"ok: Netlify 배포용 → {DEP}")
