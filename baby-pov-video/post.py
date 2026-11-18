@@ -181,7 +181,7 @@ if __name__ == '__main__':
     ap.add_argument('--size', default='1920x1080')
     ap.add_argument('--stills', default='')         # dir: write PNG stills for whatever frames exist instead of a video
     ap.add_argument('--audio', default='')
-    ap.add_argument('--crf', default='18')
+    ap.add_argument('--crf', default='20')
     ap.add_argument('--range', default='')          # "a-b": encode only these frames (preview of a section)
     a = ap.parse_args()
     f0, f1 = (int(v) for v in a.range.split('-')) if a.range else (0, TL.NF - 1)
