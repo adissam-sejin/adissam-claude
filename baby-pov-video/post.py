@@ -181,7 +181,10 @@ if __name__ == '__main__':
     ap.add_argument('--size', default='1920x1080')
     ap.add_argument('--stills', default='')         # dir: write PNG stills for whatever frames exist instead of a video
     ap.add_argument('--audio', default='')
+    ap.add_argument('--crf', default='18')
+    ap.add_argument('--range', default='')          # "a-b": encode only these frames (preview of a section)
     a = ap.parse_args()
+    f0, f1 = (int(v) for v in a.range.split('-')) if a.range else (0, TL.NF - 1)
     W, H = (int(v) for v in a.size.split('x'))
     rng = np.random.default_rng(3)
     exp = Exposure()
@@ -200,8 +203,8 @@ if __name__ == '__main__':
         sys.exit()
     cmd = ['ffmpeg', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', '%dx%d' % (W, H), '-r', str(TL.FPS), '-i', '-']
     if a.audio:
-        cmd += ['-i', a.audio]
-    cmd += ['-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+        cmd += ['-ss', '%.4f' % (f0 / TL.FPS), '-i', a.audio]
+    cmd += ['-c:v', 'libx264', '-preset', 'slow', '-crf', a.crf, '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
             '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709']
     if a.audio:
         cmd += ['-c:a', 'aac', '-b:a', '256k', '-shortest']
@@ -209,7 +212,7 @@ if __name__ == '__main__':
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     cut = int(round(TL.CUT * TL.FPS))
     prev = None
-    for fr in range(TL.NF):
+    for fr in range(f0, f1 + 1):
         img = read_exr(os.path.join(a.exr, 'f%04d.exr' % fr))
         # gentle temporal denoise: lean on the previous frame only where nothing moved
         if prev is not None and fr != cut:
