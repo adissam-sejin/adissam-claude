@@ -5,6 +5,7 @@ from mathutils import Vector, Matrix
 from lib import *
 import materials as M
 import timeline as TL
+import toon
 
 rad = math.radians
 SUN_DIR = Vector((0.35, 0.80, -0.50)).normalized()      # direction the light travels
@@ -19,7 +20,7 @@ def grp(name, loc, rz=0.0):
 
 # =============================================================================== shell
 def build_shell():
-    wallm = M.wall_paint()
+    wallm = M.wall_paint(color=toon.pick('#EFEAE2', '#F7E1BE'))
     trim = pbr('trim_white', '#F3F1EC', 0.42)
     box2('floor', (-3.2, -2.7, -0.12), (3.2, 4.7, 0.0), M.wood_floor(), bevel=0)
     box2('ceiling', (-3.2, -2.7, 2.4), (3.2, 4.7, 2.52), pbr('ceil', '#F6F4F0', 0.9), bevel=0)
@@ -58,9 +59,13 @@ def build_shell():
     while x <= 2.21:
         cyl('rail_bar', 0.008, 0.96, (x, -2.775, 0.60), rail, steps=12, bevel=0)
         x += 0.11
-    box2('city_ground', (-2500, -3500, -46), (2500, -3.2, -45), pbr('cityg', '#56624F', 0.95), bevel=0)
+    box2('city_ground', (-2500, -3500, -46), (2500, -3.2, -45), pbr('cityg', toon.pick('#56624F', '#7FB869'), 0.95), bevel=0)
     rnd = random.Random(4)
-    hazes = [pbr('bldg%d' % i, c, 0.9) for i, c in enumerate(('#AEB6C0', '#B9C0C8', '#C3C9D0', '#A3ADB8', '#CBD0D5'))]
+    hazes = [pbr('bldg%d' % i, c, 0.9) for i, c in enumerate(toon.pick(('#AEB6C0', '#B9C0C8', '#C3C9D0', '#A3ADB8', '#CBD0D5'),
+                                                                      ('#EBD3C2', '#C3D7EA', '#EFE5C6', '#DAD0E6', '#CDE4D6')))]
+    if toon.PIXAR:
+        for m in hazes:
+            toon.keep(m)
     for i in range(46):                                   # hazy skyline
         dist = rnd.uniform(160, 620)
         ang = rnd.uniform(-1.05, 1.05)
@@ -68,7 +73,7 @@ def build_shell():
         box('bldg', (w, d, h), (math.sin(ang) * dist + 30, -math.cos(ang) * dist, h / 2 - 45), hazes[i % 5], bevel=0,
             rot=(0, 0, rnd.choice((0, 0, 0.3, -0.25))))
     for i in range(7):                                    # distant hills
-        sphere('hill', 1.0, (rnd.uniform(-1500, 1500), rnd.uniform(-2300, -1500), -45), pbr('hill', '#8FA0A6', 1.0),
+        sphere('hill', 1.0, (rnd.uniform(-1500, 1500), rnd.uniform(-2300, -1500), -45), pbr('hill', toon.pick('#8FA0A6', '#86C08A'), 1.0),
                scale=(rnd.uniform(500, 900), 300, rnd.uniform(110, 230)), seg=32, rings=12)
     # ---- curtains
     def panel(name, x0, w, folds, amp, mat, seed, y=-2.41, sway=True, h=2.31):
@@ -153,7 +158,7 @@ def build_lights(scene):
         except Exception:
             pass
     mixn = nt.nodes.new('ShaderNodeMixRGB')
-    mixn.inputs[0].default_value = 0.32
+    mixn.inputs[0].default_value = toon.pick(0.32, 0.10)
     nt.links.new(sky.outputs[0], mixn.inputs[1])
     mixn.inputs[2].default_value = (9.0, 10.5, 12.5, 1.0)        # milky afternoon haze
     nt.links.new(mixn.outputs[0], bg.inputs[0])
@@ -231,7 +236,7 @@ def build_living():
     mat = box2('playmat', (TL.MAT[0], TL.MAT[2], 0.0), (TL.MAT[1], TL.MAT[3], TL.MAT_H), M.play_mat(), bevel=0.014, segs=4)
     # ---- sofa
     g = grp('sofa', (-2.50, -0.65, 0))
-    fab = M.fabric('sofa', '#B5AA9A', weave=520)
+    fab = M.fabric('sofa', toon.pick('#B5AA9A', '#7FAAC2'), weave=520)
     Wd, Dp = 2.1, 0.95
     for sx in (-1, 1):
         for sy in (-1, 1):
@@ -461,7 +466,7 @@ def build_toys():
 # =============================================================================== kitchen + dining
 def build_kitchen():
     Yf, Yb = TL.CAB_FRONT_Y, 4.5
-    doorm = pbr('cab_door', '#E3DED3', 0.48)
+    doorm = pbr('cab_door', toon.pick('#E3DED3', '#9ECDB8'), 0.48)
     dark = pbr('carcass', '#1B1A19', 0.7)
     blk = M.metal('hblk', '#1D1D1E', 0.38)
     steel = M.brushed_steel('steel', grubby=False)

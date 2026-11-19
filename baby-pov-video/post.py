@@ -5,6 +5,8 @@ import cv2
 import OpenEXR
 import timeline as TL
 
+PIXAR = os.environ.get('BABYPOV_STYLE', '') == 'pixar'
+
 
 def read_exr(path):
     with OpenEXR.File(path) as f:
@@ -123,21 +125,26 @@ def grade(img, t, exposure, rng, out_size):
     # warm home-video grade: lifted blacks, soft contrast, a little extra saturation
     x = x * np.array([1.0, 0.985, 0.955], dtype=np.float32)[None, None, :] if False else x
     lum = luminance(x)[..., None]
-    x = lum + (x - lum) * 1.08
-    x = np.clip(0.018 + x * 0.985, 0, 1)
+    if PIXAR:                                       # clean, colourful animation grade
+        x = lum + (x - lum) * 1.22
+        x = np.clip(x, 0, 1)
+        x = x * x * (3 - 2 * x) * 0.35 + x * 0.65
+    else:
+        x = lum + (x - lum) * 1.08
+        x = np.clip(0.018 + x * 0.985, 0, 1)
     x = x.astype(np.float32)
     if (x.shape[1], x.shape[0]) != (w, h):
         x = cv2.resize(x, (w, h), interpolation=cv2.INTER_LANCZOS4)
         blur = cv2.GaussianBlur(x, (0, 0), 1.2)
         x = np.clip(x + (x - blur) * 0.35, 0, 1)
-    maps, vig = lens_maps(w, h)
+    maps, vig = lens_maps(w, h, ca=0.0005 if PIXAR else 0.0016)
     x = np.stack([cv2.remap(x[..., i], maps[i][0], maps[i][1], cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT) for i in range(3)], axis=-1)
     x = x * vig
     # sensor grain (luma-weighted, stronger in the shadows)
     g = rng.standard_normal((h // 2 + 1, w // 2 + 1)).astype(np.float32)
     g = cv2.resize(g, (w, h), interpolation=cv2.INTER_LINEAR) * 0.6 + rng.standard_normal((h, w)).astype(np.float32) * 0.5
     lum = luminance(x)
-    x = x + (g * (0.022 - 0.012 * lum))[..., None]
+    x = x + (g * (0.022 - 0.012 * lum))[..., None] * (0.22 if PIXAR else 1.0)
     # blinks
     m = eyelids(w, h, blink_amount(t))
     if m is not None:

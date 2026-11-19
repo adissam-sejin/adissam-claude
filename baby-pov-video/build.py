@@ -3,7 +3,7 @@ import sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bpy
 from mathutils import Vector, Quaternion
-import lib, room, actors
+import lib, room, actors, toon
 import timeline as TL
 
 UP = Vector((0, 0, 1))
@@ -32,6 +32,13 @@ def build(out_blend, static_only=False):
     for d in L['pendant']:
         d.energy = 9.0
     L['drum'].energy = 11.0
+    if toon.PIXAR:                       # golden sun, bluer and brighter sky fill, then the global look pass
+        L['sun'].color = (1.0, 0.80, 0.56)
+        L['sun'].energy = 24.0
+        L['bg'].inputs[1].default_value = 0.115
+        toon.clouds()
+        bpy.context.view_layer.update()
+        toon.stylize()
 
     # ---- camera: the baby's eyes
     cd = bpy.data.cameras.new('eyes')
@@ -50,6 +57,19 @@ def build(out_blend, static_only=False):
     sc.frame_start = 0
     sc.frame_end = TL.NF - 1
 
+    fill = None
+    if toon.PIXAR:                       # soft key on mum's face for the reunion (as if bounced off the floor)
+        fd = bpy.data.lights.new('mom_fill', 'AREA')
+        fd.size = 0.55
+        fd.color = (1.0, 0.92, 0.82)
+        fill = bpy.data.objects.new('mom_fill', fd)
+        e = Vector(TL.cam_state(35.4)['pos'])
+        h = Vector(TL.mom_head(35.4))
+        d = (h - e).normalized()
+        fill.location = e - d * 0.10 + Vector((0, 0, -0.06))
+        fill.rotation_euler = (-d).to_track_quat('Z', 'Y').to_euler()
+        fill.visible_camera = False
+        lib.link(fill)
     bk = actors.Baker()
     fs = None
     for fr in range(0, TL.NF + 2):
@@ -60,13 +80,14 @@ def build(out_blend, static_only=False):
         # slow, baby-like accommodation
         tgt = max(0.11, min(c['focus'], 7.0))
         k_near = TL.ease(t, 33.4, 34.4)
-        tgt = tgt * (1 - k_near) + min(tgt, 0.19) * k_near          # eyes stay on its own reaching hands; mum is a warm blur
+        if not toon.PIXAR:
+            tgt = tgt * (1 - k_near) + min(tgt, 0.19) * k_near      # eyes stay on its own reaching hands; mum is a warm blur
         if fs is None or abs(t - TL.CUT) < 0.5 / TL.FPS:
             fs = tgt
         fs += (tgt - fs) * (1 - math.exp(-(1 / TL.FPS) / 0.20))
         cd.dof.focus_distance = fs
         cd.dof.keyframe_insert('focus_distance', frame=fr)
-        cd.dof.aperture_fstop = 2.2 - 0.45 * (1 - TL.ease(t, 4.0, 5.6)) - 1.45 * TL.ease(t, 33.3, 34.5)
+        cd.dof.aperture_fstop = 2.2 - 0.45 * (1 - TL.ease(t, 4.0, 5.6)) - toon.pick(1.45, -0.6) * TL.ease(t, 33.3, 34.5)
         cd.dof.keyframe_insert('aperture_fstop', frame=fr)
         bk.apply(actors.baby_pose(baby, t, c), fr)
         p, q = actors.ball_pose(t)
@@ -78,6 +99,9 @@ def build(out_blend, static_only=False):
         drum.rotation_euler = (0, actors.drum_angle(t), 0)
         drum.keyframe_insert('rotation_euler', frame=fr)
         bk.apply(actors.mom_pose(mom, t, c), fr)
+        if fill is not None:
+            fill.data.energy = 11.0 * TL.ease(t, 33.3, 34.3)
+            fill.data.keyframe_insert('energy', frame=fr)
     bpy.ops.wm.save_as_mainfile(filepath=out_blend)
     print('saved', out_blend, 'objects:', len(bpy.data.objects))
 

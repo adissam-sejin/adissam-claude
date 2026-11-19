@@ -7,6 +7,7 @@ from mathutils import Vector, Matrix, Quaternion, Euler
 from lib import *
 import materials as M
 import timeline as TL
+import toon
 
 rad = math.radians
 UP = Vector((0, 0, 1))
@@ -43,6 +44,8 @@ def segment(name, r0, r1, length, mat, extra=None, steps=40, open_start=False):
 ARM = 0.115
 def hand_sdf(mirror):
     fingers = [(-0.0158, -15, 0.027, 0.0063), (-0.0052, -4, 0.0305, 0.0066), (0.0058, 7, 0.0275, 0.0062), (0.0160, 20, 0.022, 0.0055)]
+    if toon.PIXAR:                                    # stubbier, rounder fingers
+        fingers = [(bx * 1.04, ang * 1.15, L * 0.88, r * 1.13) for bx, ang, L, r in fingers]
     tips = []
 
     def fn(p):
@@ -90,7 +93,7 @@ def hand_sdf(mirror):
 
 
 def build_baby():
-    sk = M.skin('baby')
+    sk = toon.skin('baby', base='#F8B998', flush='#F47C70', tip_axis=1, tip0=0.025, tip1=0.07, tipk=0.5) if toon.PIXAR else M.skin('baby')
     nailm = pbr('nail', '#F5C3BC', 0.2, Subsurface_Weight=0.6, Subsurface_Radius=(1, 0.4, 0.3), Subsurface_Scale=0.003,
                 Coat_Weight=0.4, Coat_Roughness=0.1)
     rig = {}
@@ -209,6 +212,8 @@ def build_robot():
         a = rad(120 * i)
         box('bristle', (0.085, 0.006, 0.003), (math.cos(a) * 0.05, math.sin(a) * 0.05, -0.006), pbr('bristle', '#E8E4D8', 0.6),
             parent=brush, rot=(0, rad(8), a), bevel=0.001)
+    if toon.PIXAR:
+        toon.robot_face(root, R)
     return dict(root=root, brush=brush, wheels=wheels)
 
 
@@ -240,14 +245,45 @@ def foot_sdf(mirror):
 
 
 BALL_Y = 0.108          # toe hinge
+HEAD_OFF = toon.pick((0.01, 0, MOM['neck'] + 0.07), (0.055, 0, MOM['neck'] + 0.135))     # head joint in torso space
+
+
+def _mom_arms(rig, card):
+    def mhand(mirror):
+        def fn(p):
+            if mirror:
+                p = p * np.array([-1.0, 1.0, 1.0])
+            d = sd_ellipsoid(p, (0, 0.045, 0), (0.042, 0.05, 0.016))
+            for x, a, L, r in ((-0.03, -9, 0.07, 0.0092), (-0.0105, -3, 0.078, 0.0096), (0.009, 3, 0.073, 0.0092), (0.027, 10, 0.058, 0.0082)):
+                b = np.array((x, 0.085, 0.0))
+                tip = b + np.array((math.sin(rad(a)), math.cos(rad(a)), -0.25)) * L
+                d = smin(d, sd_capsule(p, b, tip, r, r * 0.85), 0.008)
+            d = smin(d, sd_capsule(p, (-0.036, 0.03, -0.004), (-0.07, 0.085, -0.02), 0.0125, 0.0098), 0.012)
+            d = smin(d, sd_capsule(p, (0, -0.03, 0), (0, 0.01, 0), 0.027, 0.03), 0.015)
+            return d
+        return fn
+    handm = M.skin('momhand', base='#EBCDBD', flush='#DDB3A6', tip_axis=1, tip0=0.05, tip1=0.2, sss=0.0012)
+    if toon.PIXAR:
+        handm = toon.skin('momhand', base='#F6BE9F', flush='#F4807A', tip_axis=1, tip0=0.06, tip1=0.16, tipk=0.35, sss=0.003)
+    for f in 'LR':
+        k = toon.pick(1.0, 0.82)
+        ua = segment('muarm_' + f, 0.056 * k, 0.05 * k, MOM['uarm'], card, steps=40)
+        fa = segment('mfarm_' + f, 0.05 * k, 0.043 * k, MOM['farm'], card, steps=40,
+                     extra=[(0.044 * k, MOM['farm'] - 0.05), (0.047 * k, MOM['farm'] - 0.046), (0.047 * k, MOM['farm'] - 0.004)])
+        hd = sdf_mesh('mhand_' + f, mhand(f == 'L'), (-0.09, -0.06, -0.06), (0.06, 0.18, 0.035), 0.0022, handm, smooth_iter=2)
+        hd.rotation_mode = 'QUATERNION'
+        sph = sphere('mshoulder_' + f, 0.054 * k, (0, 0, 0), card, seg=32, rings=16)
+        rig[f].update(uarm=ua, farm=fa, hand=hd, shoulder=sph)
 
 
 def build_mom():
     rig = {}
     sockm = M.knit('sock', '#F1E9D8', rows=300, bump=0.9, band=(1, 0.150, '#D9A441', 1, -0.045), shade=0.82)
     pants = M.fabric('denim', '#6C7F95', weave=780, rough=0.85, sheen=0.25, var=0.2, bump=0.6, color2='#4C5E75')
-    card = M.knit('cardigan', '#F3EBDB', rows=120, bump=1.0, shade=0.86)
+    card = M.knit('cardigan', toon.pick('#F3EBDB', '#EE8468'), rows=120, bump=1.0, shade=0.86)
     skinm = M.skin('mom', base='#EBC6AE', flush='#DFA594', tip_axis=1, tip0=0.05, tip1=0.2, sss=0.006)
+    if toon.PIXAR:
+        skinm = toon.skin('momneck', base='#F6BE9F', sss=0.006)
     ptex = bpy.data.textures.new('pants_folds', 'CLOUDS')
     ptex.noise_scale = 0.11
     ptex.noise_depth = 1
@@ -273,11 +309,23 @@ def build_mom():
     prof = [(0.0, -0.06), (0.150, -0.06), (0.176, 0.0), (0.172, 0.12), (0.168, 0.26), (0.176, 0.36), (0.165, 0.43), (0.12, 0.475),
             (0.06, 0.50), (0.0, 0.505)]
     tor = lathe('mom_cardigan', prof, card, parent=torso, steps=64)
-    tor.scale = (0.70, 1.0, 1.0)
-    lathe('mom_neck', [(0, 0.47), (0.05, 0.47), (0.046, 0.60), (0, 0.60)], skinm, parent=torso, steps=32)
-    lathe('mom_tee', [(0, 0.44), (0.085, 0.44), (0.075, 0.50), (0.052, 0.522), (0, 0.522)], pbr('tee', '#FAF8F4', 0.8),
-          parent=torso, steps=32, loc=(0.02, 0, 0))
-    head = empty('mom_head', (0.01, 0, MOM['neck'] + 0.07), parent=torso)
+    tor.scale = toon.pick((0.70, 1.0, 1.0), (0.66, 0.90, 1.0))
+    if toon.PIXAR:                       # slimmer, longer neck leaning into the bigger head; low collar keeps the chin in view
+        nk = lathe('mom_neck', [(0, 0.0), (0.040, 0.0), (0.035, 0.22), (0, 0.22)], skinm, parent=torso, steps=32, loc=(0.0, 0, 0.46))
+        nk.rotation_euler = (0, rad(13), 0)
+        lathe('mom_tee', [(0, 0.44), (0.075, 0.44), (0.066, 0.485), (0.045, 0.497), (0, 0.497)], pbr('tee', '#FAF8F4', 0.8),
+              parent=torso, steps=32, loc=(0.012, 0, 0))
+    else:
+        lathe('mom_neck', [(0, 0.47), (0.05, 0.47), (0.046, 0.60), (0, 0.60)], skinm, parent=torso, steps=32)
+        lathe('mom_tee', [(0, 0.44), (0.085, 0.44), (0.075, 0.50), (0.052, 0.522), (0, 0.522)], pbr('tee', '#FAF8F4', 0.8),
+              parent=torso, steps=32, loc=(0.02, 0, 0))
+    head = empty('mom_head', HEAD_OFF, parent=torso)
+    if toon.PIXAR:
+        head.scale = (1.42, 1.42, 1.42)
+        rig['lids'] = toon.mom_head(head)
+        _mom_arms(rig, card)
+        rig.update(pelvis=pelvis, torso=torso, head=head)
+        return rig
 
     def head_fn(p):                      # head local: +X = face direction, +Z up
         d = sd_ellipsoid(p, (0, 0, 0.03), (0.092, 0.074, 0.105))
@@ -323,29 +371,7 @@ def build_mom():
         sphere('mom_blush', 0.02, (0.078, sy * 0.05, -0.016), pbr('blush', '#E7A193', 0.5, Subsurface_Weight=0.8,
                                                                Subsurface_Radius=(1, 0.4, 0.3), Subsurface_Scale=0.005),
                scale=(0.35, 1, 0.8), parent=head, seg=16, rings=8)
-    # arms + hands
-    def mhand(mirror):
-        def fn(p):
-            if mirror:
-                p = p * np.array([-1.0, 1.0, 1.0])
-            d = sd_ellipsoid(p, (0, 0.045, 0), (0.042, 0.05, 0.016))
-            for x, a, L, r in ((-0.03, -9, 0.07, 0.0092), (-0.0105, -3, 0.078, 0.0096), (0.009, 3, 0.073, 0.0092), (0.027, 10, 0.058, 0.0082)):
-                b = np.array((x, 0.085, 0.0))
-                tip = b + np.array((math.sin(rad(a)), math.cos(rad(a)), -0.25)) * L
-                d = smin(d, sd_capsule(p, b, tip, r, r * 0.85), 0.008)
-            d = smin(d, sd_capsule(p, (-0.036, 0.03, -0.004), (-0.07, 0.085, -0.02), 0.0125, 0.0098), 0.012)
-            d = smin(d, sd_capsule(p, (0, -0.03, 0), (0, 0.01, 0), 0.027, 0.03), 0.015)
-            return d
-        return fn
-    handm = M.skin('momhand', base='#EBCDBD', flush='#DDB3A6', tip_axis=1, tip0=0.05, tip1=0.2, sss=0.0012)
-    for f in 'LR':
-        ua = segment('muarm_' + f, 0.056, 0.05, MOM['uarm'], card, steps=40)
-        fa = segment('mfarm_' + f, 0.05, 0.043, MOM['farm'], card, steps=40,
-                     extra=[(0.044, MOM['farm'] - 0.05), (0.047, MOM['farm'] - 0.046), (0.047, MOM['farm'] - 0.004)])
-        hd = sdf_mesh('mhand_' + f, mhand(f == 'L'), (-0.09, -0.06, -0.06), (0.06, 0.18, 0.035), 0.0022, handm, smooth_iter=2)
-        hd.rotation_mode = 'QUATERNION'
-        sph = sphere('mshoulder_' + f, 0.054, (0, 0, 0), card, seg=32, rings=16)
-        rig[f].update(uarm=ua, farm=fa, hand=hd, shoulder=sph)
+    _mom_arms(rig, card)
     rig.update(pelvis=pelvis, torso=torso, head=head)
     return rig
 
@@ -366,7 +392,7 @@ def mom_pose(rig, t, cam):
     To = P + Vector((0, 0, 0.02))
     eye = Vector(cam['pos'])
     # head: look at the baby once crouching, otherwise slightly down
-    head_w = To + Tw @ Vector((0.01, 0, MOM['neck'] + 0.07))
+    head_w = To + Tw @ Vector(HEAD_OFF)
     want = (eye - head_w).normalized()
     k = TL.ease(t, 33.2, 34.6)
     base_dir = (Tw @ Vector((1, 0, -0.25))).normalized()
@@ -376,7 +402,9 @@ def mom_pose(rig, t, cam):
     y.normalize()
     z = d.cross(y)
     qw = Matrix((d, y, z)).transposed().to_quaternion()
-    out[rig['head']] = (Vector((0.01, 0, MOM['neck'] + 0.07)), Tw.inverted() @ qw, None)
+    out[rig['head']] = (Vector(HEAD_OFF), Tw.inverted() @ qw, None)
+    for lid in rig.get('lids', ()):
+        out[lid] = ('euler', (0, toon.lid_angle(t), 0))
     for f in 'LR':
         s = TL.side(f)
         (fx, fy, fz), fyaw, fpitch, toe = m['foot' + f]

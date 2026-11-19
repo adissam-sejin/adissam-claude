@@ -6,7 +6,7 @@ pre = sys.argv[4]
 rng = np.random.default_rng(1)
 ims = []
 for fr in range(a, b + 1, st):
-    p = '/tmp/babypov/exr/f%04d.exr' % fr
+    p = os.environ.get('WORK', '/tmp/babypov') + '/exr/f%04d.exr' % fr
     if not os.path.exists(p):
         continue
     img = post.read_exr(p)
