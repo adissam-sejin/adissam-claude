@@ -1,0 +1,13 @@
+{
+  "name": "sunglim-church",
+  "private": true,
+  "type": "module",
+  "description": "성림교회 홈페이지 (홈 + 모바일 주보 + 관리자)",
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/app.test.mts"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.9",
+    "@netlify/functions": "^6.1.1"
+  }
+}

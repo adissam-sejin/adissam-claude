@@ -1,0 +1,21 @@
+# 성림교회 홈페이지 — Netlify 설정
+# public 폴더가 그대로 사이트가 되고, netlify/functions 가 저장·로그인을 담당합니다.
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# 관리자 페이지는 검색에 나오지 않게
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
