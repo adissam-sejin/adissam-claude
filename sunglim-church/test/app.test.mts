@@ -103,3 +103,23 @@ test("생일 명단 전체는 관리자만 볼 수 있다", async () => {
   const viewer = (await (await call(kv, "POST", "/offerings/login", { password: "1234 5678" })).json()).token;
   assert.equal((await call(kv, "GET", "/birthdays", undefined, viewer)).status, 401);
 });
+
+test("교회 일정: 누구나 보고 관리자만 고친다. 주보와 함께 앞으로의 일정이 내려온다", async () => {
+  const kv = memoryKV(), token = await login(kv);
+  const events = [
+    { id: "b", date: "2026-12-13", title: "김장", series: "" },
+    { id: "a", date: "2026-11-29", title: "성림 에하드", time: "오후 2시" },
+    { id: "c", date: "2026-08-01", endDate: "2026-08-03", title: "여름 수련회" },
+    { id: "d", date: "2027-06-01", title: "먼 훗날" },
+    { id: "a", date: "2026-11-30", title: "같은 id 는 한 번만" },
+    { id: "x", date: "bad", title: "날짜 오류" },
+  ];
+  assert.equal((await call(kv, "PUT", "/events", events)).status, 401);
+  assert.equal((await call(kv, "PUT", "/events", events, token)).status, 200);
+  const all = await (await call(kv, "GET", "/events")).json();
+  assert.deepEqual(all.map((e: any) => e.id), ["c", "a", "b", "d"]);
+  assert.equal(all[0].endDate, "2026-08-03");
+  await call(kv, "PUT", "/bulletins/2026-11-22", { published: true, content: {} }, token);
+  const view = await (await call(kv, "GET", "/view")).json();
+  assert.deepEqual(view.events.map((e: any) => e.title), ["성림 에하드", "김장"]);
+});

@@ -81,7 +81,7 @@
     async getView(date) {
       if (live) {
         const v = await call('/view' + (date ? '?d=' + encodeURIComponent(date) : ''));
-        return { settings: fillSettings(v.settings), bulletin: v.bulletin, roster: v.roster || [], list: v.list || [] };
+        return { settings: fillSettings(v.settings), bulletin: v.bulletin, roster: v.roster || [], events: v.events || [], list: v.list || [] };
       }
       const d = loadLocal();
       const pub = d.bulletins.filter((b) => b.published).sort(newestFirst);
@@ -90,6 +90,7 @@
         settings: fillSettings(d.settings),
         bulletin: b ? Object.assign(clone(b), { offerings: undefined }) : null,
         roster: d.roster.map(clone).sort(oldestFirst),
+        events: clone(d.events || []),
         list: pub.map((x) => ({ date: x.date, issue: x.issue, published: true }))
       };
     },
@@ -140,6 +141,16 @@
       rows.forEach((r) => { map[r.date] = r; });
       d.roster = Object.keys(map).sort().map((k) => map[k]);
       saveLocal(d);
+    },
+
+    // 교회 일정(달력) — 누구나 읽고 관리자만 저장
+    async getEvents() {
+      if (live) return call('/events');
+      return clone(loadLocal().events || []).sort(oldestFirst);
+    },
+    async saveEvents(list) {
+      if (live) return call('/events', { method: 'PUT', body: list });
+      const d = loadLocal(); d.events = clone(list); saveLocal(d);
     },
 
     // 생일 명단(1년치) — 관리자만

@@ -7,6 +7,7 @@
   let settings = null;   // 교회 정보·메뉴
   let roster = [];       // 명단 전체
   let birthdayList = []; // 생일 명단(1년치)
+  let events = [];       // 교회 일정(달력)
   let list = [];         // 주보 목록
   let cur = null;        // 지금 편집 중인 주보
   let curIsNew = false;
@@ -86,6 +87,8 @@
     delete c.offerings;
     if (c.dutyWeeks == null) c.dutyWeeks = 2;
     if (c.prevMemoryRef == null) c.prevMemoryRef = '';
+    if (c.scheduleAuto == null) c.scheduleAuto = false; // 예전 주보는 직접 적은 일정 그대로
+    if (!c.scheduleWeeks) c.scheduleWeeks = 6;
     if (c.birthdaysAuto == null) c.birthdaysAuto = false; // 예전 주보는 직접 적은 내용 그대로
     if (!c.birthdayWeeks) c.birthdayWeeks = 1;
     return b;
@@ -127,6 +130,7 @@
       if (/암송/.test(it.title || '')) { it.auto = 'memory'; it.who = ''; } // 말씀암송 줄은 지난주 암송구절로 자동
     });
     c.prevMemoryRef = prevMemory || '';
+    if (events.length) c.scheduleAuto = true;        // 달력에 일정이 있으면 주보의 ‘교회 일정’도 달력에서
     if (birthdayList.length) c.birthdaysAuto = true; // 생일 명단이 있으면 그 주 생일자를 자동으로
     cur = { date, issue: prev ? nextIssue(prev.issue, prev.date, date) : '', published: false, content: c, offerings: base.offerings };
     curIsNew = true; dirty = true;
@@ -178,6 +182,24 @@
     setTimeout(() => window.print(), 150);
   }
 
+  // "12/13 김장", "8/1~8/3 수련회" 같은 한 줄 → 일정. 연도는 주보 날짜를 기준으로 가까운 쪽.
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  function eventFromLine(line, baseIso) {
+    const m = line.trim().match(/^(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*[~\-–]\s*(?:(\d{1,2})\s*\/\s*)?(\d{1,2}))?\s+(.+)$/);
+    if (!m) return null;
+    const base = D.parse(baseIso);
+    const at = (mo, d) => {
+      if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31)) return '';
+      let iso = D.iso(new Date(base.getFullYear(), mo - 1, d));
+      if (iso < D.add(baseIso, -60)) iso = D.iso(new Date(base.getFullYear() + 1, mo - 1, d)); // 연말 주보의 1월 일정
+      return iso;
+    };
+    const date = at(+m[1], +m[2]);
+    if (!date) return null;
+    const end = m[4] ? at(m[3] ? +m[3] : +m[1], +m[4]) : '';
+    return { id: newId(), date, endDate: end > date ? end : '', title: m[5].trim(), time: '', series: '' };
+  }
+
   // ---------- 목사님 원고로 채우기 ----------
   let importOpen = false;
   async function applyManuscript(text) {
@@ -204,7 +226,23 @@
       c.cellText = r.cell.join('\n'); c.cellQuestions = r.questions.join('\n');
       done.push('셀 나눔'); done.push('나눔 질문 ' + r.questions.length + '개');
     } else kept.push('셀 나눔');
-    if (r.has.schedule) { c.schedule = r.schedule.join('\n'); done.push('교회 일정 ' + r.schedule.length + '건'); } else kept.push('교회 일정');
+    if (r.has.schedule) {
+      // 원고의 일정은 달력(교회 일정)에 합침: 달력에 없는 것만 새로 추가
+      const norm = (t) => t.replace(/\s+/g, '');
+      const fresh = [];
+      let unread = 0;
+      r.schedule.forEach((line) => {
+        const ev = eventFromLine(line, cur.date);
+        if (!ev) { unread++; return; }
+        if (!events.concat(fresh).some((e) => e.date === ev.date && norm(e.title) === norm(ev.title))) fresh.push(ev);
+      });
+      if (fresh.length) {
+        try { await Store.saveEvents(events.concat(fresh)); events = await Store.getEvents(); drawEventTab(); }
+        catch (e) { return toast(errMsg(e), true); }
+      }
+      c.scheduleAuto = true;
+      done.push('교회 일정 ' + r.schedule.length + '건' + (fresh.length ? ' (달력에 새로 추가 ' + fresh.length + '건)' : ' (모두 달력에 이미 있음)') + (unread ? ' · 날짜를 못 읽은 ' + unread + '줄은 뺌' : ''));
+    } else kept.push('교회 일정');
     importOpen = false; dirty = true;
     drawBulletinTab();
     toast('넣었습니다: ' + done.join(', ') + '.' + (kept.length ? ' 원고에 없어서 지난주 그대로 둔 항목: ' + kept.join(', ') + '.' : '') + ' 미리보기로 확인하고 저장해 주세요.');
@@ -249,7 +287,7 @@
   function drawPreview() {
     if (!previewHost || !cur) return;
     const box = previewHost.parentNode; const top = box.scrollTop;
-    BulletinView.render(previewHost, cur, roster, settings);
+    BulletinView.render(previewHost, cur, roster, settings, events);
     box.scrollTop = top;
   }
 
@@ -317,8 +355,19 @@
         blank: () => ({ title: '', body: '' }), addLabel: '소식 추가', onChange: changed
       })));
 
-    formHost.appendChild(card('교회 일정', '한 줄에 하나씩, 날짜 뒤에 한 칸 띄고 내용을 적습니다. (예: 12/13 김장)',
-      area(c, 'schedule', changed, { 'aria-label': '교회 일정' })));
+    const sAuto = bind(el('input', { type: 'checkbox', checked: c.scheduleAuto }), c, 'scheduleAuto', () => { changed(); drawForm(); });
+    const sWeeks = el('select', { 'aria-label': '일정 범위', onchange: () => { c.scheduleWeeks = +sWeeks.value; changed(); drawForm(); } },
+      [4, 6, 8, 12].map((n) => el('option', { value: n, selected: +c.scheduleWeeks === n }, '앞으로 ' + n + '주')));
+    const sLines = c.scheduleAuto ? BulletinView.scheduleLines(cur, events) : [];
+    formHost.appendChild(card('교회 일정', '‘교회 일정’ 탭(달력)에 넣은 일정이 주보에도 자동으로 실립니다.',
+      el('label', { class: 'check' }, sAuto, '달력(교회 일정)에서 자동으로 불러오기'),
+      c.scheduleAuto
+        ? [field('보여줄 범위', sWeeks),
+           el('div', { class: 'auto-box' + (sLines.length ? '' : ' warn') },
+             el('b', null, sLines.length ? '이번 주보에 실리는 일정' : '이 기간에 등록된 일정이 없습니다'),
+             sLines.map((t) => [el('br'), t]), el('br'),
+             el('button', { type: 'button', class: 'a-link', onclick: () => showTab('event') }, '교회 일정 고치기'))]
+        : field('직접 적기 (한 줄에 하나, 예: 12/13 김장)', area(c, 'schedule', changed, { 'aria-label': '교회 일정' }))));
 
     formHost.appendChild(card('셀 나눔 • 개인 적용', null,
       field('나눔 글', area(c, 'cellText', changed)),
@@ -525,6 +574,103 @@
     toast('명단을 저장했습니다 (' + keep.length + '주)');
   }
 
+  // ================= 교회 일정 (달력) =================
+  const WEEKDAY = '일월화수목금토';
+  const evDraft = { date: '', endDate: '', title: '', time: '', repeat: 1 };
+  let evEditId = null, evShowPast = false, evBusy = false;
+
+  // 일정은 바꿀 때마다 바로 저장 (달력과 주보에 곧바로 반영)
+  async function saveEvents(next, message) {
+    if (evBusy) return false;
+    evBusy = true;
+    try { await Store.saveEvents(next); events = await Store.getEvents(); }
+    catch (e) { evBusy = false; toast(errMsg(e), true); return false; }
+    evBusy = false;
+    drawEventTab(); drawForm();
+    toast(message);
+    return true;
+  }
+
+  function drawEventTab() {
+    const host = $('tab-event');
+    host.textContent = '';
+    const today = D.today();
+
+    // --- 새 일정 넣기
+    const repeat = el('select', { 'aria-label': '반복', onchange: () => { evDraft.repeat = +repeat.value; } },
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 26, 52].map((n) => el('option', { value: n, selected: evDraft.repeat === n }, n === 1 ? '반복 없음' : '매주 반복 · ' + n + '주간')));
+    const dateIn = bind(el('input', { type: 'date', value: evDraft.date }), evDraft, 'date');
+    const endIn = bind(el('input', { type: 'date', value: evDraft.endDate }), evDraft, 'endDate');
+    host.appendChild(card('일정 넣기', '여기에 넣은 일정은 ‘교회 일정’ 달력과 주보의 ‘교회 일정’에 함께 나옵니다. 매주 반복되는 일정은 몇 주간인지 고르면 날짜마다 한꺼번에 들어갑니다.',
+      field('일정 이름', text(evDraft, 'title', null, { placeholder: '예: 김장, 성경개관 주일반' })),
+      el('div', { class: 'row2' }, field('날짜', dateIn), field('시간 (선택)', text(evDraft, 'time', null, { placeholder: '예: 오후 2시' }))),
+      el('div', { class: 'row2' }, field('끝나는 날 (여러 날일 때만)', endIn), field('반복', repeat)),
+      el('p', { style: 'text-align:right' }, el('button', { type: 'button', class: 'a-btn a-primary', onclick: async () => {
+        const title = evDraft.title.trim();
+        if (!title) return toast('일정 이름을 적어 주세요', true);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(evDraft.date)) return toast('날짜를 골라 주세요', true);
+        if (evDraft.endDate && evDraft.endDate < evDraft.date) return toast('끝나는 날이 시작 날짜보다 빠릅니다', true);
+        const n = evDraft.repeat || 1, series = n > 1 ? newId() : '';
+        const added = [];
+        for (let i = 0; i < n; i++) {
+          added.push({ id: newId() + i, date: D.add(evDraft.date, 7 * i), endDate: evDraft.endDate && evDraft.endDate > evDraft.date ? D.add(evDraft.endDate, 7 * i) : '', title, time: evDraft.time.trim(), series });
+        }
+        if (await saveEvents(events.concat(added), n > 1 ? title + ' — 매주 ' + n + '번 넣었습니다' : title + ' 일정을 넣었습니다')) {
+          evDraft.title = ''; evDraft.time = ''; evDraft.endDate = ''; evDraft.repeat = 1; drawEventTab();
+        }
+      } }, '일정 넣기'))));
+
+    // --- 들어 있는 일정
+    const shown = events.filter((e) => evShowPast || (e.endDate || e.date) >= today);
+    const pastCount = events.length - events.filter((e) => (e.endDate || e.date) >= today).length;
+    const rows = [];
+    let lastMonth = '';
+    shown.forEach((e) => {
+      const ym = e.date.slice(0, 7);
+      if (ym !== lastMonth) { lastMonth = ym; rows.push(el('h3', { class: 'ev-month' }, +ym.slice(0, 4) + '년 ' + +ym.slice(5) + '월')); }
+      const later = e.series ? events.filter((x) => x.series === e.series && x.date >= e.date) : [];
+      if (evEditId === e.id) {
+        const draft = { date: e.date, endDate: e.endDate, title: e.title, time: e.time, all: false };
+        rows.push(el('div', { class: 'ev-row editing' },
+          field('일정 이름', text(draft, 'title')),
+          el('div', { class: 'row2' }, field('날짜', bind(el('input', { type: 'date', value: draft.date }), draft, 'date')), field('시간', text(draft, 'time'))),
+          field('끝나는 날 (여러 날일 때만)', bind(el('input', { type: 'date', value: draft.endDate }), draft, 'endDate')),
+          later.length > 1 ? el('label', { class: 'check' }, bind(el('input', { type: 'checkbox' }), draft, 'all'), '이 날짜 뒤의 반복 일정 ' + (later.length - 1) + '건에도 이름·시간 적용') : null,
+          el('div', { class: 'ev-btns' },
+            el('button', { type: 'button', class: 'a-btn a-small', onclick: () => { evEditId = null; drawEventTab(); } }, '취소'),
+            el('button', { type: 'button', class: 'a-btn a-small a-primary', onclick: async () => {
+              const title = draft.title.trim();
+              if (!title) return toast('일정 이름을 적어 주세요', true);
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.date)) return toast('날짜를 골라 주세요', true);
+              if (draft.endDate && draft.endDate < draft.date) return toast('끝나는 날이 시작 날짜보다 빠릅니다', true);
+              const next = events.map((x) => {
+                if (x.id === e.id) return Object.assign({}, x, { date: draft.date, endDate: draft.endDate > draft.date ? draft.endDate : '', title, time: draft.time.trim() });
+                if (draft.all && x.series === e.series && x.date > e.date) return Object.assign({}, x, { title, time: draft.time.trim() });
+                return x;
+              });
+              evEditId = null;
+              await saveEvents(next, draft.all ? '이 날짜와 뒤의 반복 일정을 고쳤습니다' : '이 날짜 일정만 고쳤습니다');
+            } }, '저장'))));
+        return;
+      }
+      rows.push(el('div', { class: 'ev-row' + ((e.endDate || e.date) < today ? ' past' : '') },
+        el('span', { class: 'ev-date' }, el('b', null, window.App.eventDay(e)), el('small', null, WEEKDAY[D.parse(e.date).getDay()] + '요일')),
+        el('span', { class: 'ev-what' }, el('b', null, e.title), el('small', null, [e.time, e.series ? '매주 반복' : ''].filter(Boolean).join(' · '))),
+        el('span', { class: 'ev-btns' },
+          el('button', { type: 'button', class: 'a-btn a-small', onclick: () => { evEditId = e.id; drawEventTab(); } }, '수정'),
+          el('button', { type: 'button', class: 'a-btn a-small a-danger', onclick: () => {
+            if (confirm(window.App.eventDay(e) + ' ‘' + e.title + '’ 일정을 삭제할까요?' + (e.series ? '\n(이 날짜만 삭제됩니다. 다른 날짜의 반복 일정은 그대로 남습니다.)' : ''))) saveEvents(events.filter((x) => x.id !== e.id), '삭제했습니다');
+          } }, e.series ? '이 날만 삭제' : '삭제'),
+          later.length > 1 ? el('button', { type: 'button', class: 'a-btn a-small a-danger', onclick: () => {
+            if (confirm('‘' + e.title + '’ — ' + window.App.eventDay(e) + ' 부터 뒤의 반복 일정 ' + later.length + '건을 모두 삭제할까요?')) saveEvents(events.filter((x) => !(x.series === e.series && x.date >= e.date)), '반복 일정 ' + later.length + '건을 삭제했습니다');
+          } }, '이후 반복 모두 삭제') : null)));
+    });
+    host.appendChild(card('들어 있는 일정', '반복으로 넣은 일정도 날짜마다 따로 고치거나 지울 수 있습니다. 고치면 바로 저장됩니다.',
+      rows.length ? el('div', { class: 'ev-list' }, rows) : el('p', { class: 'empty' }, events.length ? '앞으로의 일정이 없습니다.' : '아직 넣은 일정이 없습니다.'),
+      pastCount ? el('p', { style: 'margin-top:12px' }, el('button', { type: 'button', class: 'a-link', onclick: () => { evShowPast = !evShowPast; drawEventTab(); } }, evShowPast ? '지난 일정 숨기기' : '지난 일정 ' + pastCount + '건 보기')) : null,
+      el('p', { style: 'margin-top:12px' }, el('a', { class: 'a-link', href: 'calendar.html', target: '_blank', rel: 'noopener' }, '달력 화면 열어 보기'))));
+  }
+
   // ================= 생일 명단 =================
   let bDirty = false, bPasteOpen = false;
   function drawBirthdayTab() {
@@ -693,7 +839,7 @@
   // ================= 탭 / 시작 =================
   function showTab(name) {
     document.querySelectorAll('.a-tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === name ? 'true' : 'false'));
-    ['bulletin', 'roster', 'birthday', 'info', 'menu'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
+    ['bulletin', 'roster', 'event', 'birthday', 'info', 'menu'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
     if (name === 'roster') drawRosterTab(true);
     window.scrollTo(0, 0);
   }
@@ -705,6 +851,7 @@
       settings = await Store.getSettings();
       roster = await Store.getRoster();
       birthdayList = await Store.getBirthdays();
+      events = await Store.getEvents();
       list = await Store.listBulletins();
       if (Store.live && !list.length && !roster.length) {
         // 처음 설치한 직후: 캔바에 있던 주보와 명단을 기본 내용으로 넣어 둠
@@ -718,7 +865,7 @@
       $('tab-bulletin').appendChild(el('p', { class: 'empty' }, '내용을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.'));
       return;
     }
-    drawBulletinTab(); drawBirthdayTab(); drawInfoTab(); drawMenuTab();
+    drawBulletinTab(); drawEventTab(); drawBirthdayTab(); drawInfoTab(); drawMenuTab();
     document.querySelectorAll('.a-tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
   }
 

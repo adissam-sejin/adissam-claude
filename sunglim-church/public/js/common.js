@@ -69,6 +69,7 @@
     const links = [
       { label: '홈', url: 'index.html', key: 'home' },
       { label: '주보', url: 'bulletin.html', key: 'bulletin' },
+      { label: '교회 일정', url: 'calendar.html', key: 'calendar' },
       { label: '헌금명단', url: 'offering.html', key: 'offering' }
     ].concat((settings.menu || []).filter((m) => m && m.label && m.url));
     const nav = el('nav', { class: 'nav-links', id: 'nav-links' }, links.map((m) => {
@@ -110,6 +111,18 @@
       el('p', { class: 'footer-copy' }, '© ' + new Date().getFullYear() + ' ' + c.name)));
   }
 
+  // 일정 날짜 표시: 12/13, 여러 날이면 8/1~8/3
+  function eventDay(e) {
+    const md = (s) => { const d = D.parse(s); return (d.getMonth() + 1) + '/' + d.getDate(); };
+    return md(e.date) + (e.endDate && e.endDate > e.date ? '~' + md(e.endDate) : '');
+  }
+  // from 부터 weeks 주 동안의 일정을 날짜순으로
+  function eventsInRange(events, from, weeks) {
+    const to = D.add(from, 7 * weeks);
+    return (events || []).filter((e) => (e.endDate || e.date) >= from && e.date <= to)
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  }
+
   // 글자 크기 고르기(보통·크게·아주 크게). 고른 크기는 이 기기에 기억해 둠.
   function setupSizeBar() {
     const bar = document.getElementById('sizebar');
@@ -128,5 +141,5 @@
     }));
   }
 
-  window.App = { el, safeUrl, isExternal, calliSrc, setupSizeBar, D, renderNav, renderFooter };
+  window.App = { el, safeUrl, isExternal, calliSrc, setupSizeBar, eventDay, eventsInRange, D, renderNav, renderFooter };
 })();

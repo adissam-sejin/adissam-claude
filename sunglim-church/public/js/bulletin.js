@@ -24,7 +24,7 @@
     renderFooter(settings);
     if (!b) return state('아직 올라온 주보가 없습니다', '주일 전에 새 주보가 올라옵니다.');
 
-    BulletinView.render(host, b, view.roster, settings);
+    BulletinView.render(host, b, view.roster, settings, view.events);
 
     // PDF로 저장(인쇄 창에서 ‘PDF로 저장’ 선택). 파일 이름이 되도록 제목을 정함
     document.title = settings.church.name + ' 주보 ' + b.date;

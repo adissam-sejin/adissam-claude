@@ -166,3 +166,16 @@ body.page-admin { background: #f1f3f5; font-size: 16px; }
   .bd-row > input, .bd-lunar, .bd-solar, .bd-row > .icon-btn { grid-column: auto; grid-row: auto; }
   .bd-solar:empty { display: block; }
 }
+
+/* 교회 일정 */
+.ev-month { font-size: 15px; font-weight: 800; color: var(--muted); margin: 14px 2px 6px; }
+.ev-month:first-child { margin-top: 0; }
+.ev-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 12px; border: 1px solid #dfe3e6; border-radius: 12px; background: #fafbfc; margin-bottom: 6px; }
+.ev-row.past { opacity: .6; }
+.ev-row.editing { display: block; border-color: var(--orange); background: #fff7f3; }
+.ev-date { flex: none; min-width: 5em; display: flex; flex-direction: column; line-height: 1.3; }
+.ev-date b { font-size: 17px; color: var(--orange); font-variant-numeric: tabular-nums; }
+.ev-date small, .ev-what small { font-size: 13px; color: var(--muted); }
+.ev-what { flex: 1; min-width: 140px; display: flex; flex-direction: column; line-height: 1.35; }
+.ev-what b { font-size: 16px; color: var(--ink); }
+.ev-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }

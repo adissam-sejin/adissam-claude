@@ -1,6 +1,6 @@
 // 주보 화면 그리기. 주보 페이지와 관리자 미리보기가 같이 씁니다.
 (function () {
-  const { el, D } = window.App;
+  const { el, D, eventDay, eventsInRange } = window.App;
   const lines = (s) => (s || '').split('\n').map((x) => x.replace(/\s+$/, '')).filter((x) => x.trim() !== '');
 
   // 명단(roster)에서 해당 주일 담당자를 찾음
@@ -38,7 +38,14 @@
     return el('section', { class: 'b-sec ' + cls }, title ? el('h2', { class: 'b-title' }, title) : null, kids);
   }
 
-  function render(host, b, roster, settings) {
+  // 주보에 실릴 ‘교회 일정’ 줄들: 자동이면 달력(교회 일정)에서, 아니면 직접 적은 내용
+  function scheduleLines(b, events) {
+    const c = b.content || {};
+    if (!c.scheduleAuto) return lines(c.schedule);
+    return eventsInRange(events, b.date, c.scheduleWeeks || 6).map((e) => eventDay(e) + ' ' + e.title);
+  }
+
+  function render(host, b, roster, settings, events) {
     const c = b.content || {};
     const ch = settings.church;
     const r = rosterFor(roster, b.date);
@@ -73,7 +80,7 @@
 
     // 3. 교회 소식 + 일정
     const news = (c.news || []).filter((n) => n.title || n.body);
-    const sched = lines(c.schedule);
+    const sched = scheduleLines(b, events);
     if (news.length || sched.length) {
       host.appendChild(section('b-news', null, [
         el('h2', { class: 'b-eng' }, 'NEWS'),
@@ -138,5 +145,5 @@
     }
   }
 
-  window.BulletinView = { render, rosterFor };
+  window.BulletinView = { render, rosterFor, scheduleLines };
 })();

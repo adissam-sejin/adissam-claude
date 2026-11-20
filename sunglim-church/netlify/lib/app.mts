@@ -111,6 +111,20 @@ async function getOfferings(kv: KV, date: string, bulletin?: any): Promise<Offer
   return cleanOfferings((bulletin ?? (await kv.getJSON("bulletin/" + date)))?.content?.offerings); // 예전 방식으로 저장된 주보
 }
 
+// 교회 일정: 반복 일정도 날짜마다 따로 저장해서(같은 series 표시) 하루만 고치거나 지울 수 있게 함
+type ChurchEvent = { id: string; date: string; endDate: string; title: string; time: string; series: string };
+function cleanEvents(v: unknown): ChurchEvent[] {
+  const seen = new Set<string>();
+  return (Array.isArray(v) ? v : []).slice(0, 5000)
+    .map((e: any) => ({
+      id: str(e?.id, 40).replace(/[^\w-]/g, ""), date: e?.date, title: str(e?.title, 120).trim(), time: str(e?.time, 40).trim(),
+      endDate: isDate(e?.endDate) && isDate(e?.date) && e.endDate > e.date ? e.endDate : "", series: str(e?.series, 40).replace(/[^\w-]/g, ""),
+    }))
+    .filter((e) => isDate(e.date) && e.title && e.id && !seen.has(e.id) && !!seen.add(e.id))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.title.localeCompare(b.title, "ko")));
+}
+const getEvents = async (kv: KV): Promise<ChurchEvent[]> => (await kv.getJSON("events")) || [];
+
 function plusDays(date: string, days: number): string {
   const d = new Date(date + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() + days);
@@ -136,15 +150,18 @@ export async function handle(req: Request, kv: KV, env: Env): Promise<Response> 
       const index = await getIndex(kv);
       const want = url.searchParams.get("d");
       const row = isDate(want) ? index.find((r) => r.date === want && r.published) : index.find((r) => r.published);
-      const [settings, bulletin, roster] = await Promise.all([
+      const [settings, bulletin, roster, events] = await Promise.all([
         kv.getJSON("settings"),
         row ? kv.getJSON("bulletin/" + row.date) : null,
         getRoster(kv),
+        getEvents(kv),
       ]);
       return json({
         settings,
         bulletin: withoutOfferings(bulletin),
         roster: bulletin ? inRange(roster, bulletin.date, plusDays(bulletin.date, 56)) : [],
+        // 주보의 ‘교회 일정’에 쓰일 앞으로 석 달치 일정
+        events: bulletin ? events.filter((e) => (e.endDate || e.date) >= bulletin.date && e.date <= plusDays(bulletin.date, 92)) : [],
         list: index.filter((r) => r.published),
       });
     }
@@ -204,6 +221,16 @@ export async function handle(req: Request, kv: KV, env: Env): Promise<Response> 
       const want = url.searchParams.get("d");
       const row = isDate(want) ? list.find((r) => r.date === want) : list[0];
       return json({ date: row?.date ?? null, issue: row?.issue ?? "", offerings: row ? await getOfferings(kv, row.date) : [], list });
+    }
+
+    // 교회 일정(달력): 누구나 볼 수 있고, 관리자만 고칠 수 있음
+    if (head === "events") {
+      if (method === "GET") return json(await getEvents(kv));
+      if (method === "PUT") {
+        const no = needAdmin(); if (no) return no;
+        await kv.setJSON("events", cleanEvents(await readJSON(req)));
+        return json({ ok: true });
+      }
     }
 
     // 생일 명단(1년치): 전체 명단은 관리자만 볼 수 있음. 주보에는 그 주 생일자만 실림.
