@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>하나님과의 대화 — 디자인 시안</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#E9E6E1;font-family:'Noto Sans KR',sans-serif;padding:40px;display:flex;flex-direction:column;gap:40px;align-items:flex-start}
+  .board{width:1180px;border-radius:28px;padding:36px 40px 40px;background:var(--board);color:var(--boardInk)}
+  .board h1{font-size:13px;letter-spacing:3px;font-weight:700;opacity:.6}
+  .board h2{font-family:'Gowun Batang',serif;font-size:34px;margin-top:8px;font-weight:700}
+  .board p.lead{font-size:15px;line-height:1.8;margin-top:10px;max-width:760px;opacity:.82;word-break:keep-all}
+  .phones{display:flex;gap:34px;margin-top:30px}
+  .cap{font-size:13px;font-weight:700;margin-bottom:12px;opacity:.75}
+
+  .phone{width:344px;height:716px;border-radius:44px;background:#0d0d10;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.28)}
+  .screen{width:100%;height:100%;border-radius:36px;overflow:hidden;display:flex;flex-direction:column;position:relative;background:var(--bg);color:var(--ink);font-size:14px}
+  .status{height:34px;display:flex;justify-content:space-between;align-items:center;padding:6px 24px 0;font-size:12px;font-weight:700;color:var(--ink);opacity:.85;flex:none}
+  .status i{display:inline-block;width:17px;height:9px;border:1.5px solid currentColor;border-radius:3px;position:relative}
+  .status i:after{content:'';position:absolute;inset:1.5px 4px 1.5px 1.5px;background:currentColor;border-radius:1px}
+  .hd{display:flex;align-items:center;gap:8px;padding:6px 12px 10px;flex:none;background:var(--hd);border-bottom:1px solid var(--line)}
+  .hd .t{flex:1}
+  .hd .t b{display:block;font-size:15.5px;font-weight:700}
+  .hd .t span{font-size:11px;color:var(--sub)}
+  .ic{width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--ink);opacity:.8}
+  .body{flex:1;padding:10px 12px 0;overflow:hidden;display:flex;flex-direction:column;gap:6px;position:relative}
+  .daychip{align-self:center;font-size:11px;padding:5px 12px;border-radius:99px;background:var(--chip);color:var(--chipInk)}
+
+  .m{display:flex;gap:7px;align-items:flex-end;max-width:100%}
+  .m.me{justify-content:flex-end}
+  .av{width:36px;height:36px;border-radius:14px;flex:none;align-self:flex-start;background:var(--av);display:flex;align-items:center;justify-content:center;color:var(--avInk)}
+  .mc{display:flex;flex-direction:column;max-width:224px}
+  .m.me .mc{align-items:flex-end}
+  .nm{font-size:11.5px;color:var(--sub);margin:0 0 4px 2px}
+  .line{display:flex;align-items:flex-end;gap:5px}
+  .m.me .line{flex-direction:row-reverse}
+  .b{padding:8px 12px;line-height:1.55;font-size:14px;word-break:keep-all}
+  .b.god{background:var(--god);color:var(--godInk);border-radius:var(--rg);font-family:var(--godFont);font-size:var(--godSize);border:var(--godBorder);box-shadow:var(--godShadow)}
+  .b.me{background:var(--mine);color:var(--mineInk);border-radius:var(--rm)}
+  .ref{display:block;margin-top:6px;font-family:'Noto Sans KR',sans-serif;font-size:11px;color:var(--refInk)}
+  .tm{font-size:10px;color:var(--sub);white-space:nowrap;padding-bottom:2px}
+  .rx{display:inline-flex;align-items:center;gap:2px;margin-top:4px;padding:2px 7px 2px 5px;border-radius:99px;background:var(--rx);border:1px solid var(--rxLine);font-size:12px;align-self:flex-start;color:var(--ink)}
+  .m.me .rx{align-self:flex-end}
+  .rx em{font-style:normal;font-family:'Noto Color Emoji';font-size:13px}
+  .picker{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:99px;background:var(--pick);box-shadow:0 10px 30px rgba(0,0,0,.25);border:1px solid var(--line);align-self:flex-start;margin:-2px 0 0 43px}
+  .picker em{font-style:normal;font-family:'Noto Color Emoji';font-size:23px}
+  .picker em.on{transform:scale(1.25);filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
+  .picker s{width:1px;height:20px;background:var(--line);text-decoration:none}
+  .picker span{font-size:12px;color:var(--sub);font-weight:500;white-space:nowrap}
+
+  .inp{flex:none;padding:8px 10px 20px;background:var(--bar);border-top:1px solid var(--line)}
+  .who{display:inline-flex;padding:3px;border-radius:99px;background:var(--seg);margin-bottom:8px}
+  .who span{font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;color:var(--sub)}
+  .who span.on{background:var(--segOn);color:var(--segOnInk);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .row{display:flex;align-items:center;gap:8px}
+  .plus{width:36px;height:36px;border-radius:99px;background:var(--seg);display:flex;align-items:center;justify-content:center;color:var(--ink);flex:none}
+  .field{flex:1;height:38px;border-radius:19px;background:var(--field);border:1px solid var(--line);display:flex;align-items:center;padding:0 14px;font-size:13.5px;color:var(--sub)}
+  .send{width:38px;height:38px;border-radius:99px;background:var(--send);color:var(--sendInk);display:flex;align-items:center;justify-content:center;flex:none}
+
+  /* 모아보기 */
+  .chips{display:flex;gap:5px;flex-wrap:nowrap;padding:12px 12px 4px}
+  .chip{display:inline-flex;align-items:center;gap:3px;font-size:12px;padding:6px 9px;white-space:nowrap;border-radius:99px;background:var(--rx);border:1px solid var(--rxLine);color:var(--ink)}
+  .chip em{font-style:normal;font-family:'Noto Color Emoji';font-size:14px}
+  .chip.on{background:var(--segOn);color:var(--segOnInk);border-color:transparent;font-weight:700}
+  .cards{padding:8px 12px;display:flex;flex-direction:column;gap:9px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 13px}
+  .card .d{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-bottom:6px}
+  .card .d em{font-style:normal;font-family:'Noto Color Emoji';font-size:14px}
+  .card .x{font-size:13.5px;line-height:1.65;word-break:keep-all}
+  .card.g .x{font-family:var(--godFont);font-size:var(--godSize)}
+  .card .r{font-size:11px;color:var(--refInk);margin-top:6px}
+
+  /* PDF */
+  .dim{position:absolute;inset:0;background:rgba(0,0,0,.42)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--sheet);border-radius:26px 26px 0 0;padding:10px 18px 26px;color:var(--ink)}
+  .grab{width:38px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 14px;opacity:.9}
+  .sheet h3{font-size:17px;font-weight:700}
+  .sheet .s{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.6}
+  .quick{display:flex;gap:6px;margin-top:14px}
+  .dates{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .dt{flex:1;border:1px solid var(--line);background:var(--field);border-radius:14px;padding:9px 12px}
+  .dt small{display:block;font-size:10.5px;color:var(--sub)}
+  .dt b{font-size:14px;font-weight:700}
+  .opt{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:12px}
+  .ck{width:18px;height:18px;border-radius:6px;background:var(--send);color:var(--sendInk);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .ck.off{background:none;border:1.5px solid var(--sub)}
+  .cta{margin-top:16px;height:46px;border-radius:15px;background:var(--send);color:var(--sendInk);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+  .paper{margin:14px auto 0;width:150px;background:#fff;color:#222;border-radius:4px;padding:12px 11px;box-shadow:0 6px 18px rgba(0,0,0,.25);font-size:6.5px;line-height:1.7}
+  .paper b{display:block;font-family:'Gowun Batang',serif;font-size:9px;margin-bottom:5px}
+  .paper u{display:block;text-decoration:none;color:#9a7a2e;font-weight:700;margin-top:4px}
+
+  /* ── 시안 A: 맑은 아침 ── */
+  .A{--board:#F4F7FB;--boardInk:#1E2A3A;
+     --bg:#C6D6E6;--ink:#1F2A37;--sub:#5F7186;--line:rgba(31,42,55,.10);--hd:#C6D6E6;
+     --chip:rgba(31,42,55,.16);--chipInk:#fff;
+     --av:#FFF6DA;--avInk:#C99A2E;
+     --god:#FFFFFF;--godInk:#1F2A37;--rg:4px 16px 16px 16px;--godFont:'Gowun Batang',serif;--godSize:14.5px;--godBorder:none;--godShadow:0 1px 2px rgba(31,42,55,.08);
+     --mine:#FFE27A;--mineInk:#2A2410;--rm:16px 4px 16px 16px;--refInk:#A07A1E;
+     --rx:#FFFFFF;--rxLine:rgba(31,42,55,.08);--pick:#FFFFFF;
+     --bar:#FFFFFF;--seg:#EEF2F6;--segOn:#1F2A37;--segOnInk:#fff;--field:#F4F6F9;--send:#FFE27A;--sendInk:#2A2410;
+     --card:#FFFFFF;--sheet:#FFFFFF}
+  .A .body,.A .cardsbg{background:#C6D6E6}
+  /* ── 시안 B: 새벽 하늘 ── */
+  .B{--board:#0E1330;--boardInk:#EEF2FB;
+     --bg:linear-gradient(180deg,#243161 0%,#141B3D 45%,#0A0E24 100%);--ink:#EEF2FB;--sub:#8E9CCB;--line:rgba(255,255,255,.10);--hd:transparent;
+     --chip:rgba(255,255,255,.10);--chipInk:#CFE0FF;
+     --av:rgba(224,185,106,.18);--avInk:#E0B96A;
+     --god:#EEF2FB;--godInk:#161B33;--rg:4px 18px 18px 18px;--godFont:'Gowun Batang',serif;--godSize:14.5px;--godBorder:none;--godShadow:0 4px 22px rgba(207,224,255,.16);
+     --mine:#E0B96A;--mineInk:#1B1A12;--rm:18px 4px 18px 18px;--refInk:#8A6D2B;
+     --rx:rgba(255,255,255,.10);--rxLine:rgba(255,255,255,.14);--pick:#1C2550;
+     --bar:rgba(6,9,24,.55);--seg:rgba(255,255,255,.08);--segOn:#EEF2FB;--segOnInk:#161B33;--field:rgba(255,255,255,.08);--send:#E0B96A;--sendInk:#161B33;
+     --card:rgba(255,255,255,.06);--sheet:#182048}
+  .B .card .r,.B .card.g .x{color:#EEF2FB}
+  .B .card .r{color:#E0B96A}
+  /* ── 시안 C: 따뜻한 편지지 ── */
+  .C{--board:#FBF6EC;--boardInk:#3A2E22;
+     --bg:#F3EBDD;--ink:#3A2E22;--sub:#9A8873;--line:rgba(58,46,34,.12);--hd:#F3EBDD;
+     --chip:rgba(58,46,34,.10);--chipInk:#6B5A47;
+     --av:#E9DCC3;--avInk:#9A6B2F;
+     --god:#FFFDF8;--godInk:#3A2E22;--rg:4px 18px 18px 18px;--godFont:'Gowun Batang',serif;--godSize:14.5px;--godBorder:1px solid rgba(154,107,47,.35);--godShadow:none;
+     --mine:#CBD9C2;--mineInk:#26301F;--rm:18px 4px 18px 18px;--refInk:#9A6B2F;
+     --rx:#FFFDF8;--rxLine:rgba(58,46,34,.12);--pick:#FFFDF8;
+     --bar:#FBF6EC;--seg:#EFE5D3;--segOn:#3A2E22;--segOnInk:#FBF6EC;--field:#FFFDF8;--send:#9A6B2F;--sendInk:#FFFDF8;
+     --card:#FFFDF8;--sheet:#FFFDF8}
+</style>
+</head>
+<body>
+<script>
+const I = {
+  back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  search:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  menu:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  book:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+  send:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+  light:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.500 12h3M18.500 12h3M5.300 5.300l2.100 2.100M16.600 16.600l2.100 2.100M5.300 18.700l2.100-2.100M16.600 7.400l2.100-2.100"/></svg>'
+};
+const status = '<div class="status"><span>6:32</span><span><i></i></span></div>';
+const god = (text, time, o = {}) =>
+  '<div class="m"><div class="av">'+I.light+'</div><div class="mc">'+(o.noName?'':'<div class="nm">하나님</div>')+
+  '<div class="line"><div class="b god">'+text+(o.ref?'<span class="ref">— '+o.ref+'</span>':'')+'</div><span class="tm">'+time+'</span></div>'+
+  (o.rx?'<span class="rx"><em>'+o.rx+'</em></span>':'')+'</div></div>';
+const me = (text, time, o = {}) =>
+  '<div class="m me"><div class="mc"><div class="line"><div class="b me">'+text+'</div><span class="tm">'+time+'</span></div>'+
+  (o.rx?'<span class="rx"><em>'+o.rx+'</em></span>':'')+'</div></div>';
+
+const chat = () => '<div class="phone"><div class="screen">'+status+
+  '<div class="hd"><span class="ic">'+I.back+'</span><div class="t"><b>하나님과의 대화</b><span>11월 23일 월요일 · 4개의 말</span></div><span class="ic">'+I.search+'</span><span class="ic">'+I.menu+'</span></div>'+
+  '<div class="body">'+
+    '<span class="daychip">2026년 11월 23일 월요일</span>'+
+    me('오늘은 마음이 자꾸 조급해져요', '오전 6:30')+
+    god('조급해하지 마라.<br/>내가 너와 함께 있단다', '오전 6:31', { rx:'❤️' })+
+    me('네, 그 말씀 붙들게요', '오전 6:31')+
+    god('수고하고 무거운 짐 진 자들아 다 내게로 오라 내가 너희를 쉬게 하리라', '오전 6:32', { ref:'마 11:28', rx:'🥹' })+
+    '<div class="picker"><em>❤️</em><em>👍</em><em class="on">🥹</em><em>🙏</em><em>✨</em><s></s><span>더보기</span></div>'+
+  '</div>'+
+  '<div class="inp"><div class="who"><span class="on">내 마음</span><span>하나님 말씀</span></div>'+
+    '<div class="row"><span class="plus">'+I.book+'</span><div class="field">오늘 무엇을 이야기하고 싶나요</div><span class="send">'+I.send+'</span></div></div>'+
+  '</div></div>';
+
+const collect = () => '<div class="phone"><div class="screen">'+status+
+  '<div class="hd"><span class="ic">'+I.back+'</span><div class="t"><b>마음에 남긴 말</b><span>이모지를 남긴 말만 모아 봐요</span></div></div>'+
+  '<div class="chips"><span class="chip">전체 28</span><span class="chip"><em>❤️</em>12</span><span class="chip on"><em>🥹</em>8</span><span class="chip"><em>👍</em>5</span><span class="chip"><em>🙏</em>3</span></div>'+
+  '<div class="cards">'+
+    '<div class="card g"><div class="d"><span>2026. 11. 23 (월) · 하나님</span><em>🥹</em></div><div class="x">수고하고 무거운 짐 진 자들아 다 내게로 오라 내가 너희를 쉬게 하리라</div><div class="r">— 마 11:28</div></div>'+
+    '<div class="card g"><div class="d"><span>2026. 11. 21 (토) · 하나님</span><em>🥹</em></div><div class="x">내 은혜가 네게 족하도다 이는 내 능력이 약한 데서 온전하여짐이라</div><div class="r">— 고후 12:9</div></div>'+
+    '<div class="card"><div class="d"><span>2026. 11. 18 (수) · 나</span><em>🥹</em></div><div class="x">돌아보니 한 번도 혼자였던 적이 없었네요. 감사합니다.</div></div>'+
+    '<div class="card g"><div class="d"><span>2026. 11. 12 (목) · 하나님</span><em>🥹</em></div><div class="x">두려워하지 말라 내가 너와 함께 함이라</div><div class="r">— 사 41:10</div></div>'+
+  '</div></div></div>';
+
+const pdf = () => '<div class="phone"><div class="screen">'+status+
+  '<div class="hd"><span class="ic">'+I.back+'</span><div class="t"><b>설정</b><span>기록 내보내기</span></div></div>'+
+  '<div class="body"></div><div class="dim"></div>'+
+  '<div class="sheet"><div class="grab"></div><h3>PDF로 저장하기</h3><div class="s">기간을 고르면 그동안의 이야기를 책처럼 한 파일로 만들어요.</div>'+
+    '<div class="quick"><span class="chip">이번 달</span><span class="chip on">지난 3개월</span><span class="chip">올해</span><span class="chip">전체</span></div>'+
+    '<div class="dates"><div class="dt"><small>시작</small><b>2026. 9. 1</b></div><span style="color:var(--sub)">~</span><div class="dt"><small>끝</small><b>2026. 11. 23</b></div></div>'+
+    '<div class="opt"><span class="ck">✓</span>남긴 이모지도 함께 넣기</div>'+
+    '<div class="opt"><span class="ck off"></span>이모지 남긴 말만 넣기</div>'+
+    '<div class="paper"><b>하나님과의 대화</b>2026. 9. 1 ~ 2026. 11. 23<u>11월 23일 월요일</u>나 · 오늘은 마음이 자꾸 조급해져요<br/>하나님 · 조급해하지 마라. 내가 너와 함께 있단다 ❤<br/>하나님 · 수고하고 무거운 짐 진 자들아… — 마 11:28</div>'+
+    '<div class="cta">PDF 만들기 · 34일</div></div>'+
+  '</div></div>';
+
+const board = (k, name, lead) => '<section class="board '+k+'" id="board'+k+'"><h1>시안 '+k+'</h1><h2>'+name+'</h2><p class="lead">'+lead+'</p>'+
+  '<div class="phones"><div><div class="cap">① 대화창 — 말풍선을 누르면 이모지 남기기</div>'+chat()+'</div>'+
+  '<div><div class="cap">② 이모지별로 모아 보기</div>'+collect()+'</div>'+
+  '<div><div class="cap">③ 기간 골라 PDF로 저장</div>'+pdf()+'</div></div></section>';
+
+document.body.innerHTML =
+  board('A', '맑은 아침', '익숙한 메신저 그대로의 밝은 대화창. 하늘빛 바탕에 내 말은 노란 말풍선, 하나님 말씀은 흰 말풍선. 가장 카톡에 가깝고 누구나 바로 쓸 수 있는 느낌이에요.') +
+  board('B', '새벽 하늘', '지금 앱의 밤하늘 분위기를 그대로 살리면서 배치만 메신저처럼 바꾼 안. 내 말은 금빛, 하나님 말씀은 달빛처럼 밝은 말풍선. 새벽 기도 시간에 눈이 편해요.') +
+  board('C', '따뜻한 편지지', '크림색 종이 위에 주고받는 편지 같은 대화창. 차분한 올리브빛 내 말풍선과 금테 두른 말씀 말풍선. 조용하고 따뜻한 묵상 노트 느낌이에요.');
+</script>
+</body>
+</html>
