@@ -6,7 +6,7 @@ const B = "http://localhost:8788", shots = new URL("./shots/", import.meta.url).
 const browser = await chromium.launch();
 const errors = [];
 const newCtx = async () => {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, hasTouch: true, isMobile: true, locale: "ko-KR" });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: Number(process.env.SCALE) || 1, hasTouch: true, isMobile: true, locale: "ko-KR" });
   const page = await ctx.newPage();
   page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("ERR_INTERNET_DISCONNECTED")) errors.push(m.text()); });
   page.on("pageerror", (e) => errors.push("PAGEERROR " + e.message));
