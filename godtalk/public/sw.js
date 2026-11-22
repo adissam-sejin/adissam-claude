@@ -1,6 +1,6 @@
 /* 하나님과의 대화 — 앱 껍데기와 성경을 기기에 담아 둡니다. 기록(/api)은 절대 담지 않습니다. */
-const V = 'godtalk-v1';
-const SHELL = ['/', '/manifest.webmanifest', '/favicon.ico', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png'];
+const V = 'godtalk-v2';
+const SHELL = ['/', '/manifest.webmanifest', '/favicon.ico', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/icons/avatar.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

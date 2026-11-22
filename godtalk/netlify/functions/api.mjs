@@ -37,7 +37,14 @@ const STATE_COOKIE = "gt_o";
 const SESSION_DAYS = 90;
 const DAY_MS = 86400000;
 const WEEK = ["일", "월", "화", "수", "목", "금", "토"];
-const FAV_COLOR = "yellow_background";
+/* 말풍선에 남기는 이모지 — 이 다섯 가지만 받습니다 */
+const RX = ["❤️", "👍", "🥹", "🙏", "✅"];
+const RX_RE = /\s\s(❤\uFE0F?|👍|🥹|🙏|✅)\s*$/u;
+const cleanRx = (v) => {
+  if (typeof v !== "string" || !v) return "";
+  const bare = v.replace(/\uFE0F/g, "");
+  return RX.find((e) => e.replace(/\uFE0F/g, "") === bare) || null;
+};
 const MAX_TEXT = 5000;
 const MAX_PER_DAY = 400;
 
@@ -187,7 +194,7 @@ function cloudBackend(uid) {
     },
     edit: (date, id, text) => change(date, id, (l, i) => { l[i].text = text; }),
     del: (date, id) => change(date, id, (l, i) => { l.splice(i, 1); }),
-    fav: (date, id, on) => change(date, id, (l, i) => { if (on) l[i].fav = true; else delete l[i].fav; }),
+    react: (date, id, rx) => change(date, id, (l, i) => { if (rx) l[i].rx = rx; else delete l[i].rx; }),
     async allDates() {
       const docs = await Promise.all((await months()).map(load));
       return docs.flatMap((d) => Object.keys(d.days).filter((k) => d.days[k].length)).sort();
@@ -233,17 +240,22 @@ function richText(msg) {
   for (let i = 0; i < body.length; i += 1800) parts.push({ text: { content: body.slice(i, i + 1800) } });
   if (msg.ref) parts.push({ text: { content: `\n— ${msg.ref}` }, annotations: { italic: true, color: "gray" } });
   if (msg.time) parts.push({ text: { content: `  ${msg.time}` }, annotations: { color: "gray" } });
+  if (msg.rx) parts.push({ text: { content: `  ${msg.rx}` } });
   return parts;
 }
 const toBlock = (msg) => ({
   object: "block", type: "paragraph",
-  paragraph: { rich_text: richText(msg), color: msg.fav ? FAV_COLOR : "default" },
+  paragraph: { rich_text: richText(msg) },
 });
 
 function fromBlock(b) {
   if (!b || b.type !== "paragraph") return null;
   let txt = plain(b.paragraph.rich_text);
   if (!txt.trim()) return null;
+
+  let rx = "";
+  const mx = txt.match(RX_RE);
+  if (mx) { rx = cleanRx(mx[1]) || ""; txt = txt.slice(0, mx.index); }
 
   let time = "";
   const mt = txt.match(/\s\s(오전|오후)\s(\d{1,2}:\d{2})\s*$/);
@@ -258,7 +270,7 @@ function fromBlock(b) {
   else if (txt.startsWith("나: ")) { txt = txt.slice(3); }
 
   const out = { id: b.id, who, text: txt, ref, time };
-  if (b.paragraph.color === FAV_COLOR) out.fav = true;
+  if (rx) out.rx = rx;
   return out;
 }
 
@@ -346,7 +358,7 @@ function notionBackend({ token, db, pTitle, pDate }) {
     const cur = fromBlock(await api(`blocks/${id}`, "GET"));
     if (!cur) throw new Oops("gone", "이 글은 앱에서 고칠 수 없는 모양이에요");
     const next = fn(cur);
-    await api(`blocks/${id}`, "PATCH", { paragraph: { rich_text: richText(next), color: next.fav ? FAV_COLOR : "default" } });
+    await api(`blocks/${id}`, "PATCH", { paragraph: { rich_text: richText(next) } });
   };
 
   return {
@@ -377,7 +389,7 @@ function notionBackend({ token, db, pTitle, pDate }) {
       return { pageId, id: r.results && r.results.length ? r.results[0].id : null };
     },
     async edit(date, id, text) { need(isNotionId(id)); await rewrite(id, (m) => ({ ...m, text })); },
-    async fav(date, id, on) { need(isNotionId(id)); await rewrite(id, (m) => ({ ...m, fav: !!on })); },
+    async react(date, id, rx) { need(isNotionId(id)); await rewrite(id, (m) => ({ ...m, rx })); },
     async del(date, id) { need(isNotionId(id)); await api(`blocks/${id}`, "DELETE"); },
     async allDates() {
       return [...new Set((await queryAll()).map(dateOf).filter(Boolean))].sort();
@@ -462,7 +474,7 @@ function publicUser(user, sess) {
     notionFixed: viaOwner,
     hasPin: !!user.pin,
     locked: !!user.pin && !sess.p,
-    favDays: (user.favDays || []).length,
+    rxDays: (user.rxDays || []).length,
   };
 }
 
@@ -519,7 +531,7 @@ async function kakaoCallback(req, url, secure) {
     const nick = String((me.kakao_account && me.kakao_account.profile && me.kakao_account.profile.nickname)
       || (me.properties && me.properties.nickname) || "").slice(0, 30);
     const now = new Date().toISOString();
-    const user = (await getUser(uid)) || { id: uid, createdAt: now, sv: 1, notion: null, pin: null, favDays: [] };
+    const user = (await getUser(uid)) || { id: uid, createdAt: now, sv: 1, notion: null, pin: null, rxDays: [] };
     if (nick) user.nick = nick;
     user.lastLoginAt = now;
     if (mode === "r") { user.pin = null; user.pinFails = 0; user.pinLockUntil = 0; }
@@ -692,30 +704,33 @@ async function rpc(req, url, secure) {
       await be.del(b.date, b.id);
       return json({ ok: true });
     }
-    if (b.action === "fav") {
+    if (b.action === "react") {
       need(isDate(b.date) && typeof b.id === "string");
-      await be.fav(b.date, b.id, !!b.on);
-      const set = new Set(user.favDays || []);
-      if (b.on && !set.has(b.date)) {
+      const rx = cleanRx(b.rx);
+      need(rx !== null, "남길 수 없는 이모지예요");
+      await be.react(b.date, b.id, rx);
+      const set = new Set(user.rxDays || []);
+      if (rx && !set.has(b.date)) {
         set.add(b.date);
-        user.favDays = [...set].sort();
+        user.rxDays = [...set].sort();
         await saveUser(user);
       }
       return json({ ok: true });
     }
-    if (b.action === "favs") {
-      const days = (user.favDays || []).slice().sort().reverse();
+    /* 이모지를 남긴 말만 모아 보기 — 이모지를 남긴 날짜 목록만 따로 기억해 두고 그날들만 엽니다 */
+    if (b.action === "reacts") {
+      const days = (user.rxDays || []).slice().sort().reverse();
       const start = Math.max(0, parseInt(b.cursor, 10) || 0);
       const chunk = days.slice(start, start + 8);
       const loaded = await mapLimit(chunk, 2, (d) => be.day(d));
       const hits = [], empty = [];
       chunk.forEach((d, i) => {
-        const favs = loaded[i].messages.filter((m) => m.fav);
-        if (!favs.length) empty.push(d);
-        for (const m of favs) hits.push({ date: d, ...m });
+        const got = loaded[i].messages.filter((m) => m.rx);
+        if (!got.length) empty.push(d);
+        for (const m of got) hits.push({ date: d, ...m });
       });
       if (empty.length) {
-        user.favDays = (user.favDays || []).filter((d) => !empty.includes(d));
+        user.rxDays = (user.rxDays || []).filter((d) => !empty.includes(d));
         await saveUser(user);
       }
       const next = start + chunk.length - empty.length;

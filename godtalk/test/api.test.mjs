@@ -48,7 +48,7 @@ const a = client(), b = client();
 
 await t("로그인 전에는 아무것도 주지 않는다", async () => {
   assert.equal((await a.rpc({ action: "me" })).user, null);
-  for (const action of ["month", "day", "add", "search", "dates", "favs", "notionCheck", "deleteAccount"])
+  for (const action of ["month", "day", "add", "search", "dates", "reacts", "react", "notionCheck", "deleteAccount"])
     assert.equal((await a.rpc({ action, ym: "2026-11", date: "2026-11-23" })).error, "auth", action);
 });
 await t("다른 사이트에서 온 요청은 막는다", async () => {
@@ -91,15 +91,18 @@ await t("고치기·모아두기·찾기·지우기", async () => {
   const d = await a.rpc({ action: "day", date: "2026-11-20" });
   const [m1, m2] = d.messages;
   assert.ok((await a.rpc({ action: "edit", date: "2026-11-20", id: m1.id, text: "고친 글" })).ok);
-  assert.ok((await a.rpc({ action: "fav", date: "2026-11-20", id: m2.id, on: true })).ok);
-  const favs = await a.rpc({ action: "favs" });
-  assert.deepEqual(favs.hits.map((h) => [h.date, h.text]), [["2026-11-20", "두려워하지 말라"]]);
+  assert.equal((await a.rpc({ action: "react", date: "2026-11-20", id: m2.id, rx: "😈" })).error, "bad");
+  assert.ok((await a.rpc({ action: "react", date: "2026-11-20", id: m2.id, rx: "🥹" })).ok);
+  assert.ok((await a.rpc({ action: "react", date: "2026-11-20", id: m1.id, rx: "✅" })).ok);
+  const favs = await a.rpc({ action: "reacts" });
+  assert.deepEqual(favs.hits.map((h) => [h.date, h.text, h.rx]), [["2026-11-20", "고친 글", "✅"], ["2026-11-20", "두려워하지 말라", "🥹"]]);
+  await a.rpc({ action: "react", date: "2026-11-20", id: m1.id, rx: "" });
   const s = await a.rpc({ action: "search", q: "글" });
   assert.deepEqual(s.hits.map((h) => h.text), ["고친 글", "시월의 글"]); assert.equal(s.cursor, null);
   assert.deepEqual((await a.rpc({ action: "search", q: "사 41" })).hits.map((h) => h.ref), ["사 41:10"]);
-  await a.rpc({ action: "fav", date: "2026-11-20", id: m2.id, on: false });
-  assert.deepEqual((await a.rpc({ action: "favs" })).hits, []);
-  assert.equal((await a.rpc({ action: "me" })).user.favDays, 0);
+  await a.rpc({ action: "react", date: "2026-11-20", id: m2.id, rx: "" });
+  assert.deepEqual((await a.rpc({ action: "reacts" })).hits, []);
+  assert.equal((await a.rpc({ action: "me" })).user.rxDays, 0);
   assert.ok((await a.rpc({ action: "del", date: "2026-11-20", id: m1.id })).ok);
   assert.equal((await a.rpc({ action: "day", date: "2026-11-20" })).messages.length, 1);
   assert.equal((await a.rpc({ action: "del", date: "2026-11-20", id: m1.id })).error, "gone");
@@ -185,11 +188,17 @@ await t("주인: 노션에 쓰기·고치기·모아두기·찾기·지우기", 
   const raw = notion.blocks.get(r.id).block.paragraph.rich_text.map((x) => x.plain_text).join("");
   assert.equal(raw, "하나님: 새 말씀\n— 시 23:1  오후 03:10");
   await o.rpc({ action: "edit", date: "2026-11-23", id: r.id, text: "고친 말씀" });
-  await o.rpc({ action: "fav", date: "2026-11-23", id: r.id, on: true });
-  assert.equal(notion.blocks.get(r.id).block.paragraph.color, "yellow_background");
+  await o.rpc({ action: "react", date: "2026-11-23", id: r.id, rx: "❤️" });
+  assert.equal(notion.blocks.get(r.id).block.paragraph.rich_text.map((x) => x.plain_text).join(""), "하나님: 고친 말씀\n— 시 23:1  오후 03:10  ❤️");
   const d = await o.rpc({ action: "day", date: "2026-11-23" });
-  assert.deepEqual(d.messages[2], { id: r.id, who: "god", text: "고친 말씀", ref: "시 23:1", time: "오후 03:10", fav: true });
-  assert.deepEqual((await o.rpc({ action: "favs" })).hits.map((h) => h.text), ["고친 말씀"]);
+  assert.deepEqual(d.messages[2], { id: r.id, who: "god", text: "고친 말씀", ref: "시 23:1", time: "오후 03:10", rx: "❤️" });
+  assert.deepEqual((await o.rpc({ action: "reacts" })).hits.map((h) => [h.text, h.rx]), [["고친 말씀", "❤️"]]);
+  await o.rpc({ action: "react", date: "2026-11-23", id: r.id, rx: "👍" });
+  assert.equal((await o.rpc({ action: "day", date: "2026-11-23" })).messages[2].rx, "👍");
+  const amen = await o.rpc({ action: "add", date: "2026-11-23", who: "me", text: "아멘 🙏", time: "오후 03:11" });
+  const dd = await o.rpc({ action: "day", date: "2026-11-23" });
+  assert.deepEqual([dd.messages[3].text, dd.messages[3].rx], ["아멘 🙏", undefined]);
+  await o.rpc({ action: "del", date: "2026-11-23", id: amen.id });
   assert.deepEqual((await o.rpc({ action: "search", q: "말씀" })).hits.map((h) => h.text), ["예전 말씀", "고친 말씀"]);
   assert.deepEqual((await o.rpc({ action: "dates" })).dates, ["2026-11-23", "2026-12-01"]);
   await o.rpc({ action: "del", date: "2026-11-23", id: r.id });
@@ -202,7 +211,7 @@ await t("다른 사람: 자기 노션 연결하고 기록 옮기기", async () =
   notion.addDb(DB2, "ntn_user_b_token_11111111111", { 이름: { type: "title" } }, "B의 기도");
   await b.rpc({ action: "add", date: "2026-11-05", who: "me", text: "B의 클라우드 글", time: "오전 05:00" });
   const g = await b.rpc({ action: "add", date: "2026-11-05", who: "god", text: "B의 말씀", ref: "요 3:16", time: "오전 05:01" });
-  await b.rpc({ action: "fav", date: "2026-11-05", id: g.id, on: true });
+  await b.rpc({ action: "react", date: "2026-11-05", id: g.id, rx: "🙏" });
   assert.equal((await b.rpc({ action: "notionConnect", token: "ntn_wrong_token_000000000000", db: DB2 })).error, "notion");
   assert.equal((await b.rpc({ action: "notionConnect", token: "ntn_user_b_token_11111111111", db: OWNER_DB })).error, "notion");
   const r = await b.rpc({ action: "notionConnect", token: "ntn_user_b_token_11111111111", db: `https://www.notion.so/ws/B-${DB2}?v=99998888777766665555444433332222` });
@@ -215,8 +224,8 @@ await t("다른 사람: 자기 노션 연결하고 기록 옮기기", async () =
   assert.equal((await b.rpc({ action: "moveDay", date: "2026-11-05" })).moved, 2);
   assert.deepEqual((await b.rpc({ action: "cloudDates" })).dates, []);
   const d = await b.rpc({ action: "day", date: "2026-11-05" });
-  assert.deepEqual(d.messages.map((m) => [m.who, m.text, m.ref, !!m.fav]), [["me", "B의 클라우드 글", "", false], ["god", "B의 말씀", "요 3:16", true]]);
-  assert.deepEqual((await b.rpc({ action: "favs" })).hits.map((h) => h.text), ["B의 말씀"]);
+  assert.deepEqual(d.messages.map((m) => [m.who, m.text, m.ref, m.rx || ""]), [["me", "B의 클라우드 글", "", ""], ["god", "B의 말씀", "요 3:16", "🙏"]]);
+  assert.deepEqual((await b.rpc({ action: "reacts" })).hits.map((h) => h.text), ["B의 말씀"]);
   assert.ok((await b.rpc({ action: "notionCheck" })).ok);
   assert.equal((await b.rpc({ action: "notionDisconnect" })).user.storage, "cloud");
   assert.deepEqual((await b.rpc({ action: "month", ym: "2026-11" })).days, []);
