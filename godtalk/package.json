@@ -1,0 +1,11 @@
+{
+  "name": "godtalk",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/api.test.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.7.13"
+  }
+}

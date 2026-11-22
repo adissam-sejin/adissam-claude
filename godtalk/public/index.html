@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#141B3D" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="description" content="하나님과 나눈 이야기를 날마다 적어 두는 조용한 기록장" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="하나님과의 대화" />
+<title>하나님과의 대화</title>
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  /* 색을 바꾸고 싶으면 여기 값만 고치면 됩니다 */
+  :root{
+    --night:#0A0E24; --deep:#141B3D; --dusk:#243161; --mist:#7C8DC4; --faint:#4A5A94;
+    --light:#EEF2FB; --glow:#CFE0FF; --gold:#E0B96A; --goldsoft:#A88F55;
+    --rose:#F0A3AC; --ink:#161B33; --green:#7BD88F;
+    --line:rgba(255,255,255,.08); --card:rgba(255,255,255,.05);
+    --serif:'Gowun Batang','Nanum Myeongjo',AppleMyungjo,'Apple Myungjo','Batang',serif;
+    --sans:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,-apple-system,sans-serif;
+    --fs:1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:var(--night);color:var(--light);font-family:var(--sans);overscroll-behavior:none;-webkit-text-size-adjust:100%}
+  button{font-family:inherit;font-size:inherit;border:none;background:none;color:inherit;cursor:pointer}
+  input,textarea{font-family:inherit;border:none;outline:none}
+  a{color:var(--gold)}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+  #app{max-width:520px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  @media (min-width:560px){ #app{border-left:1px solid var(--line);border-right:1px solid var(--line)} }
+  .scr{flex:1;display:flex;flex-direction:column;min-height:0;animation:fade .32s ease}
+  .sky{background:
+      radial-gradient(1px 1px at 14% 9%,rgba(255,255,255,.75),transparent 60%),
+      radial-gradient(1px 1px at 82% 6%,rgba(255,255,255,.6),transparent 60%),
+      radial-gradient(1.5px 1.5px at 64% 15%,rgba(207,224,255,.7),transparent 60%),
+      radial-gradient(1px 1px at 33% 21%,rgba(255,255,255,.45),transparent 60%),
+      radial-gradient(1px 1px at 91% 27%,rgba(255,255,255,.4),transparent 60%),
+      radial-gradient(1px 1px at 7% 31%,rgba(255,255,255,.35),transparent 60%),
+      radial-gradient(120% 60% at 50% -10%,rgba(224,185,106,.10),transparent 60%),
+      linear-gradient(180deg,#243161 0%,#141B3D 45%,#0A0E24 100%)}
+  .row{display:flex;align-items:center}
+  .grow{flex:1;min-width:0}
+  .eyebrow{font-size:10px;letter-spacing:2px;font-weight:700}
+  .serif{font-family:var(--serif)}
+  .scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .scroll::-webkit-scrollbar{width:5px}
+  .scroll::-webkit-scrollbar-thumb{background:var(--faint);border-radius:99px}
+  .safe-t{padding-top:env(safe-area-inset-top)}
+  .ib{width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border-radius:99px;color:var(--mist);flex:none}
+  .ib:active{background:var(--line)}
+  .link{color:var(--gold);text-decoration:underline;text-underline-offset:3px;font-size:13px;padding:6px 0}
+  .dim{color:var(--mist)}
+
+  /* 들어가기 */
+  .gate{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 30px;text-align:center}
+  .kakao{width:100%;max-width:320px;height:52px;border-radius:12px;background:#FEE500;color:rgba(0,0,0,.85);font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+  .kakao[aria-disabled=true]{opacity:.45;pointer-events:none}
+  .note{font-size:12px;color:var(--mist);line-height:1.8;word-break:keep-all}
+
+  /* 달력 */
+  .head{padding:16px 12px 4px 20px}
+  .month{font-family:var(--serif);font-size:30px;letter-spacing:1px;text-align:center}
+  .wk{display:grid;grid-template-columns:repeat(7,1fr);padding:0 12px;margin-top:18px}
+  .wk div{text-align:center;font-size:11px;color:var(--mist);letter-spacing:1px}
+  .wk div:first-child{color:#B98A9A}
+  .days{display:grid;grid-template-columns:repeat(7,1fr);padding:6px 12px;gap:2px 0;align-content:start}
+  .day{height:58px;padding-top:7px;border-radius:14px;border:1px solid transparent;display:flex;flex-direction:column;align-items:center}
+  .day:active{background:var(--line)}
+  .day.today{background:rgba(224,185,106,.08);border-color:rgba(224,185,106,.4)}
+  .dnum{font-size:14px;color:#6B7BB5}
+  .day.has .dnum{color:var(--light);font-weight:600}
+  .day.today .dnum{color:var(--gold)}
+  .hslot{height:24px;display:flex;align-items:center}
+  .hslot svg{animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+  .cta{width:100%;background:var(--light);color:var(--ink);padding:16px;border-radius:18px;font-weight:700;font-size:15px}
+  .cta:active{transform:scale(.985)}
+  .cta.ghost{background:var(--card);color:var(--light);border:1px solid var(--line)}
+  .cta.small{padding:12px;font-size:14px;border-radius:14px}
+  .cta:disabled{opacity:.45}
+
+  /* 대화 */
+  .bar{padding:8px 8px;border-bottom:1px solid var(--line);min-height:58px}
+  .top{padding:12px 12px 10px;background:rgba(207,224,255,.05);border-bottom:1px solid rgba(224,185,106,.18)}
+  .bot{padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:rgba(0,0,0,.3);border-top:1px solid var(--line)}
+  .ta{flex:1;resize:none;max-height:130px;line-height:1.55;border-radius:16px;padding:12px 14px;font-size:16px}
+  .ta.god{background:rgba(255,255,255,.95);color:var(--ink);font-family:var(--serif)}
+  .ta.me{background:rgba(255,255,255,.08);color:var(--light);border:1px solid rgba(255,255,255,.12)}
+  .ta.me::placeholder{color:var(--mist)}
+  .send{width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:none}
+  .send.god{background:var(--gold);color:var(--ink)}
+  .send.me{background:var(--light);color:var(--ink)}
+  .send:disabled{opacity:.38}
+  .find{font-size:12px;color:var(--gold);border:1px solid rgba(224,185,106,.45);padding:6px 12px;border-radius:999px;display:flex;align-items:center;gap:5px}
+  #list{flex:1;padding:20px 16px}
+  .msg{display:flex;margin-bottom:16px}
+  .msg.new{animation:up .28s cubic-bezier(.22,.9,.3,1)}
+  .msg.god{justify-content:flex-start}
+  .msg.me{justify-content:flex-end}
+  .col{max-width:84%}
+  .msg.me .col{display:flex;flex-direction:column;align-items:flex-end}
+  .who{font-size:11px;color:var(--gold);margin-bottom:5px;letter-spacing:1px}
+  .bub{padding:13px 16px;line-height:1.75;cursor:pointer;text-align:left;word-break:keep-all;overflow-wrap:anywhere}
+  .bub.god{background:var(--light);color:var(--ink);border-radius:4px 18px 18px 18px;font-family:var(--serif);font-size:calc(15.5px*var(--fs));box-shadow:0 4px 24px rgba(207,224,255,.13)}
+  .bub.me{background:var(--dusk);color:var(--light);border-radius:18px 4px 18px 18px;font-size:calc(14.5px*var(--fs));border:1px solid var(--line)}
+  .bub.fav{box-shadow:0 0 0 1.5px var(--gold),0 4px 24px rgba(224,185,106,.18)}
+  .bub.wait{opacity:.6}
+  .bub.flash{animation:flash 1.6s ease}
+  .vref{margin-top:9px;font-size:calc(11.5px*var(--fs));color:#7A6535;font-family:var(--sans)}
+  .meta{margin-top:5px;font-size:10px;color:var(--mist);display:flex;gap:8px;align-items:center;min-height:14px}
+  .meta .star{color:var(--gold)}
+  .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;animation:up .2s}
+  .msg.me .acts{justify-content:flex-end}
+  .act{font-size:12px;padding:7px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--glow)}
+  .act.on{color:var(--gold);border-color:rgba(224,185,106,.5)}
+  .act.warn{color:var(--rose)}
+  .empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 40px}
+  .banner{font-size:12px;color:var(--gold);background:rgba(224,185,106,.1);padding:8px 14px;text-align:center}
+
+  /* 시트·창 */
+  .veil{position:absolute;inset:0;background:rgba(6,9,24,.72);z-index:60;display:flex;flex-direction:column;animation:fade .2s}
+  .sheetbox{background:var(--deep);height:88%;border-radius:0 0 24px 24px;border-bottom:1px solid rgba(224,185,106,.3);display:flex;flex-direction:column;animation:down .28s cubic-bezier(.22,.9,.3,1);padding-top:env(safe-area-inset-top)}
+  .dialog{margin:auto 20px;background:var(--deep);border:1px solid rgba(224,185,106,.25);border-radius:22px;padding:22px 20px 18px;animation:up .25s cubic-bezier(.22,.9,.3,1);max-height:86%;display:flex;flex-direction:column}
+  .dialog h3{font-family:var(--serif);font-size:18px;font-weight:700}
+  .dialog p{font-size:13px;color:var(--mist);line-height:1.8;margin-top:8px;word-break:keep-all}
+  .dialog .btns{display:flex;gap:8px;margin-top:18px}
+  .field{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:13px 14px;color:var(--light);font-size:16px;margin-top:10px}
+  .field::placeholder{color:var(--faint)}
+  textarea.field{resize:none;line-height:1.6;min-height:130px}
+  .sbar{margin:0 16px 12px;background:rgba(255,255,255,.08);border-radius:14px;padding:4px 6px 4px 14px;display:flex;align-items:center;gap:8px;color:var(--mist)}
+  .sbar input{flex:1;background:none;color:var(--light);font-size:16px;padding:10px 0;min-width:0}
+  .sbar input::placeholder{color:var(--faint)}
+  .tabs{display:flex;gap:6px;padding:0 16px 12px}
+  .tab{flex:1;padding:9px;border-radius:12px;font-size:13px;color:var(--mist);background:var(--card)}
+  .tab.on{background:rgba(224,185,106,.16);color:var(--gold);font-weight:700}
+  .vs{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:8px;display:block}
+  .vs:active{border-color:rgba(224,185,106,.45)}
+  .vs .r{font-size:11px;color:var(--gold);margin-bottom:5px}
+  .vs .t{font-family:var(--serif);font-size:calc(14.5px*var(--fs));line-height:1.75;word-break:keep-all;overflow-wrap:anywhere}
+  .vs .p{font-size:11px;color:var(--goldsoft);margin-top:8px}
+  mark{background:rgba(224,185,106,.35);color:inherit;padding:0 1px;border-radius:2px}
+  .chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:6px}
+  .chip{padding:10px 0;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:13px;color:var(--glow)}
+  .chip:active,.chip.on{border-color:var(--gold);color:var(--gold)}
+  .verse{display:flex;gap:10px;width:100%;text-align:left;padding:9px 6px;border-radius:10px;font-family:var(--serif);font-size:calc(15px*var(--fs));line-height:1.8;word-break:keep-all;overflow-wrap:anywhere}
+  .verse:active{background:rgba(224,185,106,.12)}
+  .verse b{font-family:var(--sans);font-size:11px;color:var(--gold);padding-top:5px;min-width:20px;text-align:right;font-weight:600}
+  .lbl{font-size:11px;letter-spacing:2px;color:var(--goldsoft);font-weight:700;margin:14px 0 8px}
+
+  /* 찾기·모아보기 */
+  .hit{width:100%;text-align:left;display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:8px}
+  .hit:active{border-color:rgba(224,185,106,.45)}
+  .hit .d{font-size:11px;color:var(--goldsoft);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
+  .hit .t{font-size:calc(14px*var(--fs));line-height:1.75;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+  .hit.god .t{font-family:var(--serif);font-size:calc(15px*var(--fs))}
+  .hit .w{color:var(--gold)}
+
+  /* 설정 */
+  .sec{font-size:11px;letter-spacing:2px;color:var(--gold);font-weight:700}
+  .desc{font-size:13px;color:var(--mist);margin-top:8px;line-height:1.8;word-break:keep-all}
+  .desc b{color:var(--light);font-weight:600}
+  .card{background:var(--card);border-radius:16px;padding:15px;margin-top:14px;font-size:13px;line-height:1.8;word-break:keep-all}
+  .rule{height:1px;background:var(--line);margin:28px 0}
+  .dot{width:7px;height:7px;border-radius:99px;flex:none}
+  .seg{display:flex;gap:6px;margin-top:14px}
+  .seg button{flex:1;padding:11px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--mist);font-size:13px}
+  .seg button.on{border-color:var(--gold);color:var(--gold);font-weight:700}
+  .steps{counter-reset:s;margin-top:10px}
+  .steps li{list-style:none;counter-increment:s;position:relative;padding-left:26px;font-size:13px;color:var(--mist);line-height:1.8;margin-bottom:8px}
+  .steps li:before{content:counter(s);position:absolute;left:0;top:3px;width:18px;height:18px;border-radius:99px;background:rgba(224,185,106,.18);color:var(--gold);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .steps b{color:var(--light);font-weight:600}
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .stat3 div{background:var(--card);border-radius:14px;padding:14px 6px;text-align:center}
+  .stat3 b{display:block;font-family:var(--serif);font-size:24px;color:var(--light)}
+  .stat3 span{font-size:11px;color:var(--mist)}
+  .bar2{height:5px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:12px}
+  .bar2 i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}
+
+  /* 잠금 */
+  .dots{display:flex;gap:12px;margin:26px 0 6px;height:14px}
+  .dots i{width:11px;height:11px;border-radius:99px;border:1px solid var(--mist);display:block}
+  .dots i.on{background:var(--gold);border-color:var(--gold)}
+  .pad{display:grid;grid-template-columns:repeat(3,72px);gap:14px;margin-top:22px}
+  .pad button{height:64px;border-radius:999px;font-size:23px;font-family:var(--serif);background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  .pad button:active{background:rgba(224,185,106,.2)}
+  .pad button.plain{background:none;border:none;font-size:13px;font-family:var(--sans);color:var(--mist)}
+  .padmsg{font-size:12px;color:var(--rose);min-height:18px;margin-top:10px;text-align:center}
+
+  #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(104px + env(safe-area-inset-bottom));background:var(--light);color:var(--ink);padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:90;box-shadow:0 8px 30px rgba(0,0,0,.5);display:none;max-width:86vw;text-align:center}
+  #toast.on{display:block;animation:up .25s}
+  @keyframes up{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes down{from{transform:translateY(-14px);opacity:0}to{transform:none;opacity:1}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+  @keyframes flash{0%,60%{box-shadow:0 0 0 3px var(--gold)}100%{box-shadow:0 0 0 0 transparent}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ── 작은 도구들 ── */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nl = (s) => esc(s).replace(/\n/g,'<br/>');
+const pad = (n) => String(n).padStart(2,'0');
+const keyOf = (d) => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const toDate = (k) => { const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); };
+const shift = (k, n) => { const d = toDate(k); d.setDate(d.getDate()+n); return keyOf(d); };
+const WEEK = ['일','월','화','수','목','금','토'];
+const pretty = (k) => { const d=toDate(k); return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일 '+WEEK[d.getDay()]+'요일'; };
+const brief = (k) => { const d=toDate(k); return d.getFullYear()+'. '+(d.getMonth()+1)+'. '+d.getDate()+' ('+WEEK[d.getDay()]+')'; };
+const nowTime = () => { const d=new Date(), h=d.getHours(); return (h<12?'오전':'오후')+' '+pad(h%12===0?12:h%12)+':'+pad(d.getMinutes()); };
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+let toastT;
+function say(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2600); }
+
+const ICON = {
+  left:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  right:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>',
+  gear:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.36.4.66.74.86.28.16.6.24.92.24H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+  send:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+  book:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+  x:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  search:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  star:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.9 6.6 19.8l1.1-6.1L3.2 9.4l6.1-.8L12 3z"/></svg>',
+  kakao:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M12 3.5C6.9 3.5 2.8 6.7 2.8 10.7c0 2.6 1.7 4.8 4.3 6.1l-1 3.7c-.1.3.3.6.6.4l4.3-2.9c.3 0 .7.05 1 .05 5.1 0 9.2-3.2 9.2-7.3S17.1 3.5 12 3.5z"/></svg>',
+  heart:(s)=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F0A3AC" d="M12 21s-7.5-4.7-9.4-9.1C1 8.4 3 4.9 6.4 4.5c2.2-.3 4.1 1 5.6 2.9 1.5-1.9 3.4-3.2 5.6-2.9C21 4.9 23 8.4 21.4 11.9 19.5 16.3 12 21 12 21z"/></svg>'
+};
+
+/* ── 상태 ── */
+const S = {
+  me:null, ready:null, cursor:new Date(), days:{}, dates:null,
+  dayKey:keyOf(new Date()), pageId:null, msgs:[], godRef:'', openId:null, offline:false,
+  search:{ q:'', hits:[], cursor:null, done:false }, screen:''
+};
+const app = $('#app');
+
+function applyFont(){ document.documentElement.style.setProperty('--fs', String(store.get('gt_fs', 1))); }
+applyFont();
+
+/* ── 서버와 이야기하기 ── */
+async function api(payload, quiet){
+  let d;
+  try{
+    const r = await fetch('/api', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body:JSON.stringify(payload) });
+    d = await r.json();
+  }catch(e){
+    return { error:'offline', message:'인터넷이 끊겼거나 서버에 닿지 못했어요' };
+  }
+  if(!quiet && d.error === 'auth'){ S.me = null; showLogin(); }
+  if(!quiet && d.error === 'locked'){ showLock(); }
+  return d;
+}
+
+/* ── 화면 오가기 (뒤로 가기 버튼도 따라옵니다) ── */
+const trail = [];
+function mount(name){
+  S.screen = name;
+  app.innerHTML = '';
+  const scr = el('<div class="scr sky safe-t"></div>');
+  app.appendChild(scr);
+  return scr;
+}
+function forward(restore){ trail.push(restore); try{ history.pushState({ n:trail.length }, ''); }catch(e){} }
+function goBack(){ if(trail.length){ try{ history.back(); return; }catch(e){} } home(); }
+function home(){ trail.length = 0; if(!S.me){ boot(); return; } showCalendar(); }
+window.addEventListener('popstate', () => {
+  const veil = $('.veil');
+  if(veil){ veil.remove(); try{ history.pushState({ n:trail.length }, ''); }catch(e){} return; }
+  const restore = trail.pop();
+  if(restore) restore(); else if(S.me && !S.me.locked && S.screen !== 'calendar') showCalendar();
+});
+
+/* 작은 창 */
+function veil(inner){
+  const v = el('<div class="veil"></div>');
+  v.appendChild(typeof inner === 'string' ? el(inner) : inner);
+  v.addEventListener('click', (e) => { if(e.target === v) v.remove(); });
+  app.appendChild(v);
+  return v;
+}
+function ask({ title, body, ok, cancel, danger }){
+  return new Promise((done) => {
+    const v = veil('<div class="dialog" role="dialog" aria-modal="true"><h3>'+esc(title)+'</h3>'+(body?'<p>'+body+'</p>':'')+
+      '<div class="btns"><button class="cta ghost small" data-a="no">'+esc(cancel||'아니요')+'</button>'+
+      '<button class="cta small" data-a="yes"'+(danger?' style="background:var(--rose)"':'')+'>'+esc(ok||'네')+'</button></div></div>');
+    let answered = false;
+    const finish = (val) => { if(answered) return; answered = true; v.remove(); done(val); };
+    $('[data-a=yes]', v).onclick = () => finish(true);
+    $('[data-a=no]', v).onclick = () => finish(false);
+    new MutationObserver((_, o) => { if(!v.isConnected){ o.disconnect(); finish(false); } }).observe(app, { childList:true });
+  });
+}
+
+/* ── 보내지 못한 글 보관함 (인터넷이 끊겼을 때) ── */
+const outbox = {
+  all(){ return store.get('gt_outbox', []); },
+  mine(){ const t = S.me ? S.me.tag : store.get('gt_tag', ''); return this.all().filter(o => o.tag === t); },
+  put(o){ const a = this.all(); a.push(o); store.set('gt_outbox', a); },
+  drop(tmp){ store.set('gt_outbox', this.all().filter(o => o.tmp !== tmp)); },
+  mark(tmp, err){ store.set('gt_outbox', this.all().map(o => o.tmp === tmp ? Object.assign(o, { err }) : o)); }
+};
+let chain = Promise.resolve();
+function deliver(o){
+  chain = chain.then(async () => {
+    if(!outbox.all().some(x => x.tmp === o.tmp)) return;
+    const pageId = S.dayKey === o.date ? S.pageId : null;
+    const res = await api({ action:'add', date:o.date, pageId, who:o.who, text:o.text, ref:o.ref, time:o.time }, true);
+    if(res.error === 'offline'){ outbox.mark(o.tmp, ''); refreshPending(); return; }
+    if(res.error === 'auth' || res.error === 'locked'){ outbox.mark(o.tmp, ''); return; }
+    if(res.error){ outbox.mark(o.tmp, res.message || '저장하지 못했어요'); refreshPending(); return; }
+    outbox.drop(o.tmp);
+    if(S.dates && !S.dates.includes(o.date)){ S.dates.push(o.date); S.dates.sort(); }
+    if(S.dayKey === o.date && S.screen === 'chat'){
+      if(res.pageId) S.pageId = res.pageId;
+      S.msgs.push({ id:res.id, who:o.who, text:o.text, ref:o.ref, time:o.time });
+      drawList(false);
+    }
+  });
+  return chain;
+}
+function flushOutbox(){ if(S.me && !S.me.locked) outbox.mine().filter(o => !o.err).forEach(deliver); }
+function refreshPending(){ if(S.screen === 'chat') drawList(false); }
+window.addEventListener('online', () => {
+  if(!S.me){ boot(); return; }
+  S.offline = false;
+  if(S.screen === 'chat') loadDay(); else flushOutbox();
+});
+
+/* ── 성경 ── */
+let BIBLE = null, BOOKS = null, ABBR = {}, FULL = {}, bibleLoading = null;
+const RE_STRICT = /^\s*([0-9]{0,3}\s*[가-힣A-Za-z]{1,12})\s*(\d{1,3})\s*[:장.]\s*(\d{1,3})\s*절?\s*[:.]?\s*(.+)$/;
+const RE_LOOSE  = /^\s*(.{1,14}?)\s*(\d{1,3})[:\s]+(\d{1,3})\s+(.+)$/;
+const RE_REF    = /^\s*([가-힣]{1,6})\s*(\d{1,3})\s*[:장\s]\s*(\d{1,3})\s*(?:[-~]\s*(\d{1,3}))?\s*절?\s*$/;
+
+function flatten(json){
+  BOOKS = json.books || {};
+  const ab = json.abbrevs || {};
+  ABBR = {}; FULL = {};
+  for(const sh in ab){ ABBR[ab[sh]] = sh; FULL[sh] = ab[sh]; }
+  const out = [];
+  for(const book in BOOKS){
+    const sh = ABBR[book] || book;
+    for(const ch in BOOKS[book]){
+      for(const vs in BOOKS[book][ch]){
+        out.push({ r: sh+' '+ch+':'+vs, t: BOOKS[book][ch][vs] });
+      }
+    }
+  }
+  return out;
+}
+function parseFlat(raw){
+  const out = [];
+  for(const line of raw.split(/\r?\n/)){
+    const s = line.trim(); if(!s) continue;
+    if(s.indexOf('\t') > -1){
+      const p = s.split('\t').map(x=>x.trim()).filter(Boolean);
+      if(p.length>=4){ out.push({r:p[0]+' '+p[1]+':'+p[2], t:p.slice(3).join(' ')}); continue; }
+      if(p.length===2){ out.push({r:p[0], t:p[1]}); continue; }
+    }
+    const m = s.match(RE_STRICT) || s.match(RE_LOOSE);
+    if(m) out.push({ r:m[1].replace(/\s+/g,'')+' '+m[2]+':'+m[3], t:m[4].trim() });
+    else out.push({ r:'', t:s });
+  }
+  return out;
+}
+function loadBible(){
+  if(BIBLE) return Promise.resolve(BIBLE);
+  if(bibleLoading) return bibleLoading;
+  bibleLoading = (async () => {
+    let out = [];
+    try{
+      let res = await fetch('/bible.json');
+      if(res.ok){
+        const j = await res.json();
+        if(j && j.books) out = flatten(j);
+        else if(Array.isArray(j)) out = j.map(v=>({ r:v.r||((v.book||'')+' '+(v.chapter||'')+':'+(v.verse||'')).trim(), t:v.t||v.text||'' }));
+      }else{
+        res = await fetch('/bible.txt');
+        out = res.ok ? parseFlat(await res.text()) : [];
+      }
+    }catch(e){ out = []; }
+    bibleLoading = null;
+    if(out.length) BIBLE = out;
+    return out;
+  })();
+  return bibleLoading;
+}
+function findBook(name){
+  if(FULL[name]) return FULL[name];
+  if(BOOKS && BOOKS[name]) return name;
+  if(!BOOKS) return null;
+  const hit = Object.keys(BOOKS).filter(b => b.indexOf(name) === 0);
+  return hit.length === 1 ? hit[0] : null;
+}
+function byRef(term){
+  if(!BOOKS) return null;
+  const m = term.match(RE_REF);
+  if(!m) return null;
+  const book = findBook(m[1]);
+  if(!book || !BOOKS[book] || !BOOKS[book][m[2]]) return null;
+  const ch = BOOKS[book][m[2]], sh = ABBR[book] || book;
+  const from = +m[3], to = m[4] ? +m[4] : null;
+  if(!ch[from]) return null;
+  if(to && to > from){
+    const parts = [];
+    for(let i=from; i<=to; i++) if(ch[i]) parts.push(ch[i]);
+    return [{ r: sh+' '+m[2]+':'+from+'-'+to, t: parts.join(' ') }];
+  }
+  const out = [];
+  for(let i=from; i<from+5; i++) if(ch[i]) out.push({ r: sh+' '+m[2]+':'+i, t: ch[i] });
+  return out;
+}
+
+/* ══ 들어가기 ══ */
+const LOGIN_MSG = {
+  setup:'카카오 로그인 설정이 아직 끝나지 않았어요',
+  cancel:'로그인을 그만두었어요',
+  state:'로그인이 중간에 끊겼어요. 다시 해보세요',
+  kakao:'카카오에서 확인하지 못했어요. 다시 해보세요'
+};
+function showLogin(code){
+  trail.length = 0;
+  const scr = mount('login');
+  const ok = S.ready && S.ready.kakao && S.ready.secret;
+  scr.innerHTML =
+    '<div class="gate">'+
+      '<div style="margin-bottom:18px">'+ICON.heart(34)+'</div>'+
+      '<div class="eyebrow" style="color:var(--goldsoft)">DAWN LETTERS</div>'+
+      '<div class="serif" style="font-size:30px;margin-top:10px">하나님과의 대화</div>'+
+      '<div class="serif" style="font-size:15px;color:var(--glow);line-height:1.9;margin-top:16px">내 마음을 적고,<br/>그분의 말씀을 받아 적는<br/>나만의 조용한 기록장</div>'+
+      '<div style="height:38px"></div>'+
+      '<a class="kakao" id="kakao" href="/api/auth/kakao"'+(ok?'':' aria-disabled="true"')+'>'+ICON.kakao+'<span>카카오 로그인</span></a>'+
+      '<div id="loginMsg" style="font-size:13px;color:var(--rose);min-height:20px;margin-top:14px">'+esc(code && LOGIN_MSG[code] || (ok?'':LOGIN_MSG.setup))+'</div>'+
+      '<div class="note" style="margin-top:14px">기록은 나만 볼 수 있게 암호화해 보관해요.<br/>원하면 설정에서 내 노션에만 저장할 수도 있어요.</div>'+
+    '</div>';
+  $('#kakao').addEventListener('click', () => { $('#loginMsg').style.color = 'var(--mist)'; $('#loginMsg').textContent = '카카오로 가는 중…'; });
+}
+
+function showOffline(){
+  trail.length = 0;
+  const scr = mount('offline');
+  const canWrite = store.get('gt_tag', '') && !store.get('gt_pin', false);
+  scr.innerHTML =
+    '<div class="gate">'+
+      '<div class="serif" style="font-size:20px;color:var(--glow);line-height:1.8">인터넷이 끊겨 있어요</div>'+
+      '<div class="note" style="margin-top:10px">연결되면 저절로 다시 열려요.</div>'+
+      '<div style="height:28px"></div>'+
+      '<button class="cta" id="retry" style="max-width:320px">다시 해보기</button>'+
+      (canWrite ? '<button class="cta ghost" id="draft" style="max-width:320px;margin-top:10px">오늘 글 먼저 적어두기</button>'+
+        '<div class="note" style="margin-top:12px">적어둔 글은 연결되면 저장돼요.</div>' : '')+
+    '</div>';
+  $('#retry').onclick = boot;
+  if(canWrite) $('#draft').onclick = () => showChat(keyOf(new Date()));
+}
+
+/* ══ 잠금 ══ */
+function padHTML(){
+  return '<div class="dots"></div><div class="padmsg"></div><div class="pad">'+
+    [1,2,3,4,5,6,7,8,9].map(n=>'<button data-n="'+n+'">'+n+'</button>').join('')+
+    '<button class="plain" data-a="clear">지우기</button><button data-n="0">0</button><button class="plain" data-a="ok">확인</button></div>';
+}
+/* onOk(pin)이 글자를 돌려주면 그 글자를 빨갛게 보여주고 다시 받습니다 */
+function bindPad(root, onOk){
+  let buf = '', busy = false;
+  const dots = () => { $('.dots', root).innerHTML = buf.split('').map(()=>'<i class="on"></i>').join('') + (buf.length<8?'<i></i>':''); };
+  dots();
+  $('.pad', root).onclick = async (e) => {
+    const b = e.target.closest('button'); if(!b || busy) return;
+    const msg = $('.padmsg', root);
+    if(b.dataset.a === 'clear'){ buf=''; dots(); return; }
+    if(b.dataset.a === 'ok'){
+      if(buf.length < 4){ msg.textContent='네 자리 이상이에요'; return; }
+      busy = true; msg.textContent='';
+      const err = await onOk(buf);
+      busy = false;
+      if(err && root.isConnected){ buf=''; dots(); msg.textContent = err; }
+      return;
+    }
+    if(buf.length < 8){ buf += b.dataset.n; dots(); msg.textContent=''; }
+  };
+}
+function showLock(){
+  if(S.screen === 'lock') return;
+  trail.length = 0;
+  if(S.me) S.me.locked = true;
+  const scr = mount('lock');
+  scr.innerHTML =
+    '<div class="gate">'+
+      '<div class="eyebrow" style="color:var(--goldsoft)">DAWN LETTERS</div>'+
+      '<div class="serif" style="font-size:24px;margin-top:10px">하나님과의 대화</div>'+
+      '<div style="font-size:13px;color:var(--mist);margin-top:10px">비밀번호를 눌러 주세요</div>'+
+      padHTML()+
+      '<div class="row" style="gap:18px;margin-top:22px"><button class="link" id="forgot">비밀번호를 잊었어요</button><button class="link" id="out" style="color:var(--mist)">로그아웃</button></div>'+
+    '</div>';
+  bindPad(scr, async (pin) => {
+    const res = await api({ action:'unlock', pin }, true);
+    if(res.ok){ S.me.locked = false; enter(); return ''; }
+    if(res.error === 'auth'){ showLogin(); return ''; }
+    return res.message || '비밀번호가 달라요';
+  });
+  $('#forgot').onclick = async () => {
+    if(await ask({ title:'비밀번호를 풀까요?', body:'카카오 계정으로 다시 로그인하면 비밀번호가 풀려요. 기록은 그대로 남아요.', ok:'카카오로 확인', cancel:'그만두기' }))
+      location.href = '/api/auth/kakao?reset=1';
+  };
+  $('#out').onclick = logout;
+}
+/* 비밀번호를 받아오는 창 */
+function pinDialog(title, sub){
+  return new Promise((done) => {
+    const box = el('<div class="dialog" role="dialog" aria-modal="true" style="align-items:center"><h3>'+esc(title)+'</h3>'+
+      '<p style="margin-top:6px">'+esc(sub||'')+'</p>'+padHTML()+'<button class="link" data-a="x" style="margin-top:14px;color:var(--mist)">그만두기</button></div>');
+    const v = veil(box);
+    let answered = false;
+    const finish = (val) => { if(answered) return; answered = true; v.remove(); done(val); };
+    bindPad(box, async (pin) => { finish(pin); return ''; });
+    $('[data-a=x]', box).onclick = () => finish(null);
+    new MutationObserver((_, o) => { if(!v.isConnected){ o.disconnect(); finish(null); } }).observe(app, { childList:true });
+  });
+}
+
+async function logout(){
+  await api({ action:'logout' }, true);
+  store.del('gt_outbox'); store.del('gt_tag'); store.del('gt_pin');
+  S.me = null; S.dates = null; S.days = {};
+  showLogin();
+}
+
+/* ══ 달력 ══ */
+function streaks(dates){
+  const set = new Set(dates);
+  const today = keyOf(new Date());
+  let k = set.has(today) ? today : shift(today, -1), now = 0;
+  while(set.has(k)){ now++; k = shift(k, -1); }
+  let best = 0, run = 0, prev = null;
+  for(const d of dates.slice().sort()){
+    run = prev && shift(prev, 1) === d ? run + 1 : 1;
+    if(run > best) best = run;
+    prev = d;
+  }
+  return { now, best, total:set.size };
+}
+async function loadDates(force){
+  if(S.dates && !force) return S.dates;
+  const res = await api({ action:'dates' });
+  if(res.dates) S.dates = res.dates;
+  return S.dates || [];
+}
+
+async function showCalendar(){
+  const y = S.cursor.getFullYear(), m = S.cursor.getMonth();
+  const scr = mount('calendar');
+  scr.innerHTML =
+    '<div class="head row" style="justify-content:space-between;align-items:flex-start">'+
+      '<div><div class="eyebrow" style="color:var(--goldsoft)">DAWN LETTERS</div>'+
+      '<div class="serif" style="font-size:25px;margin-top:4px">하나님과의 대화</div></div>'+
+      '<div class="row">'+
+        '<button id="toSearch" class="ib" aria-label="기록 찾기">'+ICON.search+'</button>'+
+        '<button id="toFavs" class="ib" aria-label="모아둔 말">'+ICON.star+'</button>'+
+        '<button id="toSetup" class="ib" aria-label="설정">'+ICON.gear+'</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="row" style="justify-content:space-between;padding:12px 8px 0">'+
+      '<button id="prev" class="ib" aria-label="이전 달">'+ICON.left+'</button>'+
+      '<div><div class="month">'+y+'. '+pad(m+1)+'</div>'+
+      '<div id="stat" style="font-size:12px;color:var(--goldsoft);margin-top:2px;text-align:center;min-height:17px">불러오는 중…</div></div>'+
+      '<button id="next" class="ib" aria-label="다음 달">'+ICON.right+'</button>'+
+    '</div>'+
+    '<div class="wk">'+WEEK.map(w=>'<div>'+w+'</div>').join('')+'</div>'+
+    '<div class="days scroll grow" id="days"></div>'+
+    '<div style="padding:12px 20px calc(22px + env(safe-area-inset-bottom))">'+
+      '<button class="cta" id="today">오늘 이야기 나누기</button>'+
+      '<div id="hint" style="font-size:11px;color:var(--goldsoft);margin-top:12px;text-align:center;min-height:16px">하트가 있는 날엔 나눈 이야기가 있어요</div>'+
+    '</div>';
+
+  const open = (fn) => { forward(showCalendar); fn(); };
+  const move = (n) => { S.cursor = new Date(y, m+n, 1); showCalendar(); };
+  $('#toSetup').onclick = () => open(showSetup);
+  $('#toSearch').onclick = () => open(() => showSearch(true));
+  $('#toFavs').onclick = () => open(showFavs);
+  $('#prev').onclick = () => move(-1);
+  $('#next').onclick = () => move(1);
+  $('#today').onclick = () => open(() => showChat(keyOf(new Date())));
+
+  /* 옆으로 밀어서 달 넘기기 */
+  let sx = null, sy = 0;
+  const grid = $('#days');
+  grid.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive:true });
+  grid.addEventListener('touchend', (e) => {
+    if(sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    sx = null;
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1);
+  }, { passive:true });
+
+  const ym = y+'-'+pad(m+1);
+  drawDays(S.days[ym] || {});
+  const res = await api({ action:'month', ym });
+  if(S.screen !== 'calendar' || S.cursor.getFullYear() !== y || S.cursor.getMonth() !== m) return;
+  if(res.error){
+    if(res.error === 'auth' || res.error === 'locked') return;
+    $('#stat').textContent = res.error === 'offline' ? '인터넷이 끊겨 있어요' : '기록을 불러오지 못했어요';
+    if(res.error === 'notion'){
+      $('#hint').innerHTML = '<button class="link" id="fix" style="font-size:12px">노션 연결 살펴보기</button>';
+      $('#fix').onclick = () => open(showSetup);
+    }
+    return;
+  }
+  const days = {};
+  (res.days || []).forEach(d => { days[d] = true; });
+  S.days[ym] = days;
+  drawDays(days);
+  const n = Object.keys(days).length;
+  const base = n > 0 ? '이번 달 '+n+'일 이야기를 나눴어요' : '아직 비어 있는 달이에요';
+  $('#stat').textContent = base;
+  loadDates().then((dates) => {
+    if(S.screen !== 'calendar' || !$('#stat')) return;
+    const st = streaks(dates);
+    if(st.now >= 2) $('#stat').textContent = base + ' · 이어서 '+st.now+'일째';
+  });
+}
+
+function drawDays(days){
+  const y = S.cursor.getFullYear(), m = S.cursor.getMonth();
+  const first = new Date(y,m,1).getDay(), last = new Date(y,m+1,0).getDate();
+  const todayK = keyOf(new Date());
+  let h = '';
+  for(let i=0;i<first;i++) h += '<div style="height:58px"></div>';
+  for(let d=1; d<=last; d++){
+    const k = y+'-'+pad(m+1)+'-'+pad(d);
+    const c = days[k] ? 1 : 0;
+    h += '<button class="day'+(c?' has':'')+(k===todayK?' today':'')+'" data-k="'+k+'" aria-label="'+(m+1)+'월 '+d+'일'+(c?' 기록 있음':'')+'">'+
+         '<span class="dnum">'+d+'</span>'+
+         '<span class="hslot">'+(c?ICON.heart(16):'')+'</span></button>';
+  }
+  const box = $('#days');
+  if(!box) return;
+  box.innerHTML = h;
+  $$('.day', box).forEach(b => b.onclick = () => { forward(showCalendar); showChat(b.dataset.k); });
+}
+
+/* ══ 대화 ══ */
+function showChat(k, focusId){
+  S.dayKey = k; S.msgs = []; S.godRef = ''; S.pageId = null; S.openId = null;
+  const scr = mount('chat');
+  scr.innerHTML =
+    '<div class="bar row" style="justify-content:space-between">'+
+      '<button id="back" class="ib" style="color:var(--light)" aria-label="뒤로">'+ICON.left+'</button>'+
+      '<div style="text-align:center"><div class="serif" style="font-size:16px">'+pretty(k)+'</div>'+
+      '<div id="cnt" style="font-size:10px;color:var(--goldsoft);letter-spacing:1px">여는 중…</div></div>'+
+      '<div style="width:42px"></div>'+
+    '</div>'+
+    '<div class="top">'+
+      '<div class="row" style="gap:8px;margin-bottom:8px">'+
+        '<span class="eyebrow" style="color:var(--gold)">위에서 오는 말</span>'+
+        '<div class="grow" style="height:1px;background:rgba(224,185,106,.25)"></div>'+
+        '<button class="find" id="openBible">'+ICON.book+' 성경 찾기</button>'+
+      '</div>'+
+      '<div id="refTag" style="display:none;margin-bottom:8px" class="row">'+
+        '<span id="refText" style="font-size:11px;color:var(--gold);background:rgba(224,185,106,.13);padding:3px 9px;border-radius:6px"></span>'+
+        '<button id="refClear" style="color:var(--mist);margin-left:8px;display:flex" aria-label="구절 표시 지우기">'+ICON.x+'</button>'+
+      '</div>'+
+      '<div class="row" style="gap:8px;align-items:flex-end">'+
+        '<textarea id="godIn" class="ta god" rows="1" placeholder="하나님의 말씀을 적어요" maxlength="5000"></textarea>'+
+        '<button id="godSend" class="send god" disabled aria-label="하나님의 말씀 올리기">'+ICON.send+'</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="list" class="scroll" aria-live="polite"></div>'+
+    '<div class="bot">'+
+      '<div class="eyebrow" style="color:var(--mist);margin-bottom:8px">내 마음</div>'+
+      '<div class="row" style="gap:8px;align-items:flex-end">'+
+        '<textarea id="myIn" class="ta me" rows="1" placeholder="오늘 무엇을 이야기하고 싶나요" maxlength="5000"></textarea>'+
+        '<button id="mySend" class="send me" disabled aria-label="내 말 보내기">'+ICON.send+'</button>'+
+      '</div>'+
+    '</div>';
+
+  $('#back').onclick = goBack;
+  [ [$('#godIn'), $('#godSend'), 'god'], [$('#myIn'), $('#mySend'), 'me'] ].forEach(([ta, btn, who]) => {
+    const sync = () => { btn.disabled = !ta.value.trim(); ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,130)+'px'; };
+    ta.addEventListener('input', sync);
+    ta.addEventListener('keydown', (e) => {
+      if(e.key==='Enter' && !e.shiftKey && !e.isComposing && matchMedia('(pointer:fine)').matches){ e.preventDefault(); send(who); }
+    });
+    btn.onclick = () => send(who);
+  });
+  $('#refClear').onclick = () => setRef('');
+  $('#openBible').onclick = openBible;
+  loadDay(focusId);
+}
+
+function setRef(r){
+  S.godRef = r;
+  const tag = $('#refTag'); if(!tag) return;
+  if(r){ $('#refText').textContent = r; tag.style.display='flex'; }
+  else tag.style.display='none';
+}
+function fillGod(text, ref){
+  const ta = $('#godIn'); if(!ta) return;
+  ta.value = text; ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,130)+'px';
+  $('#godSend').disabled = false;
+  setRef(ref);
+}
+
+async function loadDay(focusId){
+  const k = S.dayKey;
+  $('#list').innerHTML = '<div class="empty dim" style="font-size:13px">여는 중…</div>';
+  const res = await api({ action:'day', date:k });
+  if(S.screen !== 'chat' || S.dayKey !== k) return;
+  if(res.error === 'auth' || res.error === 'locked') return;
+  if(res.error === 'offline'){
+    S.offline = true;
+    drawList(true);
+    if(!$('#offBanner')) $('#list').insertAdjacentHTML('beforebegin', '<div class="banner" id="offBanner">인터넷이 끊겨 있어요 · 지금 적는 글은 연결되면 저장돼요</div>');
+    return;
+  }
+  S.offline = false;
+  if($('#offBanner')) $('#offBanner').remove();
+  if(res.error){
+    $('#cnt').textContent = '불러오지 못했어요';
+    $('#list').innerHTML = '<div class="empty"><div class="serif" style="font-size:16px;color:var(--glow);line-height:1.7">기록에 닿지 못했어요.</div>'+
+      '<div style="font-size:13px;color:var(--mist);margin-top:10px;line-height:1.7">'+esc(res.message||'')+'</div>'+
+      '<button id="again" class="link" style="margin-top:14px">다시 해보기</button></div>';
+    $('#again').onclick = () => loadDay(focusId);
+    return;
+  }
+  S.pageId = res.pageId || null;
+  S.msgs = res.messages || [];
+  drawList(true);
+  flushOutbox();
+  if(focusId){
+    const b = $('.bub[data-id="'+focusId+'"]');
+    if(b){ b.scrollIntoView({ block:'center' }); b.classList.add('flash'); }
+  }
+}
+
+function bubble(m, pending){
+  const god = m.who === 'god';
+  const id = esc(pending ? m.tmp : m.id);
+  const state = pending ? (m.err ? '<span style="color:var(--rose)">저장하지 못했어요</span>' : '<span>보내는 중…</span>') : '';
+  const meta = god
+    ? '<span>'+esc(m.time||'')+'</span>'+(m.fav?'<span class="star">★ 모아둠</span>':'')+state
+    : state+(m.fav?'<span class="star">★ 모아둠</span>':'')+'<span>'+esc(m.time||'')+'</span>';
+  return '<div class="msg '+(god?'god':'me')+'" data-m="'+id+'"><div class="col">'+(god?'<div class="who">하나님</div>':'')+
+    '<button class="bub '+(god?'god':'me')+(m.fav?' fav':'')+(pending?' wait':'')+'" data-id="'+id+'"'+(pending?' data-p="1"':'')+'>'+nl(m.text)+
+    (m.ref?'<div class="vref">— '+esc(m.ref)+'</div>':'')+'</button>'+
+    '<div class="meta">'+meta+'</div><div class="slot"></div></div></div>';
+}
+
+function drawList(toEnd){
+  const box = $('#list'); if(!box) return;
+  const pend = outbox.mine().filter(o => o.date === S.dayKey);
+  const total = S.msgs.length + pend.length;
+  $('#cnt').textContent = total ? total+'개의 말' : '아직 조용한 날';
+  if(total === 0){
+    box.innerHTML = '<div class="empty"><div class="serif" style="font-size:17px;color:var(--glow);line-height:1.7">'+(S.dayKey===keyOf(new Date())?'오늘은':'이날은')+' 아직 조용해요.</div>'+
+      '<div style="font-size:13px;color:var(--mist);margin-top:10px;line-height:1.7">아래에 마음을 적고,<br/>위에 그분의 말씀을 적어 보세요.</div></div>';
+    return;
+  }
+  const keep = box.scrollTop, atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = S.msgs.map(m => bubble(m, false)).join('') + pend.map(o => bubble(o, true)).join('');
+  $$('.bub', box).forEach(b => b.onclick = () => toggleActs(b));
+  if(S.openId){ const b = $('.bub[data-id="'+S.openId+'"]', box); if(b) showActs(b); }
+  box.scrollTop = (toEnd || atEnd) ? box.scrollHeight : keep;
+}
+
+function toggleActs(b){
+  const was = S.openId === b.dataset.id;
+  $$('#list .slot').forEach(s => { s.innerHTML=''; });
+  S.openId = null;
+  if(!was) showActs(b);
+}
+function showActs(b){
+  const id = b.dataset.id, slot = $('.slot', b.closest('.col'));
+  S.openId = id;
+  if(b.dataset.p){
+    const o = outbox.mine().find(x => x.tmp === id); if(!o) return;
+    slot.innerHTML = '<div class="acts"><button class="act" data-a="retry">다시 보내기</button><button class="act warn" data-a="drop">지우기</button></div>';
+    $('[data-a=retry]', slot).onclick = () => { outbox.mark(id, ''); S.openId = null; drawList(false); deliver(o); };
+    $('[data-a=drop]', slot).onclick = () => { outbox.drop(id); S.openId = null; drawList(false); };
+    return;
+  }
+  const m = S.msgs.find(x => x.id === id); if(!m) return;
+  slot.innerHTML = '<div class="acts">'+
+    '<button class="act'+(m.fav?' on':'')+'" data-a="fav">'+(m.fav?'★ 모아둠':'☆ 모아두기')+'</button>'+
+    '<button class="act" data-a="edit">고치기</button>'+
+    '<button class="act" data-a="copy">복사</button>'+
+    '<button class="act warn" data-a="del">지우기</button></div>';
+  $('[data-a=fav]', slot).onclick = () => toggleFav(m);
+  $('[data-a=edit]', slot).onclick = () => editMsg(m);
+  $('[data-a=copy]', slot).onclick = async () => {
+    try{ await navigator.clipboard.writeText(m.text + (m.ref ? '\n— '+m.ref : '')); say('복사했어요'); }catch(e){ say('복사하지 못했어요'); }
+  };
+  const del = $('[data-a=del]', slot);
+  del.onclick = () => {
+    if(del.dataset.sure){ remove(m.id); return; }
+    del.dataset.sure = '1'; del.textContent = '한 번 더 누르면 지워져요';
+  };
+  const box = $('#list'), r = slot.getBoundingClientRect(), br = box.getBoundingClientRect();
+  if(r.bottom > br.bottom) box.scrollTop += r.bottom - br.bottom + 8;
+}
+
+function send(who){
+  const ta = who==='god' ? $('#godIn') : $('#myIn');
+  const text = ta.value.trim();
+  if(!text) return;
+  const o = { tmp:'tmp'+Date.now()+Math.random().toString(36).slice(2,6), tag:S.me ? S.me.tag : store.get('gt_tag',''),
+              date:S.dayKey, who, text, ref: who==='god' ? S.godRef : '', time: nowTime(), err:'' };
+  outbox.put(o);
+  ta.value=''; ta.style.height='auto';
+  (who==='god' ? $('#godSend') : $('#mySend')).disabled = true;
+  if(who==='god') setRef('');
+  drawList(true);
+  const last = $('#list .msg:last-child'); if(last) last.classList.add('new');
+  const ym = S.dayKey.slice(0,7);
+  (S.days[ym] = S.days[ym] || {})[S.dayKey] = true;
+  if(S.me) deliver(o);
+}
+
+async function remove(id){
+  const keep = S.msgs.slice();
+  S.msgs = S.msgs.filter(m => m.id !== id);
+  S.openId = null;
+  drawList(false);
+  const res = await api({ action:'del', date:S.dayKey, id });
+  if(res.error && res.error !== 'gone'){ S.msgs = keep; drawList(false); say(res.message || '지우지 못했어요'); return; }
+  if(!S.msgs.length){ const ym = S.dayKey.slice(0,7); if(S.days[ym]) delete S.days[ym][S.dayKey]; S.dates = null; }
+}
+
+async function toggleFav(m){
+  const on = !m.fav;
+  m.fav = on; drawList(false);
+  const res = await api({ action:'fav', date:S.dayKey, id:m.id, on });
+  if(res.error){ m.fav = !on; drawList(false); say(res.message || '모아두지 못했어요'); return; }
+  say(on ? '모아뒀어요 · 별 모양에서 다시 볼 수 있어요' : '모아둔 곳에서 뺐어요');
+}
+
+function editMsg(m){
+  const box = el('<div class="dialog" role="dialog" aria-modal="true"><h3>글 고치기</h3>'+
+    '<textarea class="field'+(m.who==='god'?' serif':'')+'" maxlength="5000"></textarea>'+
+    '<div class="btns"><button class="cta ghost small" data-a="no">그만두기</button><button class="cta small" data-a="yes">저장</button></div></div>');
+  const v = veil(box), ta = $('textarea', box);
+  ta.value = m.text;
+  setTimeout(() => ta.focus(), 50);
+  $('[data-a=no]', box).onclick = () => v.remove();
+  $('[data-a=yes]', box).onclick = async () => {
+    const text = ta.value.trim();
+    if(!text){ say('빈 글로는 저장할 수 없어요'); return; }
+    if(text === m.text){ v.remove(); return; }
+    $('[data-a=yes]', box).disabled = true;
+    const res = await api({ action:'edit', date:S.dayKey, id:m.id, text });
+    if(res.error){ $('[data-a=yes]', box).disabled = false; say(res.message || '고치지 못했어요'); return; }
+    m.text = text; v.remove(); drawList(false); say('고쳤어요');
+  };
+}
+
+/* ══ 성경 시트 ══ */
+const OT = 39;
+async function openBible(){
+  const box = el('<div class="sheetbox">'+
+    '<div class="row" style="justify-content:space-between;padding:14px 10px 8px 16px">'+
+      '<div><div class="serif" style="font-size:18px">성경</div>'+
+      '<div id="bstat" style="font-size:11px;color:var(--goldsoft);margin-top:2px">성경을 여는 중…</div></div>'+
+      '<button id="closeBible" class="ib" aria-label="닫기">'+ICON.x+'</button>'+
+    '</div>'+
+    '<div class="tabs"><button class="tab on" data-t="find">찾기</button><button class="tab" data-t="read">읽기</button></div>'+
+    '<div id="paneFind" style="display:flex;flex-direction:column;flex:1;min-height:0">'+
+      '<div class="sbar">'+ICON.search+'<input id="q" placeholder="사랑, 평강 … 또는 요 3:16" enterkeyhint="search" autocomplete="off" /></div>'+
+      '<div id="results" class="scroll" style="flex:1;padding:0 16px 16px"></div>'+
+    '</div>'+
+    '<div id="paneRead" class="scroll" style="display:none;flex:1;padding:0 16px 16px"></div>'+
+  '</div>');
+  const v = veil(box);
+  $('#closeBible').onclick = () => v.remove();
+  const tab = (t) => {
+    $$('.tab', box).forEach(b => b.classList.toggle('on', b.dataset.t === t));
+    $('#paneFind').style.display = t === 'find' ? 'flex' : 'none';
+    $('#paneRead').style.display = t === 'read' ? 'block' : 'none';
+    store.set('gt_btab', t);
+    if(t === 'read') drawRead();
+  };
+  $$('.tab', box).forEach(b => b.onclick = () => tab(b.dataset.t));
+  let t;
+  $('#q').addEventListener('input', (e) => { clearTimeout(t); t = setTimeout(() => searchBible(e.target.value), 120); });
+  const b = await loadBible();
+  if(!v.isConnected) return;
+  $('#bstat').textContent = b.length ? b.length.toLocaleString()+'구절 · 낱말이나 주소로 찾고, 장별로 읽어요' : '성경을 불러오지 못했어요. 인터넷을 확인해 주세요';
+  if(store.get('gt_btab', 'find') === 'read' && b.length) tab('read'); else $('#q').focus();
+}
+function useVerse(v){
+  fillGod(v.t, v.r);
+  const sheet = $('.veil'); if(sheet) sheet.remove();
+}
+function searchBible(term){
+  const box = $('#results'); if(!box) return;
+  const q = term.trim();
+  if(!q || !BIBLE){ box.innerHTML=''; return; }
+  let found = byRef(q), mode = 'ref';
+  if(!found){
+    mode = 'word'; found = [];
+    for(const v of BIBLE){
+      if(v.t.indexOf(q) > -1 || v.r.indexOf(q) > -1){ found.push(v); if(found.length>=80) break; }
+    }
+  }
+  if(!found.length){
+    box.innerHTML = '<div style="text-align:center;color:var(--mist);font-size:13px;margin-top:36px;line-height:1.8">찾지 못했어요.<br/>낱말로 찾거나 「요 3:16」처럼 적어 보세요.</div>';
+    return;
+  }
+  const mark = (s) => mode==='word' ? esc(s).split(esc(q)).join('<mark>'+esc(q)+'</mark>') : esc(s);
+  box.innerHTML =
+    (mode==='ref' ? '<div style="font-size:11px;color:var(--goldsoft);margin-bottom:10px">주소로 찾았어요 · 이어지는 구절도 고를 수 있어요</div>' : '') +
+    found.map((v,i) =>
+      '<button class="vs" data-i="'+i+'">'+(v.r?'<div class="r">'+esc(v.r)+'</div>':'')+
+      '<div class="t">'+mark(v.t)+'</div><div class="p">이 말씀으로 쓰기</div></button>'
+    ).join('') + (found.length>=80 ? '<div class="note" style="text-align:center;padding:8px">더 많아요. 낱말을 더 길게 적어 보세요.</div>' : '');
+  $$('.vs', box).forEach(bt => bt.onclick = () => useVerse(found[+bt.dataset.i]));
+}
+function drawRead(){
+  const pane = $('#paneRead'); if(!pane || !BOOKS) return;
+  const names = Object.keys(BOOKS);
+  const pos = store.get('gt_read', null);
+  const view = (book, ch) => {
+    if(!book){
+      const chip = (n) => '<button class="chip" data-b="'+esc(n)+'">'+esc(ABBR[n] || n)+'</button>';
+      pane.innerHTML =
+        (pos && BOOKS[pos.b] ? '<button class="vs" id="resume"><div class="r">읽던 곳</div><div class="t">'+esc(pos.b)+' '+(+pos.c)+'장</div></button>' : '')+
+        '<div class="lbl" style="margin-top:4px">구약</div><div class="chips">'+names.slice(0,OT).map(chip).join('')+'</div>'+
+        '<div class="lbl">신약</div><div class="chips">'+names.slice(OT).map(chip).join('')+'</div>';
+      if($('#resume')) $('#resume').onclick = () => view(pos.b, pos.c);
+      $$('.chip', pane).forEach(c => c.onclick = () => {
+        const n = Object.keys(BOOKS[c.dataset.b]).length;
+        if(n === 1) view(c.dataset.b, 1); else view(c.dataset.b, null);
+      });
+      pane.scrollTop = 0;
+      return;
+    }
+    const chapters = Object.keys(BOOKS[book]).map(Number).sort((a,b)=>a-b);
+    const crumb = '<div class="row" style="gap:6px;margin-bottom:10px"><button class="link" data-up="1">전체</button>'+
+      '<span class="dim">›</span>'+(ch ? '<button class="link" data-up="2">'+esc(book)+'</button><span class="dim">›</span><span style="font-size:13px">'+ch+'장</span>'
+        : '<span style="font-size:13px">'+esc(book)+'</span>')+'</div>';
+    if(!ch){
+      pane.innerHTML = crumb + '<div class="chips">'+chapters.map(c => '<button class="chip" data-c="'+c+'">'+c+'</button>').join('')+'</div>';
+      $$('.chip', pane).forEach(c => c.onclick = () => view(book, +c.dataset.c));
+    }else{
+      const vs = BOOKS[book][ch], sh = ABBR[book] || book;
+      const i = chapters.indexOf(ch);
+      pane.innerHTML = crumb +
+        '<div class="note" style="margin-bottom:6px">구절을 누르면 그 말씀으로 쓸 수 있어요</div>'+
+        Object.keys(vs).map(Number).sort((a,b)=>a-b).map(n => '<button class="verse" data-v="'+n+'"><b>'+n+'</b><span>'+esc(vs[n])+'</span></button>').join('')+
+        '<div class="row" style="gap:8px;margin-top:14px">'+
+          '<button class="cta ghost small" id="pch"'+(i<=0?' disabled':'')+'>이전 장</button>'+
+          '<button class="cta ghost small" id="nch"'+(i>=chapters.length-1?' disabled':'')+'>다음 장</button></div>';
+      $$('.verse', pane).forEach(b => b.onclick = () => useVerse({ r: sh+' '+ch+':'+b.dataset.v, t: vs[b.dataset.v] }));
+      $('#pch').onclick = () => view(book, chapters[i-1]);
+      $('#nch').onclick = () => view(book, chapters[i+1]);
+      store.set('gt_read', { b:book, c:ch });
+    }
+    $$('[data-up]', pane).forEach(u => u.onclick = () => u.dataset.up === '1' ? view(null) : view(book, null));
+    pane.scrollTop = 0;
+  };
+  view(null);
+}
+
+/* ══ 기록 찾기 ══ */
+function hitHTML(h, q){
+  let t = esc(h.text);
+  if(q){
+    const i = h.text.toLowerCase().indexOf(q.toLowerCase());
+    if(i > -1){
+      const from = Math.max(0, i - 40);
+      const cut = (from > 0 ? '…' : '') + h.text.slice(from);
+      const j = cut.toLowerCase().indexOf(q.toLowerCase());
+      t = esc(cut.slice(0, j)) + '<mark>' + esc(cut.slice(j, j + q.length)) + '</mark>' + esc(cut.slice(j + q.length));
+    }
+  }
+  return '<button class="hit '+(h.who==='god'?'god':'me')+'" data-d="'+esc(h.date)+'" data-id="'+esc(h.id)+'">'+
+    '<div class="d"><span>'+brief(h.date)+'</span><span class="w">'+(h.who==='god'?'하나님':'나')+(h.ref?' · '+esc(h.ref):'')+'</span></div>'+
+    '<div class="t">'+t+'</div></button>';
+}
+function bindHits(box, restore){
+  $$('.hit', box).forEach(b => b.onclick = () => { forward(restore); showChat(b.dataset.d, b.dataset.id); });
+}
+function showSearch(fresh){
+  if(fresh === true) S.search = { q:'', hits:[], cursor:null, done:false };
+  const scr = mount('search');
+  scr.innerHTML =
+    '<div class="bar row" style="gap:4px"><button id="back" class="ib" style="color:var(--light)" aria-label="뒤로">'+ICON.left+'</button>'+
+      '<div class="serif" style="font-size:17px">기록 찾기</div></div>'+
+    '<form id="sf" class="sbar" style="margin-top:14px">'+ICON.search+
+      '<input id="sq" placeholder="낱말이나 구절 주소(시 23)" enterkeyhint="search" autocomplete="off" maxlength="50" />'+
+      '<button class="act" type="submit" style="flex:none">찾기</button></form>'+
+    '<div id="sres" class="scroll grow" style="padding:0 16px calc(20px + env(safe-area-inset-bottom))"></div>';
+  $('#back').onclick = goBack;
+  const input = $('#sq'), box = $('#sres');
+  let run = 0;
+  const draw = (busy) => {
+    const s = S.search;
+    if(!s.q){ box.innerHTML = '<div class="note" style="text-align:center;margin-top:40px">지금까지 나눈 모든 이야기에서 찾아요.</div>'; return; }
+    box.innerHTML = s.hits.map(h => hitHTML(h, s.q)).join('') +
+      (busy ? '<div class="note" style="text-align:center;padding:14px">'+(s.hits.length?'더 ':'')+'찾는 중…</div>'
+        : s.cursor ? '<button class="cta ghost small" id="more" style="margin-top:6px">더 오래된 기록에서 찾기</button>'
+        : '<div class="note" style="text-align:center;padding:14px">'+(s.hits.length ? '모두 '+s.hits.length+'개를 찾았어요' : '찾지 못했어요')+'</div>');
+    bindHits(box, () => showSearch());
+    if($('#more')) $('#more').onclick = () => more(4);
+  };
+  const more = async (rounds) => {
+    const me = ++run, s = S.search;
+    draw(true);
+    for(let i=0; i<rounds; i++){
+      const res = await api({ action:'search', q:s.q, cursor:s.cursor });
+      if(me !== run || S.screen !== 'search') return;
+      if(res.error){ if(res.error !== 'auth' && res.error !== 'locked'){ say(res.message || '찾지 못했어요'); draw(false); } return; }
+      s.hits.push(...res.hits); s.cursor = res.cursor;
+      if(!s.cursor) break;
+      draw(true);
+    }
+    draw(false);
+  };
+  $('#sf').onsubmit = (e) => {
+    e.preventDefault();
+    const q = input.value.trim(); if(!q) return;
+    input.blur();
+    S.search = { q, hits:[], cursor:null, done:false };
+    more(4);
+  };
+  input.value = S.search.q;
+  draw(false);
+  if(!S.search.q) input.focus();
+}
+
+/* ══ 모아둔 말 ══ */
+async function showFavs(){
+  const scr = mount('favs');
+  scr.innerHTML =
+    '<div class="bar row" style="gap:4px"><button id="back" class="ib" style="color:var(--light)" aria-label="뒤로">'+ICON.left+'</button>'+
+      '<div class="serif" style="font-size:17px">모아둔 말</div></div>'+
+    '<div id="fres" class="scroll grow" style="padding:16px 16px calc(20px + env(safe-area-inset-bottom))"><div class="note" style="text-align:center;margin-top:40px">여는 중…</div></div>';
+  $('#back').onclick = goBack;
+  const box = $('#fres'), hits = [];
+  let cursor = null;
+  for(let i=0; i<40; i++){
+    const res = await api({ action:'favs', cursor });
+    if(S.screen !== 'favs') return;
+    if(res.error){ if(res.error !== 'auth' && res.error !== 'locked') box.innerHTML = '<div class="note" style="text-align:center;margin-top:40px">'+esc(res.message||'불러오지 못했어요')+'</div>'; return; }
+    hits.push(...res.hits); cursor = res.cursor;
+    box.innerHTML = hits.map(h => hitHTML(h)).join('') + (cursor ? '<div class="note" style="text-align:center;padding:14px">더 여는 중…</div>' : '');
+    bindHits(box, showFavs);
+    if(!cursor) break;
+  }
+  if(!hits.length) box.innerHTML = '<div class="empty" style="height:70%"><div style="color:var(--gold);margin-bottom:14px">'+ICON.star+'</div>'+
+    '<div class="serif" style="font-size:16px;color:var(--glow);line-height:1.8">아직 모아둔 말이 없어요.</div>'+
+    '<div class="note" style="margin-top:8px">대화에서 마음에 남는 말을 누르고<br/>「☆ 모아두기」를 눌러 보세요.</div></div>';
+}
+
+/* ══ 설정 ══ */
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; });
+
+async function showSetup(){
+  const me = S.me;
+  const scr = mount('setup');
+  const fs = store.get('gt_fs', 1);
+  scr.innerHTML =
+    '<div class="bar row" style="gap:4px"><button id="back" class="ib" style="color:var(--light)" aria-label="뒤로">'+ICON.left+'</button>'+
+      '<div class="serif" style="font-size:17px">설정</div></div>'+
+    '<div class="scroll grow" style="padding:24px 20px calc(30px + env(safe-area-inset-bottom))">'+
+
+      '<div class="sec">내 계정</div>'+
+      '<div class="card row" style="justify-content:space-between;gap:10px"><div><b>'+esc(me.nick || '카카오 사용자')+'</b>'+
+        '<div class="dim" style="font-size:12px">카카오로 로그인했어요</div></div>'+
+        '<button class="act" id="logout">로그아웃</button></div>'+
+
+      '<div class="rule"></div><div class="sec">돌아보기</div>'+
+      '<div class="stat3"><div><b id="stTotal">–</b><span>이야기 나눈 날</span></div><div><b id="stNow">–</b><span>이어서</span></div><div><b id="stBest">–</b><span>가장 길게</span></div></div>'+
+
+      '<div class="rule"></div><div class="sec">기록 보관</div>'+
+      '<div id="storeBox"></div>'+
+
+      '<div class="rule"></div><div class="sec">잠금</div>'+
+      '<div id="lockBox"></div>'+
+
+      '<div class="rule"></div><div class="sec">글자 크기</div>'+
+      '<div class="seg" id="fsSeg">'+[[0.92,'작게'],[1,'보통'],[1.14,'크게'],[1.3,'더 크게']].map(([v,l]) => '<button data-v="'+v+'"'+(v===fs?' class="on"':'')+'>'+l+'</button>').join('')+'</div>'+
+      '<div class="card serif" style="font-size:calc(15.5px*var(--fs));color:var(--glow)">여호와는 나의 목자시니 내게 부족함이 없으리로다</div>'+
+
+      '<div class="rule"></div><div class="sec">기록 내려받기</div>'+
+      '<div class="desc">지금까지의 이야기를 글 파일(.txt) 하나로 내려받아 따로 간직할 수 있어요.</div>'+
+      '<button class="cta ghost small" id="export" style="margin-top:14px">내려받기</button>'+
+      '<div class="bar2" id="exBar" style="display:none"><i></i></div>'+
+
+      '<div class="rule"></div><div class="sec">이 앱을 폰에 두기</div>'+
+      '<div class="desc" id="installDesc">사파리·크롬에서 이 주소를 열고 <b>공유 → 홈 화면에 추가</b>를 누르면 앱처럼 열려요.</div>'+
+
+      '<div class="rule"></div><div class="sec">성경</div>'+
+      '<div id="bib" class="card"><span class="dim">확인하는 중…</span></div>'+
+
+      '<div class="rule"></div><div class="sec" style="color:var(--rose)">떠나기</div>'+
+      '<div class="desc">계정과 이 앱 서버에 보관된 기록을 모두 지워요. 내 노션에 저장된 기록은 노션에 그대로 남아요.</div>'+
+      '<button class="link" id="bye" style="color:var(--rose);margin-top:8px">계정 지우기</button>'+
+    '</div>';
+
+  $('#back').onclick = goBack;
+  $('#logout').onclick = async () => { if(await ask({ title:'로그아웃할까요?', body:'기록은 그대로 남아 있어요.', ok:'로그아웃' })) logout(); };
+  $$('#fsSeg button').forEach(b => b.onclick = () => {
+    store.set('gt_fs', +b.dataset.v); applyFont();
+    $$('#fsSeg button').forEach(x => x.classList.toggle('on', x === b));
+  });
+  if(installEvt){
+    $('#installDesc').insertAdjacentHTML('afterend', '<button class="cta ghost small" id="install" style="margin-top:14px">이 기기에 설치하기</button>');
+    $('#install').onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; $('#install').remove(); };
+  }
+  $('#export').onclick = exportAll;
+  $('#bye').onclick = async () => {
+    if(!await ask({ title:'계정을 지울까요?', body:'이 앱 서버에 보관된 기록이 모두 사라지고 되돌릴 수 없어요. 필요하면 먼저 기록을 내려받아 두세요.', ok:'지우기', cancel:'그만두기', danger:true })) return;
+    if(!await ask({ title:'정말 지울까요?', body:'한 번 더 확인할게요. 지우면 되살릴 수 없어요.', ok:'모두 지우기', cancel:'그만두기', danger:true })) return;
+    const res = await api({ action:'deleteAccount' });
+    if(res.ok){ store.del('gt_outbox'); store.del('gt_tag'); store.del('gt_pin'); S.me = null; S.dates = null; S.days = {}; showLogin(); say('모두 지웠어요. 평안하세요'); }
+    else if(res.message) say(res.message);
+  };
+
+  drawStore();
+  drawLock();
+  loadDates(true).then((dates) => {
+    if(S.screen !== 'setup') return;
+    const st = streaks(dates);
+    $('#stTotal').textContent = st.total + '일'; $('#stNow').textContent = st.now + '일'; $('#stBest').textContent = st.best + '일';
+  });
+  loadBible().then((b) => {
+    if(S.screen !== 'setup') return;
+    $('#bib').innerHTML = b.length
+      ? '<div class="row" style="gap:8px"><span class="dot" style="background:var(--green)"></span><b>개역개정 '+b.length.toLocaleString()+'구절</b></div>'+
+        '<div class="dim" style="margin-top:6px">한 번 열면 기기에 담아 두어 인터넷 없이도 찾을 수 있어요.</div>'
+      : '<div class="row" style="gap:8px"><span class="dot" style="background:var(--rose)"></span><b>성경을 불러오지 못했어요</b></div>'+
+        '<div class="dim" style="margin-top:6px">인터넷을 확인하고 다시 열어 주세요.</div>';
+  });
+}
+
+function drawLock(){
+  const box = $('#lockBox'); if(!box) return;
+  const me = S.me;
+  if(me.hasPin){
+    box.innerHTML = '<div class="card"><div class="row" style="gap:8px"><span class="dot" style="background:var(--green)"></span><b>비밀번호가 걸려 있어요</b></div>'+
+      '<div class="dim" style="margin-top:6px">이 기기는 열어 두었어요. 폰을 남에게 건네기 전엔 「지금 잠그기」를 눌러 주세요.</div>'+
+      '<div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="act on" id="lockNow">지금 잠그기</button><button class="act" id="pinChange">바꾸기</button><button class="act" id="pinOff">없애기</button></div></div>';
+    $('#lockNow').onclick = async () => { const r = await api({ action:'lock' }); if(r.ok) showLock(); };
+    $('#pinChange').onclick = () => setPin(true);
+    $('#pinOff').onclick = async () => {
+      const cur = await pinDialog('지금 비밀번호', '없애려면 한 번 눌러 주세요'); if(!cur) return;
+      const r = await api({ action:'clearPin', current:cur });
+      if(r.ok){ me.hasPin = false; store.set('gt_pin', false); drawLock(); say('비밀번호를 없앴어요'); } else say(r.message || '없애지 못했어요');
+    };
+  }else{
+    box.innerHTML = '<div class="card"><div class="row" style="gap:8px"><span class="dot" style="background:var(--gold)"></span><b>비밀번호가 없어요</b></div>'+
+      '<div class="dim" style="margin-top:6px">카카오 로그인만으로 열려요. 폰을 함께 쓰거나 더 조심하고 싶다면 숫자 비밀번호를 걸어 두세요.</div>'+
+      '<button class="act on" id="pinOn" style="margin-top:12px">비밀번호 걸기</button></div>';
+    $('#pinOn').onclick = () => setPin(false);
+  }
+}
+async function setPin(change){
+  let current;
+  if(change){ current = await pinDialog('지금 비밀번호', '바꾸려면 먼저 눌러 주세요'); if(!current) return; }
+  const p1 = await pinDialog('새 비밀번호', '숫자 4~8자리'); if(!p1) return;
+  const p2 = await pinDialog('한 번 더', '같은 숫자를 다시 눌러 주세요'); if(!p2) return;
+  if(p1 !== p2){ say('두 번 누른 숫자가 달라요'); return; }
+  const r = await api({ action:'setPin', pin:p1, current });
+  if(r.ok){ S.me.hasPin = true; store.set('gt_pin', true); drawLock(); say('비밀번호를 걸었어요'); } else say(r.message || '걸지 못했어요');
+}
+
+function drawStore(){
+  const box = $('#storeBox'); if(!box) return;
+  const me = S.me;
+  if(me.storage === 'notion'){
+    box.innerHTML = '<div class="card" id="nState"><div class="row" style="gap:8px"><span class="dot" style="background:var(--gold)"></span><b>내 노션에 저장하고 있어요</b></div>'+
+      '<div class="dim" style="margin-top:6px">연결을 확인하는 중…</div></div>'+
+      '<div class="desc">하루에 한 줄이 생기고, 그 줄을 열면 「나: …」 「하나님: …」 으로 이야기가 쌓여요. 노션에서 직접 고쳐도 앱에 그대로 보여요.</div>'+
+      '<div id="moveBox"></div>'+
+      (me.notionFixed ? '' : '<button class="link" id="nOff" style="margin-top:8px;color:var(--mist)">노션 연결 끊기</button>');
+    api({ action:'notionCheck' }).then((r) => {
+      const c = $('#nState'); if(!c) return;
+      c.innerHTML = r.ok
+        ? '<div class="row" style="gap:8px"><span class="dot" style="background:var(--green)"></span><b>노션 「'+esc(r.title)+'」에 잘 이어졌어요</b></div>'+
+          (me.notionFixed ? '<div class="dim" style="margin-top:6px">처음부터 쓰던 데이터베이스예요. 예전 기록도 그대로 보여요.</div>' : '')
+        : '<div class="row" style="gap:8px"><span class="dot" style="background:var(--rose)"></span><b>노션에 닿지 못했어요</b></div>'+
+          '<div class="dim" style="margin-top:6px">'+esc(r.message || '')+'</div>';
+    });
+    if(!me.notionFixed){
+      $('#nOff').onclick = async () => {
+        if(!await ask({ title:'노션 연결을 끊을까요?', body:'노션에 쌓인 기록은 노션에 그대로 남아요. 끊고 나면 앱에는 이 앱 서버에 보관된 기록만 보여요.', ok:'끊기', cancel:'그만두기' })) return;
+        const r = await api({ action:'notionDisconnect' });
+        if(r.ok){ S.me = Object.assign(me, r.user); S.days = {}; S.dates = null; drawStore(); say('연결을 끊었어요'); }
+      };
+    }
+    api({ action:'cloudDates' }).then((r) => { if(r.dates && r.dates.length) offerMove(r.dates); });
+    return;
+  }
+  box.innerHTML = '<div class="card"><div class="row" style="gap:8px"><span class="dot" style="background:var(--green)"></span><b>이 앱 서버에 보관하고 있어요</b></div>'+
+    '<div class="dim" style="margin-top:6px">기록은 암호화해 두어 나만 열 수 있어요. 따로 할 일은 없어요.</div></div>'+
+    '<div class="desc">노션을 쓰신다면 <b>내 노션 데이터베이스</b>에만 저장되게 바꿀 수 있어요.</div>'+
+    '<button class="cta ghost small" id="nOpen" style="margin-top:14px">내 노션에 연결하기</button>'+
+    '<div id="nForm" style="display:none">'+
+      '<ol class="steps" style="margin-top:18px">'+
+        '<li>노션에서 <b>표 데이터베이스</b>를 하나 새로 만들어요. 이름은 마음대로 지어요.</li>'+
+        '<li><a href="https://www.notion.com/profile/integrations" target="_blank" rel="noopener">notion.com/profile/integrations</a>에서 <b>새 연결(New connection)</b>을 만들고, 읽기·수정·추가 권한을 켠 뒤 <b>시크릿(ntn_…)</b>을 복사해요.</li>'+
+        '<li>만든 데이터베이스 오른쪽 위 <b>⋯ → 연결</b>에서 방금 만든 연결을 붙여요.</li>'+
+        '<li>데이터베이스 <b>⋯ → 링크 복사</b>로 주소를 복사해요.</li>'+
+      '</ol>'+
+      '<input class="field" id="nTok" type="password" placeholder="노션 시크릿 (ntn_…)" autocomplete="off" />'+
+      '<input class="field" id="nDb" placeholder="데이터베이스 주소" autocomplete="off" inputmode="url" />'+
+      '<button class="cta small" id="nGo" style="margin-top:12px">연결하기</button>'+
+      '<div class="note" style="margin-top:10px">시크릿은 암호화해 보관하고 화면에 다시 보여주지 않아요.</div>'+
+    '</div>';
+  $('#nOpen').onclick = () => { $('#nForm').style.display = 'block'; $('#nOpen').style.display = 'none'; };
+  $('#nGo').onclick = async () => {
+    const token = $('#nTok').value.trim(), db = $('#nDb').value.trim();
+    if(!token || !db){ say('시크릿과 주소를 모두 넣어 주세요'); return; }
+    $('#nGo').disabled = true; $('#nGo').textContent = '확인하는 중…';
+    const r = await api({ action:'notionConnect', token, db });
+    if(!r.ok){ if($('#nGo')){ $('#nGo').disabled = false; $('#nGo').textContent = '연결하기'; } say(r.message || '연결하지 못했어요'); return; }
+    S.me = Object.assign(me, r.user); S.days = {}; S.dates = null;
+    drawStore(); say('노션에 이어졌어요');
+  };
+}
+function offerMove(dates){
+  const box = $('#moveBox'); if(!box) return;
+  box.innerHTML = '<div class="card"><b>이 앱 서버에 '+dates.length+'일의 기록이 남아 있어요</b>'+
+    '<div class="dim" style="margin-top:6px">노션으로 옮기면 한곳에서 볼 수 있어요. 옮긴 기록은 앱 서버에서 지워져요.</div>'+
+    '<button class="act on" id="mv" style="margin-top:12px">노션으로 옮기기</button><div class="bar2" id="mvBar" style="display:none"><i></i></div></div>';
+  $('#mv').onclick = async () => {
+    $('#mv').disabled = true; $('#mvBar').style.display = 'block';
+    let done = 0;
+    for(const d of dates){
+      $('#mv').textContent = '옮기는 중… '+done+' / '+dates.length;
+      const r = await api({ action:'moveDay', date:d });
+      if(r.error){ say(r.message || '옮기다 멈췄어요. 다시 눌러 이어서 옮길 수 있어요'); break; }
+      done++;
+      if($('#mvBar i')) $('#mvBar i').style.width = (done / dates.length * 100) + '%'; else return;
+    }
+    S.days = {}; S.dates = null;
+    if(done === dates.length){ box.innerHTML = ''; say('모두 노션으로 옮겼어요'); }
+    else offerMove(dates.slice(done));
+  };
+}
+
+async function exportAll(){
+  const btn = $('#export'), bar = $('#exBar');
+  btn.disabled = true; bar.style.display = 'block';
+  const dates = (await loadDates(true)).slice().sort();
+  if(!dates.length){ say('아직 내려받을 기록이 없어요'); btn.disabled = false; bar.style.display = 'none'; return; }
+  const out = ['하나님과의 대화', ''];
+  for(let i=0; i<dates.length; i++){
+    btn.textContent = '모으는 중… '+(i+1)+' / '+dates.length;
+    const r = await api({ action:'day', date:dates[i] });
+    if(S.screen !== 'setup') return;
+    if(r.error){ say(r.message || '모으다 멈췄어요'); btn.disabled = false; btn.textContent = '내려받기'; bar.style.display = 'none'; return; }
+    if(r.messages.length){
+      out.push('■ '+pretty(dates[i]));
+      for(const m of r.messages) out.push((m.time?'['+m.time+'] ':'')+(m.who==='god'?'하나님: ':'나: ')+m.text+(m.ref?' (— '+m.ref+')':''));
+      out.push('');
+    }
+    $('i', bar).style.width = ((i+1) / dates.length * 100) + '%';
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿'+out.join('\r\n')], { type:'text/plain;charset=utf-8' }));
+  a.download = '하나님과의대화_'+keyOf(new Date())+'.txt';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  btn.disabled = false; btn.textContent = '내려받기'; bar.style.display = 'none';
+  say('내려받았어요');
+}
+
+/* ══ 시작 ══ */
+async function enter(){
+  const code = (() => { try{ return sessionStorage.getItem('gt_claim'); }catch(e){ return null; } })();
+  if(code){
+    try{ sessionStorage.removeItem('gt_claim'); }catch(e){}
+    const r = await api({ action:'claim', code });
+    if(r.ok){ S.me = Object.assign(S.me, r.user); say('예전 기록을 이어받았어요'); }
+    else if(r.message) say(r.message);
+  }
+  S.offline = false; S.days = {}; S.dates = null;
+  store.set('gt_tag', S.me.tag); store.set('gt_pin', !!S.me.hasPin);
+  home();
+  flushOutbox();
+}
+
+async function boot(){
+  const p = new URLSearchParams(location.search);
+  const code = p.get('e'), claim = p.get('claim');
+  if(claim){ try{ sessionStorage.setItem('gt_claim', claim); }catch(e){} }
+  if(code || claim){ try{ history.replaceState(null, '', location.pathname); }catch(e){} }
+
+  const res = await api({ action:'me' }, true);
+  if(res.error === 'offline'){ S.offline = true; showOffline(); return; }
+  S.ready = res.ready || { kakao:false, secret:false };
+  S.me = res.user || null;
+  if(!S.me){ showLogin(code); return; }
+  if(S.me.locked){ showLock(); return; }
+  await enter();
+  if(code === 'pinreset') say('비밀번호를 풀었어요 · 설정에서 새로 걸 수 있어요');
+}
+boot();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>

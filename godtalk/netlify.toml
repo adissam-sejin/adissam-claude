@@ -1,0 +1,7 @@
+# 하나님과의 대화 — Netlify 설정
+[build]
+  publish = "public"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"

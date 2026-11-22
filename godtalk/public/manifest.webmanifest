@@ -1,0 +1,17 @@
+{
+  "name": "하나님과의 대화",
+  "short_name": "하나님과의 대화",
+  "description": "하나님과 나눈 이야기를 날마다 적어 두는 조용한 기록장",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0E24",
+  "theme_color": "#141B3D",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
